@@ -1,4 +1,4 @@
-# Productividad Embaladoras — CD Lo Boza
+#  Productividad Embaladoras — CD Lo Boza
 
 PWA para gestión de productividad de embaladoras, Samsonite Chile.
 
