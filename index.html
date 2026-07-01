@@ -2786,6 +2786,8 @@ async function handleEntregasFile(file){
       const cantidad     = parseInt(r['Cantidad']||r['cantidad']||1) || 1;
       const canal        = (r['Canal']||r['canal']||'').toString().trim();
       const tipo         = (r['TipoProducto']||r['tipo_producto']||'').toString().trim();
+      const clientenombre  = (r['ClienteNombre']||r['clientenombre']||r['Cliente']||'').toString().trim();
+      const ruta           = (r['Ruta']||r['ruta']||'').toString().trim();
 
       if(!idEntrega || !fechaCreada) return;
 
@@ -2793,7 +2795,7 @@ async function handleEntregasFile(file){
       // aunque el archivo se suba días después
       rows.push({id_entrega:idEntrega, fecha_creada:fechaCreada, hora_creada:horaCreada,
         material, material_desc:materialDesc, cantidad, canal, tipo_producto:tipo,
-        concatenado:concat, fecha_carga:fechaCreada});
+        clientenombre, ruta, concatenado:concat, fecha_carga:fechaCreada});
       totalUds += cantidad;
     });
 
@@ -4150,6 +4152,7 @@ async function exportDiaPDF(){
   <span class="hint">En el diálogo de impresión selecciona "Guardar como PDF" como destino</span>
 </div>
 ${htmlBody}
+
 </body>
 </html>`);
   win.document.close();
@@ -5011,10 +5014,7 @@ function renderEstadoOperacional(opts){
               + '<div style="font-size:20px;font-weight:900;color:#2ECC8A;line-height:1">' + fmtN(arrastreConsumidoVista) + '</div>'
               + '<div style="font-size:9px;color:rgba(46,204,138,.5)">' + pctAbsorcionVista + '%</div>'
             + '</div>'
-            + '<div style="text-align:center">'
-              + '<div style="font-size:8px;color:var(--txt3);margin-bottom:2px">Pendiente</div>'
-              + '<div style="font-size:20px;font-weight:900;color:#FFBA4D;line-height:1">' + fmtN(arrastrePendienteVista) + '</div>'
-            + '</div>'
+            + '<div style="text-align:center;cursor:pointer" ondblclick="abrirDetalleArrastre()" title="Doble clic para ver detalle pendiente">'              + '<div style="font-size:8px;color:var(--txt3);margin-bottom:2px">Pendiente</div>'              + '<div style="font-size:20px;font-weight:900;color:#FFBA4D;line-height:1">' + fmtN(arrastrePendienteVista) + '</div>'              + '<div style="font-size:8px;color:rgba(255,186,77,.4);margin-top:2px">2× detalle</div>'            + '</div>'
           + '</div>'
           + '<div style="display:flex;gap:2px;margin-top:10px">'
           + (function(){ var b=''; for(var i=0;i<20;i++){ b+='<div style="flex:1;height:8px;background:'+(i/20*100<pctAbsorcionVista?'#2ECC8A':'rgba(255,255,255,.08)')+';border-radius:2px"></div>'; } return b; })()
@@ -6077,7 +6077,7 @@ async function cargarPlanSemanal(){
 
       var _bkRes = await Promise.all([
         // Entregas S-1 — excluir insumos en el filtro de cantidad > 0
-        sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal&fecha_creada=gte.'+fLunAnt+'&fecha_creada=lte.'+fDomAnt+'&order=id_entrega.asc'),
+        sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta&fecha_creada=gte.'+fLunAnt+'&fecha_creada=lte.'+fDomAnt+'&order=id_entrega.asc'),
         // Lo que se embaló EN S-1 (para descontar del arrastre inicial)
         sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAnt+'&fecha=lte.'+fDomAnt+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc'),
         // Producción de esta semana
@@ -6097,8 +6097,16 @@ async function cargarPlanSemanal(){
         if(!id || !qty) return;
         if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return;
         if(_excCanal[(r.canal||'').toLowerCase().trim()]) return;
-        if(!mapEntregas[id]) mapEntregas[id] = { fecha_creada:(r.fecha_creada||'').slice(0,10), total_cargado:0 };
+        // Excluir rutas SSTT
+        if((r.ruta||'').toUpperCase().includes('SSTT')) return;
+        // Excluir clientes especiales de Venta en Verde que no pasan por flujo de embalaje
+        var _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
+        if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && (r.canal||'').toLowerCase().trim() === 'venta en verde') return;
+        if(!mapEntregas[id]) mapEntregas[id] = { fecha_creada:(r.fecha_creada||'').slice(0,10), total_cargado:0, canal:'', clientenombre:'', ruta:'' };
         mapEntregas[id].total_cargado += qty;
+        if(!mapEntregas[id].canal && r.canal) mapEntregas[id].canal = r.canal;
+        if(!mapEntregas[id].clientenombre && r.clientenombre) mapEntregas[id].clientenombre = r.clientenombre;
+        if(!mapEntregas[id].ruta && r.ruta) mapEntregas[id].ruta = r.ruta;
       });
 
       // Embalado EN S-1 por entrega (para calcular arrastre real)
@@ -6148,7 +6156,7 @@ async function cargarPlanSemanal(){
         _idsSAnt.add(id);
         var embalEsta  = Math.min(embalEstaSemXEnt[id]||0, pendInicio);
         var pendActual = Math.max(pendInicio - embalEsta, 0);
-        var canal      = canalXEntrega[id] || 'Sin canal';
+        var canal      = canalXEntrega[id] || (ent.canal||'') || 'Sin canal';
 
         if(!backlogPorCanal[canal]) backlogPorCanal[canal]={cargado:0,pendiente:0,consumido:0};
         backlogPorCanal[canal].cargado   += pendInicio;  // arrastre inicial real
@@ -6157,7 +6165,8 @@ async function cargarPlanSemanal(){
 
         tablaAuditoria.push({ id_entrega:id, fecha_creada:ent.fecha_creada,
           total_cargado:carg, embal_en_s1:embalSAnt, pend_inicio:pendInicio,
-          embal_esta_sem:embalEsta, pendiente:pendActual, canal:canal });
+          embal_esta_sem:embalEsta, pendiente:pendActual, canal:canal,
+          clientenombre:ent.clientenombre||'', ruta:ent.ruta||'' });
       });
 
       Object.keys(backlogPorCanal).forEach(function(c){ totalBacklog += backlogPorCanal[c].pendiente; });
@@ -6943,6 +6952,34 @@ function toggleKeysPanel(){
 </script>
 
 <!-- ==================== MODAL REPORTE 1 (Email) ==================== -->
+<!-- ── Modal Detalle Arrastre Pendiente ─────────────────────────── -->
+<div id="modal-arrastre-det" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1200;align-items:flex-end;justify-content:center" onclick="if(event.target===this)cerrarDetalleArrastre()">
+  <div style="background:#0D1B2E;border:1px solid rgba(239,68,68,.3);border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;animation:slideUp .25s ease">
+    <div style="background:rgba(239,68,68,.08);padding:14px 16px;border-bottom:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#EF4444">⚠ Detalle Arrastre Pendiente S-1</div>
+        <div style="font-size:10px;color:#4D7AAA;margin-top:2px" id="arrastre-det-resumen">—</div>
+      </div>
+      <button onclick="cerrarDetalleArrastre()" style="background:rgba(255,255,255,.08);border:none;color:#8AAED4;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1">×</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:rgba(255,255,255,.04);position:sticky;top:0">
+            <th style="padding:8px 10px;text-align:left;color:#4D7AAA;font-weight:600;white-space:nowrap">Fecha Creada</th>
+            <th style="padding:8px 10px;text-align:left;color:#4D7AAA;font-weight:600">Canal</th>
+            <th style="padding:8px 10px;text-align:left;color:#4D7AAA;font-weight:600">ID Entrega</th>
+            <th style="padding:8px 10px;text-align:left;color:#4D7AAA;font-weight:600">Cliente</th>
+            <th style="padding:8px 10px;text-align:right;color:#4D7AAA;font-weight:600">Pendiente</th>
+          </tr>
+        </thead>
+        <tbody id="arrastre-det-body"></tbody>
+        <tfoot id="arrastre-det-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div id="modal-rpt" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:flex-end;justify-content:center">
   <div style="background:#0D1B2E;border:1px solid #1E3A5F;border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:0">
     <div style="background:#0A2040;padding:16px 18px;border-bottom:1px solid #1E3A5F;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2">
@@ -7634,7 +7671,65 @@ function showGerTab(tab, btn){
   }
 }
 
+// ── Detalle Arrastre Pendiente (doble click en tarjeta Pendiente) ──────────
+function abrirDetalleArrastre(){
+  var tabla = (_planCache.tablaAuditoria || []).filter(function(r){ return r.pendiente > 0; });
+  if(!tabla.length){
+    alert('No hay unidades pendientes de arrastre.');
+    return;
+  }
+  // Ordenar por fecha_creada ASC (más antigua primero), luego canal
+  tabla.sort(function(a,b){
+    if(a.fecha_creada < b.fecha_creada) return -1;
+    if(a.fecha_creada > b.fecha_creada) return 1;
+    return (a.canal||'').localeCompare(b.canal||'');
+  });
+
+  var totalPend = tabla.reduce(function(s,r){ return s + r.pendiente; }, 0);
+  var totalEnt  = tabla.length;
+
+  document.getElementById('arrastre-det-resumen').textContent =
+    totalEnt + ' entrega' + (totalEnt!==1?'s':'') + ' · ' + totalPend.toLocaleString('es-CL') + ' unidades pendientes';
+
+  var canalColors = {
+    'Locales':'#3B8FFF','Concesiones':'#9A88FF','Grandes Tiendas':'#2ECC8A',
+    'Distribuidor':'#FFBA4D','Ecommerce':'#FF6B6B','Marketplace':'#4DCFFF','Venta en Verde':'#A8FF78'
+  };
+
+  var rows = tabla.map(function(r, i){
+    var col = canalColors[r.canal] || '#8AAED4';
+    var bg  = i % 2 === 0 ? 'rgba(255,255,255,.02)' : 'transparent';
+    return '<tr style="background:' + bg + ';border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<td style="padding:7px 10px;color:#E8F1FF;white-space:nowrap">' + (r.fecha_creada||'—') + '</td>'
+      + '<td style="padding:7px 10px"><span style="background:' + col + '22;color:' + col + ';border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">' + (r.canal||'—') + '</span></td>'
+      + '<td style="padding:7px 10px;color:#8AAED4;font-size:10px">' + (r.id_entrega||'—') + '</td>'
+      + '<td style="padding:7px 10px;color:#8AAED4;font-size:10px">' + (r.clientenombre||'—') + '</td>'
+      + '<td style="padding:7px 10px;text-align:right;font-weight:700;color:#FFBA4D">' + r.pendiente.toLocaleString('es-CL') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  document.getElementById('arrastre-det-body').innerHTML = rows;
+  document.getElementById('arrastre-det-foot').innerHTML =
+    '<tr style="background:rgba(239,68,68,.08);border-top:1px solid rgba(239,68,68,.2)">'
+    + '<td colspan="4" style="padding:8px 10px;font-weight:700;color:#EF4444;font-size:11px">TOTAL PENDIENTE</td>'
+    + '<td style="padding:8px 10px;text-align:right;font-weight:900;color:#FFBA4D;font-size:13px">' + totalPend.toLocaleString('es-CL') + '</td>'
+    + '</tr>';
+
+  var el = document.getElementById('modal-arrastre-det');
+  el.style.display = 'flex';
+}
+
+function cerrarDetalleArrastre(){
+  var el = document.getElementById('modal-arrastre-det');
+  if(el) el.style.display = 'none';
+}
+
+
+function abrirPlanDesdeGerente(){
+  showGerTab('plan', document.getElementById('gtab-plan'));
+}
 </script>
+
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -7645,6 +7740,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-
 </body>
 </html>
