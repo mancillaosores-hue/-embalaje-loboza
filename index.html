@@ -6097,8 +6097,9 @@ async function cargarPlanSemanal(){
         if(!id || !qty) return;
         if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return;
         if(_excCanal[(r.canal||'').toLowerCase().trim()]) return;
-        // Excluir rutas SSTT
-        if((r.ruta||'').toUpperCase().includes('SSTT')) return;
+        // Excluir rutas SSTT y REGULA
+        var _rutaUp = (r.ruta||'').toUpperCase().trim();
+        if(_rutaUp.includes('SSTT') || _rutaUp === 'REGULA') return;
         // Excluir clientes especiales de Venta en Verde que no pasan por flujo de embalaje
         var _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
         if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && (r.canal||'').toLowerCase().trim() === 'venta en verde') return;
