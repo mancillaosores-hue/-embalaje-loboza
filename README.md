@@ -1,133 +1,65 @@
-# Productividad Embaladoras — CD Lo Boza
-**Samsonite Chile · Sistema de gestión de productividad**
+#  Productividad Embaladoras — CD Lo Boza
 
-PWA para supervisores, embaladoras y gerentes del CD Lo Boza.  
-Publicada en GitHub Pages · Backend: Supabase · Reportes: EmailJS
+PWA para gestión de productividad de embaladoras, Samsonite Chile.
 
----
+## 🚀 Subir a GitHub Pages (paso a paso)
 
-## Estructura del proyecto
+### 1. Crear el repositorio
+1. Entra a https://github.com/new
+2. Nombre sugerido: `productividad-embaladoras`
+3. Visibilidad: **Privado** (recomendado, ya que el código tiene la URL de tu proyecto Supabase) o Público si no te importa que se vea el código fuente.
+4. NO marques "Add a README" (ya tenemos uno).
+5. Clic en **Create repository**.
 
+### 2. Subir los archivos
+Tienes 2 opciones:
+
+**Opción A — Web (sin terminal, más fácil):**
+1. En la página del repo recién creado, clic en **uploading an existing file**.
+2. Arrastra TODOS los archivos de esta carpeta (`index.html`, `manifest.json`, `sw.js`, `icons/`, `README.md`) manteniendo la estructura de carpetas.
+3. Clic en **Commit changes**.
+
+**Opción B — Terminal (si tienes git instalado):**
+```bash
+cd ruta/a/esta/carpeta
+git init
+git add .
+git commit -m "Primera versión - v2-38 PWA"
+git branch -M main
+git remote add origin https://github.com/TU-USUARIO/productividad-embaladoras.git
+git push -u origin main
+```
+
+### 3. Activar GitHub Pages
+1. En el repo, ve a **Settings** → **Pages** (menú izquierdo).
+2. En "Build and deployment" → **Source**, selecciona **Deploy from a branch**.
+3. En **Branch**, elige `main` y carpeta `/ (root)`.
+4. Clic en **Save**.
+5. Espera 1-2 minutos. GitHub te dará la URL pública, algo como:
+   `https://TU-USUARIO.github.io/productividad-embaladoras/`
+
+### 4. Verificar el PWA
+1. Abre la URL en Chrome (idealmente desde el celular o desde Chrome en PC).
+2. Deberías ver el ícono de "Instalar app" en la barra de direcciones (PC) o la opción "Agregar a pantalla de inicio" (Android/iPhone).
+3. Una vez instalada, la app abre en pantalla completa, sin la barra del navegador, como una app nativa.
+
+## 📁 Estructura de archivos
 ```
 /
-├── index.html              ← HTML limpio: solo estructura y enlaces
-├── manifest.json           ← Configuración PWA
-├── sw.js                   ← Service Worker (cache offline)
-├── icons/                  ← Íconos 192x192 y 512x512
-│
-├── css/
-│   ├── variables.css       ← Design tokens: colores, tipografía
-│   ├── animations.css      ← Keyframes y transiciones
-│   ├── base.css            ← Reset, layout global, .app, .sc
-│   ├── login.css           ← Pantalla de login
-│   ├── components.css      ← Cards, botones, tabs, toasts, badges
-│   ├── dashboard.css       ← Dashboard embaladora, heatmap, ring
-│   ├── modals.css          ← Modales de reporte y arrastre
-│   └── responsive.css      ← Media queries y @media print
-│
-└── js/
-    ├── config.js           ← Constantes globales (credenciales, DB, META)
-    ├── helpers.js          ← Utilidades puras (fechas, formato, agrupación)
-    ├── supabase.js         ← Capa de datos (fetch, insert, delete, cache)
-    ├── ui.js               ← Componentes UI (toast, nav, screen, cyber)
-    ├── auth.js             ← Autenticación (login, logout, togglePass)
-    ├── upload.js           ← Carga de Excel (producción, entregas, plan)
-    ├── dashboard.js        ← Vista embaladora (día, semana, mes, historial)
-    ├── supervisor.js       ← Vista supervisor (equipo, semana, mes)
-    ├── plan.js             ← Plan semanal (backlog, arrastre, canales)
-    ├── email.js            ← Reportes por email (EmailJS)
-    ├── pdf.js              ← Exportación PDF (jsPDF + AutoTable)
-    └── gerente.js          ← Dashboard gerencial + detalle arrastre
+├── index.html        ← La app completa (v2-38)
+├── manifest.json      ← Configuración del PWA (nombre, íconos, colores)
+├── sw.js              ← Service worker (permite funcionar offline / cache)
+├── icons/
+│   ├── icon-192.png
+│   └── icon-512.png
+└── README.md
 ```
 
----
+## 🔄 Actualizar la app en el futuro
+Cada vez que tengas una nueva versión del HTML:
+1. Reemplaza `index.html` en el repo (web: clic en el archivo → ícono de lápiz para editar, o sube el nuevo y borra el viejo).
+2. **Importante:** sube también una nueva versión de `sw.js` cambiando el número en `CACHE_NAME` (por ejemplo, de `v2-38` a `v2-39`), o los usuarios seguirán viendo la versión vieja cacheada en su celular hasta que limpien caché.
+3. Espera 1-2 minutos para que GitHub Pages despliegue el cambio.
 
-## Arquitectura
-
-### Capas
-
-```
-[HTML] index.html
-   ↓ carga
-[CSS] variables → animations → base → login → components → dashboard → modals → responsive
-   ↓ luego
-[JS] config → helpers → supabase → ui → auth → upload → dashboard → supervisor → plan → email → pdf → gerente
-```
-
-### Dependencias JS (orden de carga)
-
-| Módulo | Depende de |
-|--------|-----------|
-| `config.js` | ninguno |
-| `helpers.js` | config |
-| `supabase.js` | config |
-| `ui.js` | config, helpers |
-| `auth.js` | config, supabase, helpers, ui |
-| `upload.js` | config, supabase, helpers, ui |
-| `dashboard.js` | config, supabase, helpers, ui |
-| `supervisor.js` | config, supabase, helpers, ui |
-| `plan.js` | config, supabase, helpers, ui, supervisor |
-| `email.js` | config, supabase, helpers, ui |
-| `pdf.js` | config, helpers, supabase |
-| `gerente.js` | config, supabase, helpers, ui, plan |
-
----
-
-## Dependencias externas (CDN)
-
-| Librería | Versión | Uso |
-|----------|---------|-----|
-| SheetJS (xlsx) | 0.18.5 | Lectura de archivos Excel |
-| jsPDF | 2.5.1 | Generación de PDFs |
-| jsPDF AutoTable | 3.8.2 | Tablas en PDFs |
-| EmailJS Browser | 4 | Envío de reportes por correo |
-| Chart.js | 4.4.1 | Gráficos de tendencia |
-
----
-
-## Backend
-
-- **Supabase** proyecto: `rftjrigcngwhzhxfnrja`
-- Tablas: `produccion`, `entregas_carga`
-- Edge Function: `send-email` (para bypass de límite EmailJS)
-
----
-
-## Roles de acceso
-
-| Rol | Acceso | Pantalla |
-|-----|--------|---------|
-| Embaladora | Código + clave personal | `sc-dash` |
-| Supervisor | `supervisor2025` | `sc-sup` |
-| Gerente | `gerente2025` | `sc-ger` |
-
----
-
-## Cómo agregar una nueva función
-
-1. Identifica a qué módulo JS pertenece según la tabla de arquitectura.
-2. Agrega la función al archivo correspondiente.
-3. Si necesita constantes nuevas, agrégalas a `config.js`.
-4. Si afecta la UI, revisa `components.css` o el CSS específico de la pantalla.
-5. Si usa Supabase, usa los helpers existentes: `sbFetch`, `sbFetchAll`, `insertBatch`.
-
----
-
-## Cómo actualizar la versión
-
-1. Modifica el archivo JS correspondiente.
-2. Actualiza el `CACHE_NAME` en `sw.js` (ej: `v2-39`) para forzar recarga en dispositivos.
-3. Sube los archivos modificados a GitHub.
-4. Espera el check verde ✅ en el repo (1-2 minutos).
-
----
-
-## Despliegue
-
-**URL de producción:**  
-`https://mancillaosores-hue.github.io/-embalaje-loboza/`
-
-**Repositorio:**  
-`https://github.com/mancillaosores-hue/-embalaje-loboza`
-
-Desplegado via **GitHub Pages** desde la rama `main`, carpeta raíz.
+## ⚠️ Nota de seguridad
+Este HTML contiene la URL pública de tu proyecto Supabase (`rftjrigcngwhzhxfnrja`) y la lógica de login. Si el repositorio es público, cualquiera puede ver ese código fuente (aunque no las contraseñas reales si usas RLS de Supabase correctamente). Si prefieres mantenerlo privado, GitHub Pages también funciona con repos privados en planes de GitHub Pro/Team/Enterprise — en el plan gratuito personal, Pages solo publica desde repos públicos. Si necesitas que sea privado y gratis, una alternativa es Netlify o Vercel (también gratuitos y soportan repos privados).
