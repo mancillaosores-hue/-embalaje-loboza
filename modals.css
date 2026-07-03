@@ -1,0 +1,163 @@
+/**
+ * login.css
+ * ─────────────────────────────────────────────────────────────
+ * Estilos de la pantalla de login (sc-login).
+ * Card de acceso, campos, botón ingresar, hero animado.
+ *
+ * Autor : Diego Mancilla (CD Lo Boza - Samsonite Chile)
+ * Fecha : 2026
+ * Dependencias : variables.css, base.css
+ * ─────────────────────────────────────────────────────────────
+ */
+
+/* ===================== LOGIN PREMIUM ===================== */
+#sc-login{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:0;background:transparent;padding:0;overflow-y:auto;}
+#sc-login.on{display:flex}
+
+/* Efecto luz superior derecha */
+#sc-login::before{content:'';position:fixed;inset:0;background:linear-gradient(to bottom,rgba(2,8,20,.55) 0%,rgba(2,8,20,.3) 40%,rgba(2,8,20,.75) 100%);z-index:0;pointer-events:none;}
+/* Efecto luz inferior izquierda */
+#sc-login::after{
+  content:'';position:fixed;bottom:80px;left:-40px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(30,80,200,.2) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+.login-bg-img{
+  position:fixed;top:0;right:0;width:55%;height:70%;
+  background:url('') no-repeat center/cover;
+  opacity:.07;pointer-events:none;z-index:0;
+}
+
+/* LOGO SAMSONITE */
+.login-logo-wrap{
+  z-index:1;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding-top:0;
+  margin-bottom:12px;
+  background:transparent;
+  flex-shrink:0;
+}
+.login-logo-svg{
+  display:inline-flex;align-items:center;justify-content:center;gap:0;background:transparent;
+  font-size:clamp(28px,7vw,42px);font-weight:800;letter-spacing:-.01em;
+  color:#fff;font-family:'DM Sans',sans-serif;
+}
+.login-logo-svg .logo-o{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1em;height:1em;position:relative;
+}
+.login-logo-svg .logo-o svg{width:.9em;height:.9em}
+
+/* CARD */
+.login-card{z-index:1;background:rgba(5,15,35,.18);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:clamp(10px,2vw,16px) clamp(14px,3vw,22px);width:min(88vw,400px);box-shadow:0 8px 48px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.06) inset;margin:0;}
+
+/* App identity strip inside card */
+.login-app-strip{
+  display:flex;align-items:center;gap:14px;
+  padding-bottom:8px;margin-bottom:8px;
+  border-bottom:1px solid rgba(59,143,255,.15);
+}
+.login-app-icon{
+  width:42px;height:42px;border-radius:11px;
+  background:transparent;
+  border:none;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.login-app-icon svg{width:28px;height:28px}
+.login-app-title{font-size:18px;font-weight:700;color:#fff;letter-spacing:.01em;line-height:1.2}
+.login-app-sub{font-size:13px;color:#3B8FFF;font-weight:500;margin-top:2px}
+
+/* Separador luminoso */
+.login-glow-line{
+  width:60px;height:2px;
+  background:linear-gradient(90deg,transparent,#3B8FFF,transparent);
+  margin:0 auto 8px;
+  border-radius:2px;
+}
+
+/* Fields */
+.lf-label{font-size:11px;font-weight:700;color:#6A9FD8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.lf-input-wrap{position:relative;margin-bottom:10px}
+.lf-input-icon{
+  position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  color:#3B6EA0;display:flex;align-items:center;
+}
+.lf-input-icon svg{width:17px;height:17px}
+.lf-input{
+  width:100%;padding:12px 42px;
+  background:rgba(5,13,30,.7);
+  border:1px solid rgba(59,143,255,.2);
+  border-radius:10px;
+  font-size:14px;font-family:'DM Sans',sans-serif;
+  color:#E8F1FF;outline:none;
+  transition:border .2s,box-shadow .2s;
+  letter-spacing:.01em;
+}
+.lf-input::placeholder{color:#3B6EA0}
+.lf-input:focus{
+  border-color:rgba(59,143,255,.6);
+  box-shadow:0 0 0 3px rgba(59,143,255,.12);
+}
+.lf-eye{
+  position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  color:#3B6EA0;cursor:pointer;display:flex;align-items:center;
+  background:none;border:none;padding:0;
+  transition:color .2s;
+}
+.lf-eye:hover{color:#5AABFF}
+.lf-eye svg{width:17px;height:17px}
+
+/* Forgot password */
+.lf-forgot{
+  text-align:right;font-size:12px;color:#3B8FFF;
+  font-weight:500;cursor:pointer;margin-top:-8px;margin-bottom:20px;
+  text-decoration:none;display:block;
+  transition:color .2s;
+}
+.lf-forgot:hover{color:#5AABFF}
+
+/* Botón ingresar */
+.btn-login{
+  width:100%;padding:13px;
+  background:linear-gradient(135deg,#2563EB,#3B8FFF);
+  color:#fff;border:none;border-radius:10px;
+  font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 4px 20px rgba(37,99,235,.4);
+  transition:all .2s;letter-spacing:.01em;
+}
+.btn-login:hover{background:linear-gradient(135deg,#1D4FBB,#2563EB);box-shadow:0 6px 28px rgba(37,99,235,.55);transform:translateY(-1px)}
+.btn-login:active{transform:translateY(0)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-login svg{width:18px;height:18px}
+
+/* Secure badge */
+.lf-secure{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:10px;font-size:11px;color:#3B6EA0;font-weight:500;
+}
+.lf-secure svg{width:13px;height:13px;color:#3B6EA0}
+
+/* Error */
+.err-msg{
+  font-size:12px;color:#FF8080;margin-top:.6rem;text-align:center;
+  padding:8px;background:rgba(255,80,80,.1);
+  border:1px solid rgba(255,80,80,.25);border-radius:8px;
+}
+
+/* Marcas strip */
+.login-brands{z-index:2;width:100%;padding:4px clamp(8px,2vw,14px) 6px;flex-shrink:0;position:fixed;bottom:0;left:0;}
+.login-brands-inner{display:flex;align-items:center;justify-content:center;gap:clamp(10px,3vw,22px);flex-wrap:nowrap;background:rgba(2,8,20,.75);border:none;border-top:1px solid rgba(255,255,255,.08);border-radius:0;padding:10px 16px;backdrop-filter:blur(8px);}
+.brand-name{
+  font-size:clamp(9px,2.2vw,12px);font-weight:700;
+  color:rgba(255,255,255,.45);letter-spacing:.06em;text-transform:uppercase;
+  white-space:nowrap;font-family:'DM Sans',sans-serif;
+}
+.brand-name.tumi{letter-spacing:.2em}
+.brand-name.lipault{font-weight:400;letter-spacing:.04em}
+.brand-sep{width:1px;height:14px;background:rgba(255,255,255,.1);flex-shrink:0}

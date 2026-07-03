@@ -1,0 +1,23 @@
+/**
+ * variables.css
+ * ─────────────────────────────────────────────────────────────
+ * Design tokens: colores, tipografía, espaciados y sombras.
+ * Toda la paleta corporativa Samsonite CD Lo Boza.
+ *
+ * Autor : Diego Mancilla (CD Lo Boza - Samsonite Chile)
+ * Fecha : 2026
+ * ─────────────────────────────────────────────────────────────
+ */
+
+:root{
+  --red:#3B8FFF;--red-d:#1E6FD9;--navy:#0D1B2E;
+  --bg:#080F1E;--card:#0F1E35;--card2:#132040;--border:#1A3354;
+  --txt:#EEF4FF;--txt2:#7FA8D4;--txt3:#3D6A99;
+  --green:#2ECC8A;--green-l:#071F14;--green-t:#2ECC8A;
+  --blue-l:#0B2040;--blue-t:#60B0FF;
+  --amber-l:#201500;--amber-t:#FFBA4D;
+  --purple-l:#130E2E;--purple-t:#9A88FF;
+  --r:14px;--r-sm:9px;--r-lg:20px;
+  --shadow:0 4px 24px rgba(0,0,0,.45);
+  --glow-blue:0 0 24px rgba(59,143,255,.18);
+}

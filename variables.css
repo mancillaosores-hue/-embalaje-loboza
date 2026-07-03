@@ -1,0 +1,11 @@
+/**
+ * animations.css
+ * ─────────────────────────────────────────────────────────────
+ * Keyframes: slideUp, fadeIn, spin, pulseRing, confetti, etc.
+ *
+ * Autor : Diego Mancilla (CD Lo Boza - Samsonite Chile)
+ * Fecha : 2026
+ * ─────────────────────────────────────────────────────────────
+ */
+
+@keyframes orbePulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
