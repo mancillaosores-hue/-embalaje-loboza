@@ -5156,7 +5156,7 @@ function renderEstadoOperacional(opts){
       + '<div style="height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden">'
       +   (barPct > 0 ? '<div style="height:100%;width:' + barPct + '%;background:' + colBar + ';border-radius:2px"></div>' : '')
       + '</div>'
-      + '<span style="font-size:10px;text-align:right;color:#F59E0B;font-weight:700">'  + (cargDia     > 0 ? fmtN(cargDia)     : (esFuturo?'':'—')) + '</span>'
+      + '<span style="font-size:10px;text-align:right;color:#F59E0B;font-weight:700' + (cargDia>0?';cursor:pointer':'') + '"' + (cargDia>0?' ondblclick="abrirDetalleCarga(\'' + d.fecha + '\')" title="Doble clic · detalle por rango horario"':'') + '>'  + (cargDia     > 0 ? fmtN(cargDia)     : (esFuturo?'':'—')) + '</span>'
       + '<span style="font-size:10px;text-align:right;color:#2ECC8A;font-weight:700">'  + (embCargaDia > 0 ? fmtN(embCargaDia) : (esFuturo?'':'—')) + '</span>'
       + '<span style="font-size:10px;text-align:right;color:#9A88FF;font-weight:700">'  + (arrastreInicial > 0 ? (embBackDia > 0 ? fmtN(embBackDia) : (esFuturo?'':'—')) : '—') + '</span>'
       + '<span style="font-size:10px;text-align:right;font-weight:700;color:' + colPend + '">' + (arrastreInicial > 0 && hayDatos ? fmtN(pendBackDia) : '—') + '</span>'
@@ -6981,6 +6981,31 @@ function toggleKeysPanel(){
   </div>
 </div>
 
+<div id="modal-carga-det" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1200;align-items:flex-end;justify-content:center" onclick="if(event.target===this)cerrarDetalleCarga()">
+  <div style="background:#0D1B2E;border:1px solid rgba(245,158,11,.3);border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;animation:slideUp .25s ease">
+    <div style="background:rgba(245,158,11,.08);padding:14px 16px;border-bottom:1px solid rgba(245,158,11,.2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#F59E0B">&#128230; Detalle Carga · Rango Horario</div>
+        <div style="font-size:10px;color:#4D7AAA;margin-top:2px" id="carga-det-resumen">—</div>
+      </div>
+      <button onclick="cerrarDetalleCarga()" style="background:rgba(255,255,255,.08);border:none;color:#8AAED4;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1">×</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:rgba(255,255,255,.04);position:sticky;top:0">
+            <th style="padding:8px 10px;text-align:left;color:#4D7AAA;font-weight:600;white-space:nowrap">Rango Horario</th>
+            <th style="padding:8px 10px;text-align:left;color:#4D7AAA;font-weight:600">Canal</th>
+            <th style="padding:8px 10px;text-align:right;color:#4D7AAA;font-weight:600">Unidades</th>
+          </tr>
+        </thead>
+        <tbody id="carga-det-body"></tbody>
+        <tfoot id="carga-det-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div id="modal-rpt" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:flex-end;justify-content:center">
   <div style="background:#0D1B2E;border:1px solid #1E3A5F;border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:0">
     <div style="background:#0A2040;padding:16px 18px;border-bottom:1px solid #1E3A5F;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2">
@@ -7722,6 +7747,122 @@ function abrirDetalleArrastre(){
 
 function cerrarDetalleArrastre(){
   var el = document.getElementById('modal-arrastre-det');
+  if(el) el.style.display = 'none';
+}
+
+// ── Detalle de Carga por Rango Horario (doble clic en columna Carg. de Avance Diario) ──
+// No hay turno nocturno: el horario hábil es 08:00–18:00 y las cargas WMS que llegan
+// fuera de ese rango (antes de las 08:00 o después de las 18:00) quedan agrupadas
+// en un único rango "Fuera de horario", dentro del mismo día calendario (fecha_carga).
+const RANGOS_HORA_DEF = [
+  {ini:'08:00:00', fin:'10:00:00', label:'08:00 – 10:00'},
+  {ini:'10:00:00', fin:'12:00:00', label:'10:00 – 12:00'},
+  {ini:'12:00:00', fin:'14:00:00', label:'12:00 – 14:00'},
+  {ini:'14:00:00', fin:'16:00:00', label:'14:00 – 16:00'},
+  {ini:'16:00:00', fin:'18:00:00', label:'16:00 – 18:00'},
+];
+const RANGO_FUERA_LABEL = 'Fuera de horario (< 08:00 / ≥ 18:00)';
+
+function _rangoHoraLabel(hora){
+  var h = (hora||'').toString().trim().slice(0,8);
+  if(!h) return RANGO_FUERA_LABEL;
+  for(var i=0;i<RANGOS_HORA_DEF.length;i++){
+    var r = RANGOS_HORA_DEF[i];
+    if(h >= r.ini && h < r.fin) return r.label;
+  }
+  return RANGO_FUERA_LABEL;
+}
+
+async function abrirDetalleCarga(fecha){
+  if(!fecha) return;
+  var elModal = document.getElementById('modal-carga-det');
+  elModal.style.display = 'flex';
+  document.getElementById('carga-det-resumen').textContent = 'Cargando...';
+  document.getElementById('carga-det-body').innerHTML = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#4D7AAA">Cargando…</td></tr>';
+  document.getElementById('carga-det-foot').innerHTML = '';
+
+  try{
+    var rows = await sbFetchAll('entregas_carga?select=canal,tipo_producto,cantidad,hora_creada,ruta,clientenombre&fecha_carga=eq.' + fecha + '&order=hora_creada.asc');
+
+    // Mismas exclusiones que el resto de la app: insumos, anuladas/regula/bts, rutas SSTT/REGULA, clientes VEV especiales
+    var _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
+    var data = (rows||[]).filter(function(r){
+      if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return false;
+      var cLow = (r.canal||'').toLowerCase().trim();
+      if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return false;
+      var rutaUp = (r.ruta||'').toUpperCase().trim();
+      if(rutaUp.includes('SSTT') || rutaUp === 'REGULA') return false;
+      if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && cLow === 'venta en verde') return false;
+      return true;
+    });
+
+    if(!data.length){
+      document.getElementById('carga-det-resumen').textContent = 'Sin cargas registradas ese día';
+      document.getElementById('carga-det-body').innerHTML = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#4D7AAA">Sin datos</td></tr>';
+      return;
+    }
+
+    // Agrupar por rango horario + canal
+    var mapa = {}; // { rangoLabel: { canal: qty } }
+    var ordenRangos = RANGOS_HORA_DEF.map(function(r){ return r.label; }).concat([RANGO_FUERA_LABEL]);
+    var totalGeneral = 0;
+    data.forEach(function(r){
+      var rango = _rangoHoraLabel(r.hora_creada);
+      var canal = (r.canal||'Sin canal').trim();
+      var qty   = Number(r.cantidad)||0;
+      if(!mapa[rango]) mapa[rango] = {};
+      mapa[rango][canal] = (mapa[rango][canal]||0) + qty;
+      totalGeneral += qty;
+    });
+
+    var canalColors = {
+      'Locales':'#3B8FFF','Concesiones':'#9A88FF','Grandes Tiendas':'#2ECC8A',
+      'Distribuidor':'#FFBA4D','Ecommerce':'#FF6B6B','Marketplace':'#4DCFFF','Venta en Verde':'#A8FF78'
+    };
+
+    var bodyHtml = '';
+    var rowIdx = 0;
+    ordenRangos.forEach(function(rango){
+      var canales = mapa[rango];
+      if(!canales) return;
+      var subtotal = 0;
+      var canalKeys = Object.keys(canales).sort(function(a,b){ return canales[b]-canales[a]; });
+      canalKeys.forEach(function(canal, i){
+        var col = canalColors[canal] || '#8AAED4';
+        var bg  = rowIdx % 2 === 0 ? 'rgba(255,255,255,.02)' : 'transparent';
+        bodyHtml += '<tr style="background:' + bg + ';border-bottom:1px solid rgba(255,255,255,.04)">'
+          + '<td style="padding:7px 10px;color:' + (i===0?'#E8F1FF':'transparent') + ';font-weight:' + (i===0?'700':'400') + ';white-space:nowrap">' + (i===0?rango:'') + '</td>'
+          + '<td style="padding:7px 10px"><span style="background:' + col + '22;color:' + col + ';border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">' + canal + '</span></td>'
+          + '<td style="padding:7px 10px;text-align:right;font-weight:700;color:#F59E0B">' + canales[canal].toLocaleString('es-CL') + '</td>'
+          + '</tr>';
+        subtotal += canales[canal];
+        rowIdx++;
+      });
+      bodyHtml += '<tr style="background:rgba(255,255,255,.05)">'
+        + '<td colspan="2" style="padding:5px 10px;text-align:right;font-size:9px;font-weight:700;color:#4D7AAA;text-transform:uppercase">Subtotal ' + rango + '</td>'
+        + '<td style="padding:5px 10px;text-align:right;font-size:10px;font-weight:800;color:#8AAED4">' + subtotal.toLocaleString('es-CL') + '</td>'
+        + '</tr>';
+      rowIdx++;
+    });
+
+    document.getElementById('carga-det-body').innerHTML = bodyHtml;
+    document.getElementById('carga-det-foot').innerHTML =
+      '<tr style="background:rgba(245,158,11,.08);border-top:1px solid rgba(245,158,11,.2)">'
+      + '<td colspan="2" style="padding:8px 10px;font-weight:700;color:#F59E0B;font-size:11px">TOTAL CARGADO ' + fmtFechaCL(new Date(fecha+'T12:00:00')) + '</td>'
+      + '<td style="padding:8px 10px;text-align:right;font-weight:900;color:#F59E0B;font-size:13px">' + totalGeneral.toLocaleString('es-CL') + '</td>'
+      + '</tr>';
+
+    var totalReg = data.length;
+    document.getElementById('carga-det-resumen').textContent =
+      totalGeneral.toLocaleString('es-CL') + ' unidades · ' + totalReg + ' registro' + (totalReg!==1?'s':'');
+  }catch(err){
+    document.getElementById('carga-det-resumen').textContent = 'Error al cargar detalle';
+    document.getElementById('carga-det-body').innerHTML = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#EF4444">' + (err.message||err) + '</td></tr>';
+  }
+}
+
+function cerrarDetalleCarga(){
+  var el = document.getElementById('modal-carga-det');
   if(el) el.style.display = 'none';
 }
 
