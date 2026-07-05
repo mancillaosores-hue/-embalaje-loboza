@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tendencias · Productividad Embaladoras</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --bg:#060B14; --surface:#0D1B2E; --surface-2:#0A1628; --surface-3:#101F35;
+    --border:#1A2B45; --border-soft:#142640;
+    --txt:#EAF2FF; --txt-dim:#93ABC9; --txt-mute:#4D7AAA;
+    --blue:#3B8FFF; --blue-soft:#5FA3FF; --green:#22C58B; --amber:#FFB648; --red:#F14C4C;
+    --purple:#9A88FF; --cyan:#3FD6FF; --lime:#9BFF6B;
+    --radius-lg:18px; --radius-md:14px;
+    --shadow-card:0 8px 24px -8px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.02) inset;
+    --shadow-pop:0 14px 34px -10px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(59,143,255,.10), transparent 45%),
+      radial-gradient(circle at 85% 8%, rgba(154,136,255,.08), transparent 40%),
+      var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--txt); min-height:100vh; display:flex; justify-content:center; padding:0 0 70px;
+  }
+  .wrap{width:100%;max-width:460px;padding:16px 12px 0}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .anim{animation:fadeUp .45s ease both}
+  .d1{animation-delay:.02s}.d2{animation-delay:.06s}.d3{animation-delay:.10s}.d4{animation-delay:.14s}
+  .d5{animation-delay:.18s}.d6{animation-delay:.22s}.d7{animation-delay:.26s}
+
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;padding:2px 2px 0}
+  .header-l h1{font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--txt)}
+  .header-l .sub{font-size:11px;color:var(--txt-mute);margin-top:3px;display:flex;align-items:center;gap:6px}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(34,197,139,.18);display:inline-block;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .header-r{text-align:right}
+  .header-r .fecha{font-size:11px;font-weight:700;color:var(--txt)}
+  .header-r .fecha-sub{font-size:9.5px;color:var(--txt-mute);margin-top:2px}
+
+  .filtros{display:flex;gap:6px;margin-bottom:18px}
+  .ftab{flex:1;background:var(--surface-2);color:var(--txt-dim);border:1px solid var(--border-soft);border-radius:11px;padding:9px 0;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s ease}
+  .ftab.on{background:linear-gradient(135deg,var(--blue),#2E6FE0);color:#fff;border-color:transparent;box-shadow:0 4px 14px -4px rgba(59,143,255,.55)}
+
+  .seccion{font-size:10px;font-weight:800;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.10em;margin:26px 2px 12px;display:flex;align-items:center;gap:8px}
+  .seccion::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border-soft),transparent)}
+  .seccion:first-of-type{margin-top:0}
+
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+  .kpi-card{background:linear-gradient(160deg,var(--surface-3),var(--surface));border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:14px 13px;box-shadow:var(--shadow-card);position:relative;overflow:hidden}
+  .kpi-card::before{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,var(--kpi-glow,rgba(59,143,255,.18)),transparent 70%)}
+  .kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .kpi-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;background:rgba(255,255,255,.06)}
+  .kpi-badge{font-size:9px;font-weight:800;padding:3px 7px;border-radius:20px}
+  .kpi-lbl{font-size:9.5px;color:var(--txt-mute);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .kpi-val{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .kpi-foot{font-size:9.5px;color:var(--txt-dim);margin-top:8px;display:flex;align-items:center;gap:4px}
+  .progress-track{width:100%;height:6px;border-radius:6px;background:rgba(255,255,255,.07);margin-top:10px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+  .card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:16px 14px;margin-bottom:14px;box-shadow:var(--shadow-card)}
+  .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .card-title{font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:7px}
+  .card-sub{font-size:9.5px;color:var(--txt-mute);margin-bottom:10px;margin-top:2px}
+  .chip{font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px}
+
+  .leyenda{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:9px;color:var(--txt-dim);font-weight:600}
+  .leyenda span{display:flex;align-items:center;gap:4px}
+  .dot{width:7px;height:7px;border-radius:2px;display:inline-block}
+  .line-sw{width:13px;height:3px;border-radius:2px;display:inline-block}
+  .bar-sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  .alerta{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--border-soft)}
+  .alerta:last-child{border-bottom:none;padding-bottom:2px}
+  .alerta:first-child{padding-top:2px}
+  .alerta-ico{font-size:15px;line-height:1;margin-top:1px}
+  .alerta-txt b{font-weight:800}
+  .alerta-txt{font-size:11.5px;color:var(--txt);line-height:1.45}
+  .alerta-sub{font-size:9.5px;color:var(--txt-mute);margin-top:2px}
+
+  .pronostico-card{background:linear-gradient(135deg,rgba(59,143,255,.14),rgba(154,136,255,.08));border:1px solid rgba(59,143,255,.28);border-radius:var(--radius-lg);padding:18px 16px;margin-bottom:14px;box-shadow:var(--shadow-pop)}
+  .pronostico-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .pronostico-tag{font-size:9.5px;font-weight:800;color:var(--blue-soft);text-transform:uppercase;letter-spacing:.08em}
+  .pronostico-txt{font-size:14px;font-weight:600;line-height:1.5;color:var(--txt)}
+  .pronostico-txt b{color:var(--amber);font-weight:800}
+  .pronostico-foot{font-size:9.5px;color:var(--txt-mute);margin-top:10px}
+
+  .rank-row{padding:11px 2px;border-bottom:1px solid var(--border-soft)}
+  .rank-row:last-child{border-bottom:none;padding-bottom:0}
+  .rank-row:first-child{padding-top:0}
+  .rank-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .rank-name{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700}
+  .rank-pos{width:18px;height:18px;border-radius:6px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--txt-mute);flex-shrink:0}
+  .rank-stats{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700}
+  .rank-tend{font-size:11px}
+  .rank-bar-track{width:100%;height:7px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden}
+  .rank-bar-fill{height:100%;border-radius:6px;transition:width .6s ease}
+  .rank-meta{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--txt-mute)}
+
+  .tabla-wrap{overflow-x:auto;margin:0 -4px}
+  table.destinos{width:100%;border-collapse:collapse;font-size:10.5px}
+  table.destinos th{text-align:left;color:var(--txt-mute);font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+  table.destinos td{padding:8px 8px;border-bottom:1px solid var(--border-soft);white-space:nowrap;font-weight:600}
+  table.destinos tr:last-child td{border-bottom:none}
+  .estado-pill{font-size:8.5px;font-weight:800;padding:3px 8px;border-radius:20px;display:inline-block}
+
+  .cap-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .cap-gauge{width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
+  .cap-gauge svg{position:absolute;inset:0}
+  .cap-gauge-val{font-size:13px;font-weight:800}
+  .cap-info-lbl{font-size:9px;color:var(--txt-mute);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .cap-info-val{font-size:13px;font-weight:700;margin-top:2px}
+
+  .chart-box{position:relative}
+  .foot-note{font-size:9.5px;color:var(--txt-mute);text-align:center;margin-top:8px;line-height:1.5;padding:0 10px}
+  .canal-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .canal-name{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800}
+
+  .loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:999}
+  .spinner{width:34px;height:34px;border-radius:50%;border:3px solid rgba(59,143,255,.2);border-top-color:var(--blue);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-txt{font-size:12px;color:var(--txt-mute);font-weight:600}
+  .err-box{background:rgba(241,76,76,.1);border:1px solid rgba(241,76,76,.3);border-radius:12px;padding:14px;color:#F14C4C;font-size:12px;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <div class="loading-txt">Cargando datos reales desde Supabase…</div>
+</div>
+
+<div class="wrap" id="mainWrap" style="display:none">
+
+  <div class="header anim d1">
+    <div class="header-l">
+      <h1>Productividad Embaladoras</h1>
+      <div class="sub"><span class="live-dot"></span> Panel Gerencial · CD Lo Boza</div>
+    </div>
+    <div class="header-r">
+      <div class="fecha" id="hd-fecha">—</div>
+      <div class="fecha-sub">Últimos 10 días</div>
+    </div>
+  </div>
+
+  <div class="filtros anim d1">
+    <button class="ftab on" data-m="todos">Todos</button>
+    <button class="ftab" data-m="maleta">Maleta</button>
+    <button class="ftab" data-m="nomaleta">No Maleta</button>
+  </div>
+
+  <div id="errBox"></div>
+
+  <div class="kpi-grid anim d2">
+    <div class="kpi-card" style="--kpi-glow:rgba(255,182,72,.22)">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(255,182,72,.14)">📦</div>
+        <div class="kpi-badge" id="kpi-carg-badge" style="background:rgba(255,182,72,.14);color:var(--amber)">—</div>
+      </div>
+      <div class="kpi-lbl">Total Cargado</div>
+      <div class="kpi-val" style="color:var(--amber)" id="kpi-carg">—</div>
+      <div class="kpi-foot" id="kpi-carg-foot">vs. ayer</div>
+    </div>
+    <div class="kpi-card" style="--kpi-glow:rgba(34,197,139,.22)">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(34,197,139,.14)">✅</div>
+        <div class="kpi-badge" id="kpi-emb-badge" style="background:rgba(34,197,139,.14);color:var(--green)">—</div>
+      </div>
+      <div class="kpi-lbl">Total Embalado</div>
+      <div class="kpi-val" style="color:var(--green)" id="kpi-emb">—</div>
+      <div class="kpi-foot" id="kpi-emb-foot">vs. ayer</div>
+    </div>
+    <div class="kpi-card" style="--kpi-glow:rgba(241,76,76,.22)">
+      <div class="kpi-top">
+        <div class="kpi-icon" id="kpi-brecha-icon" style="background:rgba(241,76,76,.14)">⚠️</div>
+        <div class="kpi-badge" id="kpi-brecha-badge">—</div>
+      </div>
+      <div class="kpi-lbl">Brecha</div>
+      <div class="kpi-val" id="kpi-brecha">—</div>
+      <div class="kpi-foot" id="kpi-brecha-foot">cargado − embalado</div>
+    </div>
+    <div class="kpi-card" style="--kpi-glow:rgba(59,143,255,.22)">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(59,143,255,.14)">🎯</div>
+        <div class="kpi-badge" id="kpi-cumpl-badge" style="background:rgba(59,143,255,.14);color:var(--blue-soft)">Hoy</div>
+      </div>
+      <div class="kpi-lbl">Cumplimiento</div>
+      <div class="kpi-val" style="color:var(--blue-soft)" id="kpi-cumpl">—</div>
+      <div class="progress-track"><div class="progress-fill" id="kpi-cumpl-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="seccion anim d3">📊 Tendencia General</div>
+  <div class="card anim d3">
+    <div class="card-head">
+      <div class="card-title">Cargado vs Embalado</div>
+      <div class="chip" style="background:rgba(255,255,255,.06);color:var(--txt-dim)">10 días</div>
+    </div>
+    <div class="card-sub">Barras = unidades cargadas · Línea = unidades embaladas</div>
+    <div class="leyenda">
+      <span><span class="bar-sw" style="background:var(--amber)"></span>Cargado</span>
+      <span><span class="line-sw" style="background:var(--green)"></span>Embalado</span>
+    </div>
+    <div class="chart-box" style="height:210px"><canvas id="chartPrincipal"></canvas></div>
+  </div>
+
+  <div class="seccion anim d4">🚨 Alertas Inteligentes</div>
+  <div class="card anim d4" id="cardAlertas"></div>
+
+  <div class="pronostico-card anim d4">
+    <div class="pronostico-top"><span style="font-size:18px">🔮</span><span class="pronostico-tag">Pronóstico para mañana</span></div>
+    <div class="pronostico-txt" id="pronostico-txt">Calculando proyección…</div>
+    <div class="pronostico-foot" id="pronostico-foot"></div>
+  </div>
+
+  <div class="seccion anim d5">🏆 Ranking de Canales</div>
+  <div class="card anim d5" id="cardRanking"></div>
+
+  <div class="seccion anim d5">📍 Top Clientes con Mayor Pendiente</div>
+  <div class="card anim d5">
+    <div class="card-sub" style="margin-bottom:8px">Cargado vs Embalado por cliente/destino, últimos 10 días</div>
+    <div class="tabla-wrap">
+      <table class="destinos">
+        <thead><tr><th>Cliente</th><th>Cargado</th><th>Embalado</th><th>Pendiente</th><th>Estado</th></tr></thead>
+        <tbody id="tablaDestinos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="seccion anim d6">🥧 Participación por Canal</div>
+  <div class="card anim d6">
+    <div class="card-sub">% del total cargado en los últimos 10 días</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="chart-box" style="height:150px;width:150px;flex-shrink:0"><canvas id="chartDoughnut"></canvas></div>
+      <div id="leg-doughnut" style="display:flex;flex-direction:column;gap:7px;font-size:10.5px;font-weight:700;flex:1"></div>
+    </div>
+  </div>
+
+  <div class="seccion anim d6">⚙️ Capacidad y Eficiencia</div>
+  <div class="card anim d6">
+    <div class="card-head"><div class="card-title">Uso de Capacidad</div></div>
+    <div class="card-sub">Capacidad = suma de meta individual de las operarias activas cada día</div>
+    <div class="cap-top">
+      <div class="cap-gauge" id="capGauge">
+        <svg viewBox="0 0 36 36">
+          <path d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3"/>
+          <path id="capGaugeArc" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-dasharray="0 100"/>
+        </svg>
+        <div class="cap-gauge-val" id="capGaugeVal">—</div>
+      </div>
+      <div style="flex:1">
+        <div class="cap-info-lbl">Utilización promedio (10 días)</div>
+        <div class="cap-info-val" id="capUsoTxt">—</div>
+      </div>
+    </div>
+    <div class="chart-box" style="height:170px"><canvas id="chartCapacidad"></canvas></div>
+  </div>
+
+  <div class="card anim d7">
+    <div class="card-title">👷 Productividad por Persona</div>
+    <div class="card-sub">Embalado ÷ dotación activa ese día (dotación real, no fija)</div>
+    <div class="chart-box" style="height:150px"><canvas id="chartProductividad"></canvas></div>
+  </div>
+
+  <div class="card anim d7">
+    <div class="card-title">⏱️ Lead Time Promedio</div>
+    <div class="card-sub">Días entre carga y último registro de embalaje de esa entrega (aproximado, solo entregas ya resueltas dentro de la ventana)</div>
+    <div class="chart-box" style="height:150px"><canvas id="chartLeadTime"></canvas></div>
+  </div>
+
+  <div class="seccion anim d7">📂 Detalle por Canal</div>
+  <div id="canalCharts"></div>
+
+  <div class="foot-note">Datos reales de Supabase · entregas_carga / producción / plan_carga · CD Lo Boza</div>
+</div>
+
+<script>
+(function(){
+  /* =========================================================
+     CONEXIÓN SUPABASE (mismas credenciales que la app principal)
+  ========================================================= */
+  const SUPA_URL = 'https://rftjrigcngwhzhxfnrja.supabase.co';
+  const SUPA_KEY = 'sb_publishable_anwu04CDMLrMXOnVVQ_ioQ_UM1-p3LC';
+
+  async function sbFetchAll(path){
+    let all=[], from=0, size=1000;
+    while(true){
+      const res = await fetch(SUPA_URL+'/rest/v1/'+path,{
+        headers:{
+          'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+          'Content-Type':'application/json','Prefer':'count=none',
+          'Range':`${from}-${from+size-1}`
+        }
+      });
+      if(!res.ok) throw new Error('Supabase '+res.status+': '+(await res.text()).slice(0,200));
+      const batch = await res.json();
+      if(!batch||!batch.length) break;
+      all = all.concat(batch);
+      if(batch.length < size) break;
+      from += size;
+    }
+    return all;
+  }
+
+  /* =========================================================
+     CONSTANTES DE NEGOCIO (idénticas a las de la app principal)
+  ========================================================= */
+  const DB = {
+    "000022":"Susan Liz Carrizo Sandoval","000030":"Evita Arévalo","000036":"Paola del Carmen Marchant Cornejo",
+    "000039":"Elena del Rosario Nahuelñir González","000043":"Melissa Pino Montenegro","000055":"Daniela Acevedo",
+    "000190":"Norma Troncoso","000191":"Paola Cortés","000193":"Corina San Martín","000198":"Carolina Carrasco",
+    "001632":"Karen Sepúlveda","001771":"Aida Torres"
+  };
+  const META = {
+    "000022":1215,"000030":300,"000036":350,"000039":1215,"000043":1215,"000055":1215,
+    "000190":1215,"000191":350,"000193":1215,"000198":1215,"001632":250,"001771":250
+  };
+
+  const canales = ['Locales','Concesiones','Grandes Tiendas','Distribuidor','Ecommerce','Marketplace','Venta en verde'];
+  const CANAL_ABREV = {'Locales':'LOC','Concesiones':'CONC','Grandes Tiendas':'GGTT','Distribuidor':'DIST','Ecommerce':'ECO','Marketplace':'MKP','Venta en verde':'VEV'};
+  const colores = {
+    'Locales':'#3B8FFF','Concesiones':'#9A88FF','Grandes Tiendas':'#22C58B',
+    'Distribuidor':'#FFB648','Ecommerce':'#F14C4C','Marketplace':'#3FD6FF','Venta en verde':'#9BFF6B'
+  };
+  const _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
+
+  function fmt(n){ return Math.round(n||0).toLocaleString('es-CL'); }
+
+  /* =========================================================
+     FECHAS — últimos 10 días calendario terminando hoy (hora local)
+  ========================================================= */
+  function fechaLocalStr(d){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
+  const hoyDate = new Date();
+  const dias = [];       // ['2026-06-24', ...] formato ISO para queries
+  const diasLabel = [];  // ['24/06', ...] para mostrar
+  for(let i=9;i>=0;i--){
+    const d = new Date(hoyDate); d.setDate(d.getDate()-i);
+    dias.push(fechaLocalStr(d));
+    diasLabel.push(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+  const fechaInicio = dias[0], fechaFin = dias[dias.length-1];
+
+  // ISO week helper (mismo criterio que Postgres extract(week from ..))
+  function isoWeekInfo(fechaStr){
+    const d = new Date(fechaStr+'T12:00:00Z');
+    const dayNum = (d.getUTCDay()+6)%7;
+    d.setUTCDate(d.getUTCDate()-dayNum+3);
+    const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+    const week = 1+Math.round(((d-firstThursday)/86400000-3+((firstThursday.getUTCDay()+6)%7))/7);
+    return {anio:d.getUTCFullYear(), semana:week};
+  }
+  const semanasSpan = [...new Set(dias.map(f=>{const w=isoWeekInfo(f);return w.anio+'-'+w.semana;}))];
+
+  /* =========================================================
+     CARGA DE DATOS REALES
+  ========================================================= */
+  let cargadoRaw = [], embaladoRaw = [], planRaw = [];
+
+  async function cargarTodo(){
+    const [carg, emb, plan] = await Promise.all([
+      sbFetchAll('entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,ruta,clientenombre,id_entrega&fecha_carga=gte.'+fechaInicio+'&fecha_carga=lte.'+fechaFin+'&order=fecha_carga.asc'),
+      sbFetchAll('produccion?select=usuario,canal,tipo,cantidad,fecha,entrega,clientenombre&fecha=gte.'+fechaInicio+'&fecha=lte.'+fechaFin+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc'),
+      sbFetchAll('plan_carga?select=semana_iso,anio,canal,tipo,unidades_plan')
+    ]);
+    cargadoRaw  = carg;
+    embaladoRaw = emb;
+    planRaw     = plan;
+  }
+
+  function tipoNormCargado(tp){
+    const t=(tp||'').toLowerCase().trim();
+    if(t==='maleta') return 'Maleta';
+    if(t==='no maleta') return 'No Maleta';
+    return null; // insumo u otro -> excluido
+  }
+  function tipoNormEmbalado(t){
+    const tt=(t||'').toLowerCase().trim();
+    if(tt==='maleta') return 'Maleta';
+    if(tt==='linea') return 'No Maleta';
+    return null;
+  }
+
+  function pasaExclusionCargado(r){
+    if((r.tipo_producto||'').toLowerCase().trim()==='insumo') return false;
+    const cLow=(r.canal||'').toLowerCase().trim();
+    if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return false;
+    const rutaUp=(r.ruta||'').toUpperCase().trim();
+    if(rutaUp.indexOf('SSTT')!==-1 || rutaUp==='REGULA') return false;
+    if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase())!==-1 && cLow==='venta en verde') return false;
+    return true;
+  }
+
+  /* =========================================================
+     AGREGACIÓN: cargadoTotal / embaladoTotal { canal: [10 valores] } por material
+  ========================================================= */
+  let cargadoPorDiaCanalMat = {};   // { fecha: { canal: { Maleta:x, 'No Maleta':y } } }
+  let embaladoPorDiaCanalMat = {};
+  let capacidadPorDia = {};         // { fecha: uds }
+  let dotacionPorDia = {};          // { fecha: n }
+  let clientesAgg = {};             // { cliente: {cargado, embalado} }
+  let leadTimes = {};               // { fecha_carga: [dias,...] } promedio por día de carga
+
+  function procesarDatos(){
+    dias.forEach(f=>{ cargadoPorDiaCanalMat[f]={}; embaladoPorDiaCanalMat[f]={}; });
+
+    // --- Cargado ---
+    const entregaInfo = {}; // id_entrega -> {fecha_carga, total}
+    cargadoRaw.forEach(r=>{
+      const f=(r.fecha_carga||'').slice(0,10);
+      if(!cargadoPorDiaCanalMat[f]) return;
+      if(!pasaExclusionCargado(r)) return;
+      const mat=tipoNormCargado(r.tipo_producto);
+      if(!mat) return;
+      const canal=r.canal||'Sin canal';
+      const qty=Number(r.cantidad)||0;
+      if(!cargadoPorDiaCanalMat[f][canal]) cargadoPorDiaCanalMat[f][canal]={'Maleta':0,'No Maleta':0};
+      cargadoPorDiaCanalMat[f][canal][mat]+=qty;
+
+      const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
+      if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
+      clientesAgg[cli].cargado+=qty;
+
+      const id=(r.id_entrega||'').toString().trim();
+      if(id){
+        if(!entregaInfo[id]) entregaInfo[id]={fecha_carga:f,total:0};
+        entregaInfo[id].total+=qty;
+      }
+    });
+
+    // --- Embalado + capacidad/dotación por día ---
+    const usuariosActivosPorDia = {};
+    const entregaEmbFechaMax = {}; // id_entrega -> última fecha embalada dentro de la ventana
+    embaladoRaw.forEach(r=>{
+      if(DB[r.usuario]===undefined) return; // solo operarias válidas
+      const f=(r.fecha||'').slice(0,10);
+      if(!embaladoPorDiaCanalMat[f]) return;
+      const mat=tipoNormEmbalado(r.tipo);
+      const canal=r.canal||'Sin canal';
+      const qty=Number(r.cantidad)||0;
+
+      if(mat){
+        if(!embaladoPorDiaCanalMat[f][canal]) embaladoPorDiaCanalMat[f][canal]={'Maleta':0,'No Maleta':0};
+        embaladoPorDiaCanalMat[f][canal][mat]+=qty;
+      }
+
+      const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
+      if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
+      clientesAgg[cli].embalado+=qty;
+
+      if(!usuariosActivosPorDia[f]) usuariosActivosPorDia[f]=new Set();
+      usuariosActivosPorDia[f].add(r.usuario);
+
+      const id=(r.entrega||'').toString().trim();
+      if(id){
+        if(!entregaEmbFechaMax[id] || f > entregaEmbFechaMax[id]) entregaEmbFechaMax[id]=f;
+      }
+    });
+
+    dias.forEach(f=>{
+      const activos = usuariosActivosPorDia[f] ? [...usuariosActivosPorDia[f]] : [];
+      dotacionPorDia[f] = activos.length;
+      capacidadPorDia[f] = activos.reduce((s,u)=>s+(META[u]||0),0);
+    });
+
+    // Lead time aproximado: fecha_carga -> última fecha embalada de esa entrega dentro de la ventana
+    Object.keys(entregaInfo).forEach(id=>{
+      const info = entregaInfo[id];
+      const fEmb = entregaEmbFechaMax[id];
+      if(!fEmb) return;
+      const dCarga = new Date(info.fecha_carga+'T12:00:00');
+      const dEmb   = new Date(fEmb+'T12:00:00');
+      const diasLead = Math.round((dEmb-dCarga)/86400000);
+      if(diasLead < 0) return;
+      if(!leadTimes[info.fecha_carga]) leadTimes[info.fecha_carga]=[];
+      leadTimes[info.fecha_carga].push(diasLead);
+    });
+  }
+
+  /* =========================================================
+     VISTAS FILTRADAS POR MATERIAL: cData / eData { canal: [10] }
+  ========================================================= */
+  function vistaCargado(modo){
+    const out={};
+    canales.forEach(c=>{
+      out[c]=dias.map(f=>{
+        const m = (cargadoPorDiaCanalMat[f]&&cargadoPorDiaCanalMat[f][c]) || {'Maleta':0,'No Maleta':0};
+        if(modo==='maleta') return m['Maleta'];
+        if(modo==='nomaleta') return m['No Maleta'];
+        return m['Maleta']+m['No Maleta'];
+      });
+    });
+    return out;
+  }
+  function vistaEmbalado(modo){
+    const out={};
+    canales.forEach(c=>{
+      out[c]=dias.map(f=>{
+        const m = (embaladoPorDiaCanalMat[f]&&embaladoPorDiaCanalMat[f][c]) || {'Maleta':0,'No Maleta':0};
+        if(modo==='maleta') return m['Maleta'];
+        if(modo==='nomaleta') return m['No Maleta'];
+        return m['Maleta']+m['No Maleta'];
+      });
+    });
+    return out;
+  }
+  function sumaTotal(dataObj){
+    return dias.map((_,i)=>canales.reduce((s,c)=>s+dataObj[c][i],0));
+  }
+
+  /* =========================================================
+     META DIARIA REAL (plan_carga, prorateada a días hábiles de esa semana ISO)
+  ========================================================= */
+  const metaSemanal = {}; // 'anio-semana' -> total unidades_plan
+  function construirMetaSemanal(){
+    planRaw.forEach(r=>{
+      const key=r.anio+'-'+r.semana_iso;
+      metaSemanal[key]=(metaSemanal[key]||0)+(Number(r.unidades_plan)||0);
+    });
+  }
+  function metaDiaria(fechaStr){
+    const d=new Date(fechaStr+'T12:00:00');
+    const dow=d.getDay(); // 0=Dom,6=Sab
+    if(dow===0||dow===6) return 0;
+    const w=isoWeekInfo(fechaStr);
+    const total=metaSemanal[w.anio+'-'+w.semana]||0;
+    return total/5;
+  }
+
+  /* =========================================================
+     RENDER — helpers visuales
+  ========================================================= */
+  const tooltipBase=()=>({backgroundColor:'#0D1B2E',borderColor:'#1E3A5F',borderWidth:1,titleColor:'#93ABC9',bodyColor:'#EAF2FF',padding:10,cornerRadius:8,titleFont:{size:10,weight:'700'},bodyFont:{size:11,weight:'600'}});
+  const ejeBase=()=>({
+    x:{grid:{display:false},ticks:{color:'#4D7AAA',font:{size:9}}},
+    y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4D7AAA',font:{size:9}}}
+  });
+
+  const chartRefs={canal:{}};
+  let chartPrincipal, chartDoughnut, chartCapacidad, chartProductividad, chartLeadTime;
+
+  function actualizarKPIs(cData,eData){
+    const totC=sumaTotal(cData), totE=sumaTotal(eData);
+    const totalCarg10=totC.reduce((a,b)=>a+b,0), totalEmb10=totE.reduce((a,b)=>a+b,0);
+    const hoyC=totC[totC.length-1], ayerC=totC[totC.length-2]||1;
+    const hoyE=totE[totE.length-1], ayerE=totE[totE.length-2]||1;
+    const varC=Math.round(((hoyC-ayerC)/ayerC)*100);
+    const varE=Math.round(((hoyE-ayerE)/ayerE)*100);
+
+    document.getElementById('kpi-carg').textContent=fmt(totalCarg10);
+    document.getElementById('kpi-emb').textContent=fmt(totalEmb10);
+    document.getElementById('kpi-carg-badge').textContent=(varC>=0?'+':'')+varC+'%';
+    document.getElementById('kpi-emb-badge').textContent=(varE>=0?'+':'')+varE+'%';
+    document.getElementById('kpi-carg-foot').textContent='Hoy: '+fmt(hoyC)+' uds';
+    document.getElementById('kpi-emb-foot').textContent='Hoy: '+fmt(hoyE)+' uds';
+
+    const brechaHoy=hoyC-hoyE, brechaTotal10=totalCarg10-totalEmb10;
+    let colorBrecha,labelBrecha,bgBrecha;
+    if(brechaHoy<=80){colorBrecha='var(--green)';bgBrecha='rgba(34,197,139,.14)';labelBrecha='OK';}
+    else if(brechaHoy<=250){colorBrecha='var(--amber)';bgBrecha='rgba(255,182,72,.14)';labelBrecha='Atento';}
+    else {colorBrecha='var(--red)';bgBrecha='rgba(241,76,76,.14)';labelBrecha='Crítico';}
+
+    const elB=document.getElementById('kpi-brecha');
+    elB.style.color=colorBrecha; elB.textContent=(brechaHoy>=0?'':'−')+fmt(Math.abs(brechaHoy));
+    document.getElementById('kpi-brecha-badge').style.background=bgBrecha;
+    document.getElementById('kpi-brecha-badge').style.color=colorBrecha;
+    document.getElementById('kpi-brecha-badge').textContent=labelBrecha;
+    document.getElementById('kpi-brecha-icon').style.background=bgBrecha;
+    document.getElementById('kpi-brecha-foot').textContent='Acum. 10d: '+(brechaTotal10>=0?'':'−')+fmt(Math.abs(brechaTotal10))+' uds';
+
+    const metaHoy=metaDiaria(dias[dias.length-1]);
+    const cumplHoy=metaHoy>0?Math.round((hoyE/metaHoy)*100):0;
+    document.getElementById('kpi-cumpl').textContent=metaHoy>0?(cumplHoy+'%'):'—';
+    const barColor=cumplHoy>=100?'var(--green)':cumplHoy>=85?'var(--amber)':'var(--red)';
+    const bar=document.getElementById('kpi-cumpl-bar');
+    bar.style.width=Math.min(cumplHoy,100)+'%'; bar.style.background=barColor;
+  }
+
+  function renderPrincipal(cData,eData){
+    const totC=sumaTotal(cData), totE=sumaTotal(eData);
+    if(chartPrincipal) chartPrincipal.destroy();
+    chartPrincipal=new Chart(document.getElementById('chartPrincipal'),{
+      data:{labels:diasLabel,datasets:[
+        {type:'bar',label:'Cargado',data:totC,backgroundColor:'#FFB64899',borderColor:'#FFB648',borderWidth:1.5,borderRadius:5,maxBarThickness:26,order:2},
+        {type:'line',label:'Embalado',data:totE,borderColor:'#22C58B',backgroundColor:'transparent',borderWidth:2.75,tension:.35,pointRadius:3.5,pointBackgroundColor:'#22C58B',pointBorderColor:'#0D1B2E',pointBorderWidth:1.5,order:1}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)+' uds'}})},
+        scales:ejeBase()}
+    });
+  }
+
+  function generarAlertas(cData,eData){
+    const alertas=[];
+    canales.forEach(c=>{
+      const cArr=cData[c], eArr=eData[c], n=cArr.length;
+      if(n<3) return;
+      const backlogHoy=cArr[n-1]-eArr[n-1], backlogAyer=cArr[n-2]-eArr[n-2], backlogAnteayer=cArr[n-3]-eArr[n-3];
+      if(backlogHoy>backlogAyer && backlogAyer>backlogAnteayer && backlogHoy>15){
+        alertas.push({ico:'🔴',txt:'<b>'+c+'</b> acumula backlog de forma sostenida.',sub:'Brecha hoy: '+fmt(backlogHoy)+' uds, en aumento 3 días'});
+      }
+      const cumplCanalHoy = cArr[n-1]>0 ? (eArr[n-1]/cArr[n-1]*100) : 100;
+      if(cArr[n-1]>0 && cumplCanalHoy<75){
+        alertas.push({ico:'🟡',txt:'<b>'+c+'</b> está bajo la meta de embalaje.',sub:'Cumplimiento del día: '+Math.round(cumplCanalHoy)+'%'});
+      }
+      if(eArr[n-1]>eArr[n-2] && backlogHoy<backlogAyer && backlogAyer>=backlogAnteayer){
+        alertas.push({ico:'🟢',txt:'<b>'+c+'</b> se está recuperando.',sub:'Brecha bajó de '+fmt(backlogAyer)+' a '+fmt(backlogHoy)+' uds'});
+      }
+      if(eArr[n-1]<eArr[n-2] && eArr[n-2]<eArr[n-3]){
+        alertas.push({ico:'⚠️',txt:'<b>'+c+'</b> lleva 3 días disminuyendo su embalaje.',sub:fmt(eArr[n-3])+' → '+fmt(eArr[n-2])+' → '+fmt(eArr[n-1])+' uds'});
+      }
+    });
+    const orden={'🔴':0,'🟡':1,'⚠️':1,'🟢':2};
+    alertas.sort((a,b)=>orden[a.ico]-orden[b.ico]);
+    const top=alertas.slice(0,5);
+    document.getElementById('cardAlertas').innerHTML = top.length ? top.map(a=>
+      '<div class="alerta"><div class="alerta-ico">'+a.ico+'</div><div><div class="alerta-txt">'+a.txt+'</div><div class="alerta-sub">'+a.sub+'</div></div></div>'
+    ).join('') : '<div class="alerta"><div class="alerta-ico">🟢</div><div><div class="alerta-txt">Sin alertas relevantes — operación estable.</div></div></div>';
+  }
+
+  function generarPronostico(cData,eData){
+    const totC=sumaTotal(cData), totE=sumaTotal(eData);
+    const brecha=totC.map((v,i)=>v-totE[i]);
+    const n=brecha.length;
+    const ult=brecha.slice(Math.max(0,n-5));
+    const xs=ult.map((_,i)=>i);
+    const mediaX=xs.reduce((a,b)=>a+b,0)/xs.length;
+    const mediaY=ult.reduce((a,b)=>a+b,0)/ult.length;
+    let num=0,den=0;
+    xs.forEach((x,i)=>{num+=(x-mediaX)*(ult[i]-mediaY);den+=(x-mediaX)*(x-mediaX);});
+    const pendiente = den ? num/den : 0;
+    const backlogAcumulado = brecha.reduce((a,b)=>a+b,0);
+    const proyeccionManana = Math.max(0, Math.round(backlogAcumulado*0.15 + (mediaY + pendiente*5)));
+    const tendenciaTxt = pendiente>5 ? 'creciendo' : pendiente<-5 ? 'bajando' : 'estable';
+    const emojiT = pendiente>5 ? '📈' : pendiente<-5 ? '📉' : '➡️';
+    document.getElementById('pronostico-txt').innerHTML='Si continúa la tendencia actual, mañana quedarían aproximadamente <b>'+fmt(proyeccionManana)+' unidades</b> pendientes de embalar.';
+    document.getElementById('pronostico-foot').textContent=emojiT+' Tendencia de la brecha (últimos 5 días): '+tendenciaTxt+' · regresión simple sobre datos reales';
+  }
+
+  function generarRanking(cData,eData){
+    const filas = canales.map(c=>{
+      const totC=cData[c].reduce((a,b)=>a+b,0), totE=eData[c].reduce((a,b)=>a+b,0);
+      const cumpl = totC>0 ? Math.round((totE/totC)*100) : 0;
+      const brecha = totC-totE;
+      const tendenciaVal = eData[c][eData[c].length-1]-eData[c][0];
+      return {c,cumpl,brecha,tendenciaVal,totC};
+    }).filter(f=>f.totC>0).sort((a,b)=>b.cumpl-a.cumpl);
+
+    document.getElementById('cardRanking').innerHTML = filas.length ? filas.map((f,idx)=>{
+      const barColor = f.cumpl>=95?'var(--green)':f.cumpl>=80?'var(--amber)':'var(--red)';
+      const tendIco = f.tendenciaVal>3?'▲':f.tendenciaVal<-3?'▼':'▬';
+      const tendColor = f.tendenciaVal>3?'var(--green)':f.tendenciaVal<-3?'var(--red)':'var(--txt-mute)';
+      return '<div class="rank-row">'
+        +'<div class="rank-top"><div class="rank-name"><span class="rank-pos">'+(idx+1)+'</span><span class="dot" style="background:'+colores[f.c]+'"></span>'+f.c+'</div>'
+        +'<div class="rank-stats"><span class="rank-tend" style="color:'+tendColor+'">'+tendIco+'</span><span style="color:'+barColor+'">'+f.cumpl+'%</span></div></div>'
+        +'<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+Math.min(f.cumpl,100)+'%;background:'+barColor+'"></div></div>'
+        +'<div class="rank-meta"><span>Brecha: '+(f.brecha>=0?'−':'+')+fmt(Math.abs(f.brecha))+' uds</span><span>10 días</span></div></div>';
+    }).join('') : '<div class="alerta-sub">Sin datos suficientes en el rango.</div>';
+  }
+
+  function generarTablaClientes(){
+    const filas = Object.keys(clientesAgg).map(cli=>{
+      const d=clientesAgg[cli];
+      const pendiente=d.cargado-d.embalado;
+      return {cli,cargado:d.cargado,embalado:d.embalado,pendiente};
+    }).filter(f=>f.cargado>0).sort((a,b)=>b.pendiente-a.pendiente).slice(0,8);
+
+    document.getElementById('tablaDestinos').innerHTML = filas.length ? filas.map(f=>{
+      const pct = f.cargado>0 ? f.pendiente/f.cargado : 0;
+      let estado,color,bg;
+      if(pct<=0.05){estado='Al día';color='var(--green)';bg='rgba(34,197,139,.14)';}
+      else if(pct<=0.25){estado='Atento';color='var(--amber)';bg='rgba(255,182,72,.14)';}
+      else {estado='Crítico';color='var(--red)';bg='rgba(241,76,76,.14)';}
+      return '<tr>'
+        +'<td style="color:var(--txt)">'+f.cli+'</td>'
+        +'<td style="color:var(--txt-dim)">'+fmt(f.cargado)+'</td>'
+        +'<td style="color:var(--txt-dim)">'+fmt(f.embalado)+'</td>'
+        +'<td style="color:'+color+'">'+(f.pendiente>=0?'−':'+')+fmt(Math.abs(f.pendiente))+'</td>'
+        +'<td><span class="estado-pill" style="background:'+bg+';color:'+color+'">'+estado+'</span></td></tr>';
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--txt-mute)">Sin datos</td></tr>';
+  }
+
+  function renderDoughnut(cData){
+    const totales = canales.map(c=>cData[c].reduce((a,b)=>a+b,0));
+    const totalGeneral = totales.reduce((a,b)=>a+b,0) || 1;
+    if(chartDoughnut) chartDoughnut.destroy();
+    chartDoughnut=new Chart(document.getElementById('chartDoughnut'),{
+      type:'doughnut',
+      data:{labels:canales,datasets:[{data:totales,backgroundColor:canales.map(c=>colores[c]),borderColor:'#0D1B2E',borderWidth:2,hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+        plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:c=>' '+c.label+': '+fmt(c.raw)+' uds ('+Math.round(c.raw/totalGeneral*100)+'%)'}})}}
+    });
+    document.getElementById('leg-doughnut').innerHTML = canales.map((c,i)=>{
+      const pct=Math.round(totales[i]/totalGeneral*100);
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+        +'<span style="display:flex;align-items:center;gap:6px;color:var(--txt-dim)"><span class="dot" style="background:'+colores[c]+'"></span>'+c+'</span>'
+        +'<span style="color:var(--txt)">'+pct+'%</span></div>';
+    }).join('');
+  }
+
+  function renderCanalCharts(cData,eData){
+    const cont=document.getElementById('canalCharts');
+    cont.innerHTML='';
+    canales.forEach(c=>{
+      const totC=cData[c].reduce((a,b)=>a+b,0), totE=eData[c].reduce((a,b)=>a+b,0);
+      if(totC===0 && totE===0) return;
+      const delta=totC-totE;
+      const id='canalchart-'+c.replace(/\s+/g,'');
+      const div=document.createElement('div');
+      div.className='card';
+      div.innerHTML =
+        '<div class="canal-card-head"><div class="canal-name"><span class="dot" style="background:'+colores[c]+'"></span>'+c+'</div>'
+        +'<span class="chip" style="background:'+(delta>0?'rgba(241,76,76,.14)':'rgba(34,197,139,.14)')+';color:'+(delta>0?'var(--red)':'var(--green)')+'">'+(delta>0?'−'+fmt(delta):'al día')+'</span></div>'
+        +'<div class="leyenda" style="margin-top:8px"><span><span class="line-sw" style="background:'+colores[c]+'"></span>Cargado</span><span><span class="line-sw" style="background:#93ABC9"></span>Embalado</span></div>'
+        +'<div class="chart-box" style="height:160px"><canvas id="'+id+'"></canvas></div>';
+      cont.appendChild(div);
+      if(chartRefs.canal[c]) chartRefs.canal[c].destroy();
+      chartRefs.canal[c]=new Chart(div.querySelector('canvas'),{
+        type:'line',
+        data:{labels:diasLabel,datasets:[
+          {label:'Cargado',data:cData[c],borderColor:colores[c],backgroundColor:colores[c]+'22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:colores[c]},
+          {label:'Embalado',data:eData[c],borderColor:'#93ABC9',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],tension:.35,fill:false,pointRadius:2.5,pointBackgroundColor:'#93ABC9'}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+          plugins:{legend:{display:false},tooltip:tooltipBase()},scales:ejeBase()}
+      });
+    });
+  }
+
+  function render(modo){
+    const cData=vistaCargado(modo), eData=vistaEmbalado(modo);
+    actualizarKPIs(cData,eData);
+    renderPrincipal(cData,eData);
+    generarAlertas(cData,eData);
+    generarPronostico(cData,eData);
+    generarRanking(cData,eData);
+    renderDoughnut(cData);
+    renderCanalCharts(cData,eData);
+  }
+
+  function renderCapacidad(){
+    const produccionReal = dias.map(f=>{
+      const dataDia = embaladoPorDiaCanalMat[f]||{};
+      return canales.reduce((s,c)=>{const m=dataDia[c]||{'Maleta':0,'No Maleta':0};return s+m['Maleta']+m['No Maleta'];},0);
+    });
+    const capacidadArr = dias.map(f=>capacidadPorDia[f]||0);
+    const usoPct = produccionReal.map((v,i)=>capacidadArr[i]>0?Math.round(v/capacidadArr[i]*100):0);
+    const usoValidos = usoPct.filter((v,i)=>capacidadArr[i]>0);
+    const usoPromedio = usoValidos.length ? Math.round(usoValidos.reduce((a,b)=>a+b,0)/usoValidos.length) : 0;
+
+    const gaugeColor = usoPromedio>=90?'#F14C4C':usoPromedio>=75?'#FFB648':'#22C58B';
+    document.getElementById('capGaugeVal').textContent=usoPromedio+'%';
+    document.getElementById('capGaugeVal').style.color=gaugeColor;
+    document.getElementById('capGaugeArc').setAttribute('stroke',gaugeColor);
+    document.getElementById('capGaugeArc').setAttribute('stroke-dasharray',Math.min(usoPromedio,100)+' 100');
+    const hoyIdx=produccionReal.length-1;
+    document.getElementById('capUsoTxt').textContent=fmt(produccionReal[hoyIdx])+' / '+fmt(capacidadArr[hoyIdx])+' uds (hoy)';
+    document.getElementById('capUsoTxt').style.color=gaugeColor;
+
+    if(chartCapacidad) chartCapacidad.destroy();
+    chartCapacidad=new Chart(document.getElementById('chartCapacidad'),{
+      data:{labels:diasLabel,datasets:[
+        {type:'bar',label:'Producción real',data:produccionReal,backgroundColor:produccionReal.map((v,i)=>{const p=capacidadArr[i]>0?v/capacidadArr[i]*100:0;return p>=90?'#F14C4C99':p>=75?'#FFB64899':'#3B8FFF99';}),borderColor:'#3B8FFF',borderWidth:1,borderRadius:5,maxBarThickness:22,order:2},
+        {type:'line',label:'Capacidad instalada',data:capacidadArr,borderColor:'#93ABC9',borderDash:[5,4],borderWidth:2,pointRadius:0,fill:false,order:1}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:c=>{
+          if(c.dataset.type==='line') return ' Capacidad: '+fmt(c.raw)+' uds';
+          const p=capacidadArr[c.dataIndex]>0?Math.round(c.raw/capacidadArr[c.dataIndex]*100):0;
+          return ' Real: '+fmt(c.raw)+' uds ('+p+'% uso)';
+        }}})},
+        scales:ejeBase()}
+    });
+
+    // Productividad por persona (dotación real, no fija)
+    const prodPersona = dias.map((f,i)=>{
+      const dot=dotacionPorDia[f]||0;
+      return dot>0 ? Math.round((produccionReal[i]/dot)*10)/10 : 0;
+    });
+    if(chartProductividad) chartProductividad.destroy();
+    chartProductividad=new Chart(document.getElementById('chartProductividad'),{
+      type:'line',
+      data:{labels:diasLabel,datasets:[{data:prodPersona,borderColor:'#3B8FFF',backgroundColor:'#3B8FFF22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#3B8FFF'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:(c)=>{
+          const dot=dotacionPorDia[dias[c.dataIndex]]||0;
+          return ' '+c.raw+' uds/persona ('+dot+' activas)';
+        }}})},
+        scales:ejeBase()}
+    });
+
+    // Lead time promedio por día de carga
+    const leadArr = dias.map(f=>{
+      const arr=leadTimes[f];
+      if(!arr||!arr.length) return null;
+      return Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*10)/10;
+    });
+    if(chartLeadTime) chartLeadTime.destroy();
+    chartLeadTime=new Chart(document.getElementById('chartLeadTime'),{
+      type:'line',
+      data:{labels:diasLabel,datasets:[{data:leadArr,borderColor:'#9A88FF',backgroundColor:'#9A88FF22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#9A88FF',spanGaps:true}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:c=>c.raw==null?' Sin datos':' '+c.raw+' días promedio'}})},
+        scales:ejeBase()}
+    });
+  }
+
+  /* =========================================================
+     INIT
+  ========================================================= */
+  document.querySelectorAll('.ftab').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      render(btn.getAttribute('data-m'));
+    });
+  });
+
+  (async function init(){
+    try{
+      document.getElementById('hd-fecha').textContent = 'Hoy · '+diasLabel[diasLabel.length-1];
+      await cargarTodo();
+      construirMetaSemanal();
+      procesarDatos();
+      generarTablaClientes();
+      render('todos');
+      renderCapacidad();
+      document.getElementById('loadingScreen').style.display='none';
+      document.getElementById('mainWrap').style.display='block';
+    }catch(err){
+      document.getElementById('loadingScreen').style.display='none';
+      document.getElementById('mainWrap').style.display='block';
+      document.getElementById('errBox').innerHTML = '<div class="err-box">⚠️ Error cargando datos: '+err.message+'</div>';
+      console.error(err);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
