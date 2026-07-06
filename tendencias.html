@@ -31,14 +31,23 @@
   .d1{animation-delay:.02s}.d2{animation-delay:.06s}.d3{animation-delay:.10s}.d4{animation-delay:.14s}
   .d5{animation-delay:.18s}.d6{animation-delay:.22s}.d7{animation-delay:.26s}
 
-  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;padding:2px 2px 0}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding:2px 2px 0}
   .header-l h1{font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--txt)}
   .header-l .sub{font-size:11px;color:var(--txt-mute);margin-top:3px;display:flex;align-items:center;gap:6px}
   .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(34,197,139,.18);display:inline-block;animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .header-r{text-align:right}
-  .header-r .fecha{font-size:11px;font-weight:700;color:var(--txt)}
-  .header-r .fecha-sub{font-size:9.5px;color:var(--txt-mute);margin-top:2px}
+  .header-r .estado-badge{font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:20px}
+
+  /* Selector de semana */
+  .semana-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px;box-shadow:var(--shadow-card)}
+  .semana-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .semana-btn{width:38px;height:38px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-soft);color:var(--txt-dim);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+  .semana-btn:active{background:var(--surface-3)}
+  .semana-mid{flex:1;text-align:center}
+  .semana-num{font-size:16px;font-weight:800;color:var(--txt)}
+  .semana-rango{font-size:10px;color:var(--txt-mute);margin-top:2px}
+  .semana-hoy-btn{width:34px;height:34px;border-radius:10px;background:rgba(59,143,255,.12);border:1px solid rgba(59,143,255,.3);color:var(--blue-soft);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 
   .filtros{display:flex;gap:6px;margin-bottom:18px}
   .ftab{flex:1;background:var(--surface-2);color:var(--txt-dim);border:1px solid var(--border-soft);border-radius:11px;padding:9px 0;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s ease}
@@ -140,8 +149,19 @@
       <div class="sub"><span class="live-dot"></span> Panel Gerencial · CD Lo Boza</div>
     </div>
     <div class="header-r">
-      <div class="fecha" id="hd-fecha">—</div>
-      <div class="fecha-sub">Últimos 10 días</div>
+      <div class="estado-badge" id="hd-estado" style="background:rgba(59,143,255,.14);color:var(--blue-soft)">—</div>
+    </div>
+  </div>
+
+  <div class="semana-card anim d1">
+    <div class="semana-nav">
+      <div class="semana-btn" id="btnSemanaPrev">←</div>
+      <div class="semana-mid">
+        <div class="semana-num" id="semanaNum">Semana —</div>
+        <div class="semana-rango" id="semanaRango">—</div>
+      </div>
+      <div class="semana-btn" id="btnSemanaNext">→</div>
+      <div class="semana-hoy-btn" id="btnSemanaHoy" title="Ir a la semana actual">↻</div>
     </div>
   </div>
 
@@ -159,32 +179,32 @@
         <div class="kpi-icon" style="background:rgba(255,182,72,.14)">📦</div>
         <div class="kpi-badge" id="kpi-carg-badge" style="background:rgba(255,182,72,.14);color:var(--amber)">—</div>
       </div>
-      <div class="kpi-lbl">Total Cargado</div>
+      <div class="kpi-lbl">Cargado Semana</div>
       <div class="kpi-val" style="color:var(--amber)" id="kpi-carg">—</div>
-      <div class="kpi-foot" id="kpi-carg-foot">vs. ayer</div>
+      <div class="kpi-foot" id="kpi-carg-foot">vs. semana anterior</div>
     </div>
     <div class="kpi-card" style="--kpi-glow:rgba(34,197,139,.22)">
       <div class="kpi-top">
         <div class="kpi-icon" style="background:rgba(34,197,139,.14)">✅</div>
         <div class="kpi-badge" id="kpi-emb-badge" style="background:rgba(34,197,139,.14);color:var(--green)">—</div>
       </div>
-      <div class="kpi-lbl">Total Embalado</div>
+      <div class="kpi-lbl">Embalado Semana</div>
       <div class="kpi-val" style="color:var(--green)" id="kpi-emb">—</div>
-      <div class="kpi-foot" id="kpi-emb-foot">vs. ayer</div>
+      <div class="kpi-foot" id="kpi-emb-foot">vs. semana anterior</div>
     </div>
     <div class="kpi-card" style="--kpi-glow:rgba(241,76,76,.22)">
       <div class="kpi-top">
         <div class="kpi-icon" id="kpi-brecha-icon" style="background:rgba(241,76,76,.14)">⚠️</div>
         <div class="kpi-badge" id="kpi-brecha-badge">—</div>
       </div>
-      <div class="kpi-lbl">Brecha</div>
+      <div class="kpi-lbl">Brecha Semana</div>
       <div class="kpi-val" id="kpi-brecha">—</div>
       <div class="kpi-foot" id="kpi-brecha-foot">cargado − embalado</div>
     </div>
     <div class="kpi-card" style="--kpi-glow:rgba(59,143,255,.22)">
       <div class="kpi-top">
         <div class="kpi-icon" style="background:rgba(59,143,255,.14)">🎯</div>
-        <div class="kpi-badge" id="kpi-cumpl-badge" style="background:rgba(59,143,255,.14);color:var(--blue-soft)">Hoy</div>
+        <div class="kpi-badge" id="kpi-cumpl-badge" style="background:rgba(59,143,255,.14);color:var(--blue-soft)">Semana</div>
       </div>
       <div class="kpi-lbl">Cumplimiento</div>
       <div class="kpi-val" style="color:var(--blue-soft)" id="kpi-cumpl">—</div>
@@ -192,13 +212,13 @@
     </div>
   </div>
 
-  <div class="seccion anim d3">📊 Tendencia General</div>
+  <div class="seccion anim d3">📊 Tendencia de la Semana</div>
   <div class="card anim d3">
     <div class="card-head">
       <div class="card-title">Cargado vs Embalado</div>
-      <div class="chip" style="background:rgba(255,255,255,.06);color:var(--txt-dim)">10 días</div>
+      <div class="chip" style="background:rgba(255,255,255,.06);color:var(--txt-dim)">L-D</div>
     </div>
-    <div class="card-sub">Barras = unidades cargadas · Línea = unidades embaladas</div>
+    <div class="card-sub">Barras = unidades cargadas · Línea = unidades embaladas, día por día</div>
     <div class="leyenda">
       <span><span class="bar-sw" style="background:var(--amber)"></span>Cargado</span>
       <span><span class="line-sw" style="background:var(--green)"></span>Embalado</span>
@@ -210,8 +230,8 @@
   <div class="card anim d4" id="cardAlertas"></div>
 
   <div class="pronostico-card anim d4">
-    <div class="pronostico-top"><span style="font-size:18px">🔮</span><span class="pronostico-tag">Pronóstico para mañana</span></div>
-    <div class="pronostico-txt" id="pronostico-txt">Calculando proyección…</div>
+    <div class="pronostico-top"><span style="font-size:18px" id="pronostico-emoji">🔮</span><span class="pronostico-tag" id="pronostico-tag">Proyección de la semana</span></div>
+    <div class="pronostico-txt" id="pronostico-txt">Calculando…</div>
     <div class="pronostico-foot" id="pronostico-foot"></div>
   </div>
 
@@ -220,7 +240,7 @@
 
   <div class="seccion anim d5">📍 Top Clientes con Mayor Pendiente</div>
   <div class="card anim d5">
-    <div class="card-sub" style="margin-bottom:8px">Cargado vs Embalado por cliente/destino, últimos 10 días</div>
+    <div class="card-sub" style="margin-bottom:8px">Cargado vs Embalado por cliente/destino, esta semana</div>
     <div class="tabla-wrap">
       <table class="destinos">
         <thead><tr><th>Cliente</th><th>Cargado</th><th>Embalado</th><th>Pendiente</th><th>Estado</th></tr></thead>
@@ -231,7 +251,7 @@
 
   <div class="seccion anim d6">🥧 Participación por Canal</div>
   <div class="card anim d6">
-    <div class="card-sub">% del total cargado en los últimos 10 días</div>
+    <div class="card-sub">% del total cargado esta semana</div>
     <div style="display:flex;align-items:center;gap:14px">
       <div class="chart-box" style="height:150px;width:150px;flex-shrink:0"><canvas id="chartDoughnut"></canvas></div>
       <div id="leg-doughnut" style="display:flex;flex-direction:column;gap:7px;font-size:10.5px;font-weight:700;flex:1"></div>
@@ -251,7 +271,7 @@
         <div class="cap-gauge-val" id="capGaugeVal">—</div>
       </div>
       <div style="flex:1">
-        <div class="cap-info-lbl">Utilización promedio (10 días)</div>
+        <div class="cap-info-lbl">Utilización promedio (esta semana)</div>
         <div class="cap-info-val" id="capUsoTxt">—</div>
       </div>
     </div>
@@ -266,7 +286,7 @@
 
   <div class="card anim d7">
     <div class="card-title">⏱️ Lead Time Promedio</div>
-    <div class="card-sub">Días entre carga y último registro de embalaje de esa entrega (aproximado, solo entregas ya resueltas dentro de la ventana)</div>
+    <div class="card-sub">Días entre carga y último registro de embalaje de esa entrega (aproximado, solo entregas resueltas dentro de la ventana consultada)</div>
     <div class="chart-box" style="height:150px"><canvas id="chartLeadTime"></canvas></div>
   </div>
 
@@ -319,33 +339,22 @@
   };
 
   const canales = ['Locales','Concesiones','Grandes Tiendas','Distribuidor','Ecommerce','Marketplace','Venta en verde'];
-  const CANAL_ABREV = {'Locales':'LOC','Concesiones':'CONC','Grandes Tiendas':'GGTT','Distribuidor':'DIST','Ecommerce':'ECO','Marketplace':'MKP','Venta en verde':'VEV'};
   const colores = {
     'Locales':'#3B8FFF','Concesiones':'#9A88FF','Grandes Tiendas':'#22C58B',
     'Distribuidor':'#FFB648','Ecommerce':'#F14C4C','Marketplace':'#3FD6FF','Venta en verde':'#9BFF6B'
   };
   const _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
+  const DIAS_SEM = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
   function fmt(n){ return Math.round(n||0).toLocaleString('es-CL'); }
 
   /* =========================================================
-     FECHAS — últimos 10 días calendario terminando hoy (hora local)
+     FECHAS / SEMANA ISO
   ========================================================= */
   function fechaLocalStr(d){
     const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
     return y+'-'+m+'-'+day;
   }
-  const hoyDate = new Date();
-  const dias = [];       // ['2026-06-24', ...] formato ISO para queries
-  const diasLabel = [];  // ['24/06', ...] para mostrar
-  for(let i=9;i>=0;i--){
-    const d = new Date(hoyDate); d.setDate(d.getDate()-i);
-    dias.push(fechaLocalStr(d));
-    diasLabel.push(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'));
-  }
-  const fechaInicio = dias[0], fechaFin = dias[dias.length-1];
-
-  // ISO week helper (mismo criterio que Postgres extract(week from ..))
   function isoWeekInfo(fechaStr){
     const d = new Date(fechaStr+'T12:00:00Z');
     const dayNum = (d.getUTCDay()+6)%7;
@@ -354,29 +363,73 @@
     const week = 1+Math.round(((d-firstThursday)/86400000-3+((firstThursday.getUTCDay()+6)%7))/7);
     return {anio:d.getUTCFullYear(), semana:week};
   }
-  const semanasSpan = [...new Set(dias.map(f=>{const w=isoWeekInfo(f);return w.anio+'-'+w.semana;}))];
+  // Lunes de una semana ISO (anio, semana) — mismo criterio que Postgres/ISO 8601
+  function lunesDeSemanaISO(anio, semana){
+    const simple = new Date(Date.UTC(anio,0,4));
+    const dow = (simple.getUTCDay()+6)%7;
+    const lunesSemana1 = new Date(simple); lunesSemana1.setUTCDate(simple.getUTCDate()-dow);
+    const lunes = new Date(lunesSemana1); lunes.setUTCDate(lunesSemana1.getUTCDate() + (semana-1)*7);
+    return lunes;
+  }
+  function diasDeSemana(anio, semana){
+    const lunes = lunesDeSemanaISO(anio, semana);
+    const out = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(lunes); d.setUTCDate(lunes.getUTCDate()+i);
+      out.push(fechaLocalStr(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())));
+    }
+    return out;
+  }
+  function fmtFechaCorta(fechaStr){
+    const d = new Date(fechaStr+'T12:00:00');
+    return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  }
+  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function fmtFechaLarga(fechaStr){
+    const d = new Date(fechaStr+'T12:00:00');
+    return String(d.getDate()).padStart(2,'0')+' '+MESES[d.getMonth()]+' '+d.getFullYear();
+  }
+
+  const hoyStr = fechaLocalStr(new Date());
+  let semanaActual = isoWeekInfo(hoyStr); // {anio, semana} — estado navegable
 
   /* =========================================================
-     CARGA DE DATOS REALES
+     ESTADO DE DATOS (se recarga al cambiar de semana)
   ========================================================= */
-  let cargadoRaw = [], embaladoRaw = [], planRaw = [];
+  let diasSel = [];      // 7 fechas ISO de la semana seleccionada (Lun..Dom)
+  let diasAnt  = [];     // 7 fechas ISO de la semana anterior (para comparar)
+  let diasLabelSel = [];
+  let cargadoRaw=[], embaladoRaw=[], planRaw=[];
+  let cargadoPorDiaCanalMat={}, embaladoPorDiaCanalMat={};
+  let capacidadPorDia={}, dotacionPorDia={}, clientesAgg={}, leadTimes={};
+  const metaSemanal = {};
 
-  async function cargarTodo(){
+  async function cargarSemana(){
+    diasSel = diasDeSemana(semanaActual.anio, semanaActual.semana);
+    diasLabelSel = diasSel.map(fmtFechaCorta);
+    const lunesAnt = new Date(lunesDeSemanaISO(semanaActual.anio, semanaActual.semana));
+    lunesAnt.setUTCDate(lunesAnt.getUTCDate()-7);
+    const wAnt = isoWeekInfo(fechaLocalStr(new Date(lunesAnt.getUTCFullYear(),lunesAnt.getUTCMonth(),lunesAnt.getUTCDate())));
+    diasAnt = diasDeSemana(wAnt.anio, wAnt.semana);
+
+    const fetchInicio = diasAnt[0], fetchFin = diasSel[6];
+
+    document.getElementById('semanaNum').textContent = 'Semana '+semanaActual.semana;
+    document.getElementById('semanaRango').textContent = fmtFechaLarga(diasSel[0])+' al '+fmtFechaLarga(diasSel[6])+' (L-D)';
+
     const [carg, emb, plan] = await Promise.all([
-      sbFetchAll('entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,ruta,clientenombre,id_entrega&fecha_carga=gte.'+fechaInicio+'&fecha_carga=lte.'+fechaFin+'&order=fecha_carga.asc'),
-      sbFetchAll('produccion?select=usuario,canal,tipo,cantidad,fecha,entrega,clientenombre&fecha=gte.'+fechaInicio+'&fecha=lte.'+fechaFin+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc'),
+      sbFetchAll('entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,ruta,clientenombre,id_entrega&fecha_carga=gte.'+fetchInicio+'&fecha_carga=lte.'+fetchFin+'&order=fecha_carga.asc'),
+      sbFetchAll('produccion?select=usuario,canal,tipo,cantidad,fecha,entrega,clientenombre&fecha=gte.'+fetchInicio+'&fecha=lte.'+fetchFin+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc'),
       sbFetchAll('plan_carga?select=semana_iso,anio,canal,tipo,unidades_plan')
     ]);
-    cargadoRaw  = carg;
-    embaladoRaw = emb;
-    planRaw     = plan;
+    cargadoRaw=carg; embaladoRaw=emb; planRaw=plan;
   }
 
   function tipoNormCargado(tp){
     const t=(tp||'').toLowerCase().trim();
     if(t==='maleta') return 'Maleta';
     if(t==='no maleta') return 'No Maleta';
-    return null; // insumo u otro -> excluido
+    return null;
   }
   function tipoNormEmbalado(t){
     const tt=(t||'').toLowerCase().trim();
@@ -384,7 +437,6 @@
     if(tt==='linea') return 'No Maleta';
     return null;
   }
-
   function pasaExclusionCargado(r){
     if((r.tipo_producto||'').toLowerCase().trim()==='insumo') return false;
     const cLow=(r.canal||'').toLowerCase().trim();
@@ -395,21 +447,12 @@
     return true;
   }
 
-  /* =========================================================
-     AGREGACIÓN: cargadoTotal / embaladoTotal { canal: [10 valores] } por material
-  ========================================================= */
-  let cargadoPorDiaCanalMat = {};   // { fecha: { canal: { Maleta:x, 'No Maleta':y } } }
-  let embaladoPorDiaCanalMat = {};
-  let capacidadPorDia = {};         // { fecha: uds }
-  let dotacionPorDia = {};          // { fecha: n }
-  let clientesAgg = {};             // { cliente: {cargado, embalado} }
-  let leadTimes = {};               // { fecha_carga: [dias,...] } promedio por día de carga
-
   function procesarDatos(){
-    dias.forEach(f=>{ cargadoPorDiaCanalMat[f]={}; embaladoPorDiaCanalMat[f]={}; });
+    const todasLasFechas = [...new Set(diasAnt.concat(diasSel))];
+    cargadoPorDiaCanalMat={}; embaladoPorDiaCanalMat={}; clientesAgg={};
+    todasLasFechas.forEach(f=>{ cargadoPorDiaCanalMat[f]={}; embaladoPorDiaCanalMat[f]={}; });
 
-    // --- Cargado ---
-    const entregaInfo = {}; // id_entrega -> {fecha_carga, total}
+    const entregaInfo = {};
     cargadoRaw.forEach(r=>{
       const f=(r.fecha_carga||'').slice(0,10);
       if(!cargadoPorDiaCanalMat[f]) return;
@@ -421,22 +464,19 @@
       if(!cargadoPorDiaCanalMat[f][canal]) cargadoPorDiaCanalMat[f][canal]={'Maleta':0,'No Maleta':0};
       cargadoPorDiaCanalMat[f][canal][mat]+=qty;
 
-      const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
-      if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
-      clientesAgg[cli].cargado+=qty;
-
-      const id=(r.id_entrega||'').toString().trim();
-      if(id){
-        if(!entregaInfo[id]) entregaInfo[id]={fecha_carga:f,total:0};
-        entregaInfo[id].total+=qty;
+      if(diasSel.indexOf(f)!==-1){
+        const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
+        if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
+        clientesAgg[cli].cargado+=qty;
       }
+      const id=(r.id_entrega||'').toString().trim();
+      if(id){ if(!entregaInfo[id]) entregaInfo[id]={fecha_carga:f,total:0}; entregaInfo[id].total+=qty; }
     });
 
-    // --- Embalado + capacidad/dotación por día ---
-    const usuariosActivosPorDia = {};
-    const entregaEmbFechaMax = {}; // id_entrega -> última fecha embalada dentro de la ventana
+    const usuariosActivosPorDia={};
+    const entregaEmbFechaMax={};
     embaladoRaw.forEach(r=>{
-      if(DB[r.usuario]===undefined) return; // solo operarias válidas
+      if(DB[r.usuario]===undefined) return;
       const f=(r.fecha||'').slice(0,10);
       if(!embaladoPorDiaCanalMat[f]) return;
       const mat=tipoNormEmbalado(r.tipo);
@@ -447,48 +487,44 @@
         if(!embaladoPorDiaCanalMat[f][canal]) embaladoPorDiaCanalMat[f][canal]={'Maleta':0,'No Maleta':0};
         embaladoPorDiaCanalMat[f][canal][mat]+=qty;
       }
-
-      const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
-      if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
-      clientesAgg[cli].embalado+=qty;
-
+      if(diasSel.indexOf(f)!==-1){
+        const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
+        if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
+        clientesAgg[cli].embalado+=qty;
+      }
       if(!usuariosActivosPorDia[f]) usuariosActivosPorDia[f]=new Set();
       usuariosActivosPorDia[f].add(r.usuario);
 
       const id=(r.entrega||'').toString().trim();
-      if(id){
-        if(!entregaEmbFechaMax[id] || f > entregaEmbFechaMax[id]) entregaEmbFechaMax[id]=f;
-      }
+      if(id){ if(!entregaEmbFechaMax[id] || f>entregaEmbFechaMax[id]) entregaEmbFechaMax[id]=f; }
     });
 
-    dias.forEach(f=>{
+    capacidadPorDia={}; dotacionPorDia={};
+    diasSel.forEach(f=>{
       const activos = usuariosActivosPorDia[f] ? [...usuariosActivosPorDia[f]] : [];
-      dotacionPorDia[f] = activos.length;
-      capacidadPorDia[f] = activos.reduce((s,u)=>s+(META[u]||0),0);
+      dotacionPorDia[f]=activos.length;
+      capacidadPorDia[f]=activos.reduce((s,u)=>s+(META[u]||0),0);
     });
 
-    // Lead time aproximado: fecha_carga -> última fecha embalada de esa entrega dentro de la ventana
+    leadTimes={};
     Object.keys(entregaInfo).forEach(id=>{
-      const info = entregaInfo[id];
-      const fEmb = entregaEmbFechaMax[id];
+      const info=entregaInfo[id];
+      const fEmb=entregaEmbFechaMax[id];
       if(!fEmb) return;
-      const dCarga = new Date(info.fecha_carga+'T12:00:00');
-      const dEmb   = new Date(fEmb+'T12:00:00');
-      const diasLead = Math.round((dEmb-dCarga)/86400000);
-      if(diasLead < 0) return;
+      const dCarga=new Date(info.fecha_carga+'T12:00:00');
+      const dEmb=new Date(fEmb+'T12:00:00');
+      const diasLead=Math.round((dEmb-dCarga)/86400000);
+      if(diasLead<0) return;
       if(!leadTimes[info.fecha_carga]) leadTimes[info.fecha_carga]=[];
       leadTimes[info.fecha_carga].push(diasLead);
     });
   }
 
-  /* =========================================================
-     VISTAS FILTRADAS POR MATERIAL: cData / eData { canal: [10] }
-  ========================================================= */
-  function vistaCargado(modo){
+  function vistaCargado(modo, listaFechas){
     const out={};
     canales.forEach(c=>{
-      out[c]=dias.map(f=>{
-        const m = (cargadoPorDiaCanalMat[f]&&cargadoPorDiaCanalMat[f][c]) || {'Maleta':0,'No Maleta':0};
+      out[c]=listaFechas.map(f=>{
+        const m=(cargadoPorDiaCanalMat[f]&&cargadoPorDiaCanalMat[f][c])||{'Maleta':0,'No Maleta':0};
         if(modo==='maleta') return m['Maleta'];
         if(modo==='nomaleta') return m['No Maleta'];
         return m['Maleta']+m['No Maleta'];
@@ -496,11 +532,11 @@
     });
     return out;
   }
-  function vistaEmbalado(modo){
+  function vistaEmbalado(modo, listaFechas){
     const out={};
     canales.forEach(c=>{
-      out[c]=dias.map(f=>{
-        const m = (embaladoPorDiaCanalMat[f]&&embaladoPorDiaCanalMat[f][c]) || {'Maleta':0,'No Maleta':0};
+      out[c]=listaFechas.map(f=>{
+        const m=(embaladoPorDiaCanalMat[f]&&embaladoPorDiaCanalMat[f][c])||{'Maleta':0,'No Maleta':0};
         if(modo==='maleta') return m['Maleta'];
         if(modo==='nomaleta') return m['No Maleta'];
         return m['Maleta']+m['No Maleta'];
@@ -509,82 +545,89 @@
     return out;
   }
   function sumaTotal(dataObj){
-    return dias.map((_,i)=>canales.reduce((s,c)=>s+dataObj[c][i],0));
+    return dataObj[canales[0]].map((_,i)=>canales.reduce((s,c)=>s+dataObj[c][i],0));
   }
 
-  /* =========================================================
-     META DIARIA REAL (plan_carga, prorateada a días hábiles de esa semana ISO)
-  ========================================================= */
-  const metaSemanal = {}; // 'anio-semana' -> total unidades_plan
   function construirMetaSemanal(){
+    Object.keys(metaSemanal).forEach(k=>delete metaSemanal[k]);
     planRaw.forEach(r=>{
       const key=r.anio+'-'+r.semana_iso;
       metaSemanal[key]=(metaSemanal[key]||0)+(Number(r.unidades_plan)||0);
     });
   }
+  function metaSemanaDe(anio, semana){ return metaSemanal[anio+'-'+semana]||0; }
   function metaDiaria(fechaStr){
     const d=new Date(fechaStr+'T12:00:00');
-    const dow=d.getDay(); // 0=Dom,6=Sab
+    const dow=d.getDay();
     if(dow===0||dow===6) return 0;
     const w=isoWeekInfo(fechaStr);
-    const total=metaSemanal[w.anio+'-'+w.semana]||0;
-    return total/5;
+    return metaSemanaDe(w.anio,w.semana)/5;
   }
 
   /* =========================================================
-     RENDER — helpers visuales
+     RENDER
   ========================================================= */
   const tooltipBase=()=>({backgroundColor:'#0D1B2E',borderColor:'#1E3A5F',borderWidth:1,titleColor:'#93ABC9',bodyColor:'#EAF2FF',padding:10,cornerRadius:8,titleFont:{size:10,weight:'700'},bodyFont:{size:11,weight:'600'}});
   const ejeBase=()=>({
     x:{grid:{display:false},ticks:{color:'#4D7AAA',font:{size:9}}},
     y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4D7AAA',font:{size:9}}}
   });
-
   const chartRefs={canal:{}};
   let chartPrincipal, chartDoughnut, chartCapacidad, chartProductividad, chartLeadTime;
 
-  function actualizarKPIs(cData,eData){
-    const totC=sumaTotal(cData), totE=sumaTotal(eData);
-    const totalCarg10=totC.reduce((a,b)=>a+b,0), totalEmb10=totE.reduce((a,b)=>a+b,0);
-    const hoyC=totC[totC.length-1], ayerC=totC[totC.length-2]||1;
-    const hoyE=totE[totE.length-1], ayerE=totE[totE.length-2]||1;
-    const varC=Math.round(((hoyC-ayerC)/ayerC)*100);
-    const varE=Math.round(((hoyE-ayerE)/ayerE)*100);
+  function actualizarEstadoBadge(){
+    const fin = diasSel[6];
+    const badge = document.getElementById('hd-estado');
+    if(fin < hoyStr){ badge.textContent='Semana cerrada'; badge.style.background='rgba(147,171,201,.14)'; badge.style.color='var(--txt-dim)'; }
+    else if(diasSel[0] > hoyStr){ badge.textContent='Semana futura'; badge.style.background='rgba(255,182,72,.14)'; badge.style.color='var(--amber)'; }
+    else { badge.textContent='Semana en curso'; badge.style.background='rgba(34,197,139,.14)'; badge.style.color='var(--green)'; }
+  }
 
-    document.getElementById('kpi-carg').textContent=fmt(totalCarg10);
-    document.getElementById('kpi-emb').textContent=fmt(totalEmb10);
+  function actualizarKPIs(cData,eData,cDataAnt,eDataAnt){
+    const totC=sumaTotal(cData), totE=sumaTotal(eData);
+    const totalCargSem=totC.reduce((a,b)=>a+b,0), totalEmbSem=totE.reduce((a,b)=>a+b,0);
+    const totCAnt=sumaTotal(cDataAnt), totEAnt=sumaTotal(eDataAnt);
+    const totalCargAnt=totCAnt.reduce((a,b)=>a+b,0), totalEmbAnt=totEAnt.reduce((a,b)=>a+b,0);
+
+    const varC = totalCargAnt>0 ? Math.round(((totalCargSem-totalCargAnt)/totalCargAnt)*100) : 0;
+    const varE = totalEmbAnt>0 ? Math.round(((totalEmbSem-totalEmbAnt)/totalEmbAnt)*100) : 0;
+
+    document.getElementById('kpi-carg').textContent=fmt(totalCargSem);
+    document.getElementById('kpi-emb').textContent=fmt(totalEmbSem);
     document.getElementById('kpi-carg-badge').textContent=(varC>=0?'+':'')+varC+'%';
     document.getElementById('kpi-emb-badge').textContent=(varE>=0?'+':'')+varE+'%';
-    document.getElementById('kpi-carg-foot').textContent='Hoy: '+fmt(hoyC)+' uds';
-    document.getElementById('kpi-emb-foot').textContent='Hoy: '+fmt(hoyE)+' uds';
+    document.getElementById('kpi-carg-foot').textContent='Sem. anterior: '+fmt(totalCargAnt)+' uds';
+    document.getElementById('kpi-emb-foot').textContent='Sem. anterior: '+fmt(totalEmbAnt)+' uds';
 
-    const brechaHoy=hoyC-hoyE, brechaTotal10=totalCarg10-totalEmb10;
+    const brechaSem=totalCargSem-totalEmbSem;
+    const brechaAnt=totalCargAnt-totalEmbAnt;
     let colorBrecha,labelBrecha,bgBrecha;
-    if(brechaHoy<=80){colorBrecha='var(--green)';bgBrecha='rgba(34,197,139,.14)';labelBrecha='OK';}
-    else if(brechaHoy<=250){colorBrecha='var(--amber)';bgBrecha='rgba(255,182,72,.14)';labelBrecha='Atento';}
+    if(brechaSem<=300){colorBrecha='var(--green)';bgBrecha='rgba(34,197,139,.14)';labelBrecha='OK';}
+    else if(brechaSem<=800){colorBrecha='var(--amber)';bgBrecha='rgba(255,182,72,.14)';labelBrecha='Atento';}
     else {colorBrecha='var(--red)';bgBrecha='rgba(241,76,76,.14)';labelBrecha='Crítico';}
 
     const elB=document.getElementById('kpi-brecha');
-    elB.style.color=colorBrecha; elB.textContent=(brechaHoy>=0?'':'−')+fmt(Math.abs(brechaHoy));
+    elB.style.color=colorBrecha; elB.textContent=(brechaSem>=0?'':'−')+fmt(Math.abs(brechaSem));
     document.getElementById('kpi-brecha-badge').style.background=bgBrecha;
     document.getElementById('kpi-brecha-badge').style.color=colorBrecha;
     document.getElementById('kpi-brecha-badge').textContent=labelBrecha;
     document.getElementById('kpi-brecha-icon').style.background=bgBrecha;
-    document.getElementById('kpi-brecha-foot').textContent='Acum. 10d: '+(brechaTotal10>=0?'':'−')+fmt(Math.abs(brechaTotal10))+' uds';
+    document.getElementById('kpi-brecha-foot').textContent='Sem. anterior: '+(brechaAnt>=0?'−':'+')+fmt(Math.abs(brechaAnt))+' uds';
 
-    const metaHoy=metaDiaria(dias[dias.length-1]);
-    const cumplHoy=metaHoy>0?Math.round((hoyE/metaHoy)*100):0;
-    document.getElementById('kpi-cumpl').textContent=metaHoy>0?(cumplHoy+'%'):'—';
-    const barColor=cumplHoy>=100?'var(--green)':cumplHoy>=85?'var(--amber)':'var(--red)';
+    const metaSem = metaSemanaDe(semanaActual.anio, semanaActual.semana);
+    const cumplSem = metaSem>0 ? Math.round((totalEmbSem/metaSem)*100) : 0;
+    document.getElementById('kpi-cumpl').textContent = metaSem>0 ? (cumplSem+'%') : '—';
+    const barColor = cumplSem>=100?'var(--green)':cumplSem>=85?'var(--amber)':'var(--red)';
     const bar=document.getElementById('kpi-cumpl-bar');
-    bar.style.width=Math.min(cumplHoy,100)+'%'; bar.style.background=barColor;
+    bar.style.width=Math.min(cumplSem,100)+'%'; bar.style.background=barColor;
   }
 
   function renderPrincipal(cData,eData){
     const totC=sumaTotal(cData), totE=sumaTotal(eData);
+    const labels = diasSel.map((f,i)=>DIAS_SEM[i]+' '+diasLabelSel[i]);
     if(chartPrincipal) chartPrincipal.destroy();
     chartPrincipal=new Chart(document.getElementById('chartPrincipal'),{
-      data:{labels:diasLabel,datasets:[
+      data:{labels:labels,datasets:[
         {type:'bar',label:'Cargado',data:totC,backgroundColor:'#FFB64899',borderColor:'#FFB648',borderWidth:1.5,borderRadius:5,maxBarThickness:26,order:2},
         {type:'line',label:'Embalado',data:totE,borderColor:'#22C58B',backgroundColor:'transparent',borderWidth:2.75,tension:.35,pointRadius:3.5,pointBackgroundColor:'#22C58B',pointBorderColor:'#0D1B2E',pointBorderWidth:1.5,order:1}
       ]},
@@ -596,12 +639,14 @@
 
   function generarAlertas(cData,eData){
     const alertas=[];
+    const nDatos = diasSel.filter(f=>f<=hoyStr).length;
     canales.forEach(c=>{
-      const cArr=cData[c], eArr=eData[c], n=cArr.length;
+      const cArr=cData[c], eArr=eData[c];
+      const n=Math.min(nDatos, cArr.length);
       if(n<3) return;
       const backlogHoy=cArr[n-1]-eArr[n-1], backlogAyer=cArr[n-2]-eArr[n-2], backlogAnteayer=cArr[n-3]-eArr[n-3];
       if(backlogHoy>backlogAyer && backlogAyer>backlogAnteayer && backlogHoy>15){
-        alertas.push({ico:'🔴',txt:'<b>'+c+'</b> acumula backlog de forma sostenida.',sub:'Brecha hoy: '+fmt(backlogHoy)+' uds, en aumento 3 días'});
+        alertas.push({ico:'🔴',txt:'<b>'+c+'</b> acumula backlog de forma sostenida.',sub:'Brecha último día: '+fmt(backlogHoy)+' uds, en aumento'});
       }
       const cumplCanalHoy = cArr[n-1]>0 ? (eArr[n-1]/cArr[n-1]*100) : 100;
       if(cArr[n-1]>0 && cumplCanalHoy<75){
@@ -619,26 +664,54 @@
     const top=alertas.slice(0,5);
     document.getElementById('cardAlertas').innerHTML = top.length ? top.map(a=>
       '<div class="alerta"><div class="alerta-ico">'+a.ico+'</div><div><div class="alerta-txt">'+a.txt+'</div><div class="alerta-sub">'+a.sub+'</div></div></div>'
-    ).join('') : '<div class="alerta"><div class="alerta-ico">🟢</div><div><div class="alerta-txt">Sin alertas relevantes — operación estable.</div></div></div>';
+    ).join('') : '<div class="alerta"><div class="alerta-ico">🟢</div><div><div class="alerta-txt">Sin alertas relevantes esta semana.</div></div></div>';
   }
 
   function generarPronostico(cData,eData){
     const totC=sumaTotal(cData), totE=sumaTotal(eData);
-    const brecha=totC.map((v,i)=>v-totE[i]);
-    const n=brecha.length;
-    const ult=brecha.slice(Math.max(0,n-5));
-    const xs=ult.map((_,i)=>i);
+    const nDatos = diasSel.filter(f=>f<=hoyStr).length;
+
+    const emoji=document.getElementById('pronostico-emoji');
+    const tag=document.getElementById('pronostico-tag');
+    const txt=document.getElementById('pronostico-txt');
+    const foot=document.getElementById('pronostico-foot');
+
+    if(nDatos===0){
+      emoji.textContent='🗓️'; tag.textContent='Semana futura';
+      txt.innerHTML='Esta semana todavía no comienza — no hay datos que proyectar.';
+      foot.textContent='';
+      return;
+    }
+
+    const brecha = totC.slice(0,nDatos).map((v,i)=>v-totE[i]);
+
+    if(nDatos>=7){
+      emoji.textContent='✅'; tag.textContent='Resultado final de la semana';
+      const brechaFinal = brecha[brecha.length-1];
+      txt.innerHTML = brechaFinal>0
+        ? 'Esta semana cerró con <b>'+fmt(brechaFinal)+' unidades</b> pendientes de embalar.'
+        : 'Esta semana cerró <b>al día</b>, sin unidades pendientes de embalar.';
+      const totalCargSem=totC.reduce((a,b)=>a+b,0), totalEmbSem=totE.reduce((a,b)=>a+b,0);
+      foot.textContent='Cargado: '+fmt(totalCargSem)+' uds · Embalado: '+fmt(totalEmbSem)+' uds';
+      return;
+    }
+
+    // Semana en curso: regresión simple sobre los días transcurridos
+    const xs=brecha.map((_,i)=>i);
     const mediaX=xs.reduce((a,b)=>a+b,0)/xs.length;
-    const mediaY=ult.reduce((a,b)=>a+b,0)/ult.length;
+    const mediaY=brecha.reduce((a,b)=>a+b,0)/brecha.length;
     let num=0,den=0;
-    xs.forEach((x,i)=>{num+=(x-mediaX)*(ult[i]-mediaY);den+=(x-mediaX)*(x-mediaX);});
+    xs.forEach((x,i)=>{num+=(x-mediaX)*(brecha[i]-mediaY);den+=(x-mediaX)*(x-mediaX);});
     const pendiente = den ? num/den : 0;
-    const backlogAcumulado = brecha.reduce((a,b)=>a+b,0);
-    const proyeccionManana = Math.max(0, Math.round(backlogAcumulado*0.15 + (mediaY + pendiente*5)));
-    const tendenciaTxt = pendiente>5 ? 'creciendo' : pendiente<-5 ? 'bajando' : 'estable';
-    const emojiT = pendiente>5 ? '📈' : pendiente<-5 ? '📉' : '➡️';
-    document.getElementById('pronostico-txt').innerHTML='Si continúa la tendencia actual, mañana quedarían aproximadamente <b>'+fmt(proyeccionManana)+' unidades</b> pendientes de embalar.';
-    document.getElementById('pronostico-foot').textContent=emojiT+' Tendencia de la brecha (últimos 5 días): '+tendenciaTxt+' · regresión simple sobre datos reales';
+    const diasRestantes = 7-nDatos;
+    const brechaActual = brecha[brecha.length-1];
+    const proyeccionCierre = Math.max(0, Math.round(brechaActual + pendiente*diasRestantes));
+
+    const tendenciaTxt = pendiente>5?'creciendo':pendiente<-5?'bajando':'estable';
+    emoji.textContent = pendiente>5?'📈':pendiente<-5?'📉':'➡️';
+    tag.textContent='Proyección al cierre de semana';
+    txt.innerHTML='Si continúa la tendencia actual, esta semana cerraría con aproximadamente <b>'+fmt(proyeccionCierre)+' unidades</b> pendientes (quedan '+diasRestantes+' día'+(diasRestantes!==1?'s':'')+').';
+    foot.textContent='Tendencia de la brecha: '+tendenciaTxt+' · regresión simple sobre '+nDatos+' día'+(nDatos!==1?'s':'')+' reales';
   }
 
   function generarRanking(cData,eData){
@@ -658,8 +731,8 @@
         +'<div class="rank-top"><div class="rank-name"><span class="rank-pos">'+(idx+1)+'</span><span class="dot" style="background:'+colores[f.c]+'"></span>'+f.c+'</div>'
         +'<div class="rank-stats"><span class="rank-tend" style="color:'+tendColor+'">'+tendIco+'</span><span style="color:'+barColor+'">'+f.cumpl+'%</span></div></div>'
         +'<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+Math.min(f.cumpl,100)+'%;background:'+barColor+'"></div></div>'
-        +'<div class="rank-meta"><span>Brecha: '+(f.brecha>=0?'−':'+')+fmt(Math.abs(f.brecha))+' uds</span><span>10 días</span></div></div>';
-    }).join('') : '<div class="alerta-sub">Sin datos suficientes en el rango.</div>';
+        +'<div class="rank-meta"><span>Brecha: '+(f.brecha>=0?'−':'+')+fmt(Math.abs(f.brecha))+' uds</span><span>esta semana</span></div></div>';
+    }).join('') : '<div class="alerta-sub">Sin datos suficientes esta semana.</div>';
   }
 
   function generarTablaClientes(){
@@ -705,6 +778,7 @@
   function renderCanalCharts(cData,eData){
     const cont=document.getElementById('canalCharts');
     cont.innerHTML='';
+    const labels = diasSel.map((f,i)=>DIAS_SEM[i]+' '+diasLabelSel[i]);
     canales.forEach(c=>{
       const totC=cData[c].reduce((a,b)=>a+b,0), totE=eData[c].reduce((a,b)=>a+b,0);
       if(totC===0 && totE===0) return;
@@ -721,7 +795,7 @@
       if(chartRefs.canal[c]) chartRefs.canal[c].destroy();
       chartRefs.canal[c]=new Chart(div.querySelector('canvas'),{
         type:'line',
-        data:{labels:diasLabel,datasets:[
+        data:{labels:labels,datasets:[
           {label:'Cargado',data:cData[c],borderColor:colores[c],backgroundColor:colores[c]+'22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:colores[c]},
           {label:'Embalado',data:eData[c],borderColor:'#93ABC9',backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],tension:.35,fill:false,pointRadius:2.5,pointBackgroundColor:'#93ABC9'}
         ]},
@@ -731,23 +805,12 @@
     });
   }
 
-  function render(modo){
-    const cData=vistaCargado(modo), eData=vistaEmbalado(modo);
-    actualizarKPIs(cData,eData);
-    renderPrincipal(cData,eData);
-    generarAlertas(cData,eData);
-    generarPronostico(cData,eData);
-    generarRanking(cData,eData);
-    renderDoughnut(cData);
-    renderCanalCharts(cData,eData);
-  }
-
   function renderCapacidad(){
-    const produccionReal = dias.map(f=>{
+    const produccionReal = diasSel.map(f=>{
       const dataDia = embaladoPorDiaCanalMat[f]||{};
       return canales.reduce((s,c)=>{const m=dataDia[c]||{'Maleta':0,'No Maleta':0};return s+m['Maleta']+m['No Maleta'];},0);
     });
-    const capacidadArr = dias.map(f=>capacidadPorDia[f]||0);
+    const capacidadArr = diasSel.map(f=>capacidadPorDia[f]||0);
     const usoPct = produccionReal.map((v,i)=>capacidadArr[i]>0?Math.round(v/capacidadArr[i]*100):0);
     const usoValidos = usoPct.filter((v,i)=>capacidadArr[i]>0);
     const usoPromedio = usoValidos.length ? Math.round(usoValidos.reduce((a,b)=>a+b,0)/usoValidos.length) : 0;
@@ -757,13 +820,15 @@
     document.getElementById('capGaugeVal').style.color=gaugeColor;
     document.getElementById('capGaugeArc').setAttribute('stroke',gaugeColor);
     document.getElementById('capGaugeArc').setAttribute('stroke-dasharray',Math.min(usoPromedio,100)+' 100');
-    const hoyIdx=produccionReal.length-1;
-    document.getElementById('capUsoTxt').textContent=fmt(produccionReal[hoyIdx])+' / '+fmt(capacidadArr[hoyIdx])+' uds (hoy)';
+    const idxHoy = Math.max(0, diasSel.filter(f=>f<=hoyStr).length-1);
+    document.getElementById('capUsoTxt').textContent=fmt(produccionReal[idxHoy])+' / '+fmt(capacidadArr[idxHoy])+' uds';
     document.getElementById('capUsoTxt').style.color=gaugeColor;
+
+    const labels = diasSel.map((f,i)=>DIAS_SEM[i]+' '+diasLabelSel[i]);
 
     if(chartCapacidad) chartCapacidad.destroy();
     chartCapacidad=new Chart(document.getElementById('chartCapacidad'),{
-      data:{labels:diasLabel,datasets:[
+      data:{labels:labels,datasets:[
         {type:'bar',label:'Producción real',data:produccionReal,backgroundColor:produccionReal.map((v,i)=>{const p=capacidadArr[i]>0?v/capacidadArr[i]*100:0;return p>=90?'#F14C4C99':p>=75?'#FFB64899':'#3B8FFF99';}),borderColor:'#3B8FFF',borderWidth:1,borderRadius:5,maxBarThickness:22,order:2},
         {type:'line',label:'Capacidad instalada',data:capacidadArr,borderColor:'#93ABC9',borderDash:[5,4],borderWidth:2,pointRadius:0,fill:false,order:1}
       ]},
@@ -776,25 +841,23 @@
         scales:ejeBase()}
     });
 
-    // Productividad por persona (dotación real, no fija)
-    const prodPersona = dias.map((f,i)=>{
+    const prodPersona = diasSel.map((f,i)=>{
       const dot=dotacionPorDia[f]||0;
       return dot>0 ? Math.round((produccionReal[i]/dot)*10)/10 : 0;
     });
     if(chartProductividad) chartProductividad.destroy();
     chartProductividad=new Chart(document.getElementById('chartProductividad'),{
       type:'line',
-      data:{labels:diasLabel,datasets:[{data:prodPersona,borderColor:'#3B8FFF',backgroundColor:'#3B8FFF22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#3B8FFF'}]},
+      data:{labels:labels,datasets:[{data:prodPersona,borderColor:'#3B8FFF',backgroundColor:'#3B8FFF22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#3B8FFF'}]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:(c)=>{
-          const dot=dotacionPorDia[dias[c.dataIndex]]||0;
+          const dot=dotacionPorDia[diasSel[c.dataIndex]]||0;
           return ' '+c.raw+' uds/persona ('+dot+' activas)';
         }}})},
         scales:ejeBase()}
     });
 
-    // Lead time promedio por día de carga
-    const leadArr = dias.map(f=>{
+    const leadArr = diasSel.map(f=>{
       const arr=leadTimes[f];
       if(!arr||!arr.length) return null;
       return Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*10)/10;
@@ -802,42 +865,69 @@
     if(chartLeadTime) chartLeadTime.destroy();
     chartLeadTime=new Chart(document.getElementById('chartLeadTime'),{
       type:'line',
-      data:{labels:diasLabel,datasets:[{data:leadArr,borderColor:'#9A88FF',backgroundColor:'#9A88FF22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#9A88FF',spanGaps:true}]},
+      data:{labels:labels,datasets:[{data:leadArr,borderColor:'#9A88FF',backgroundColor:'#9A88FF22',borderWidth:2.5,tension:.35,fill:true,pointRadius:3,pointBackgroundColor:'#9A88FF',spanGaps:true}]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:Object.assign(tooltipBase(),{callbacks:{label:c=>c.raw==null?' Sin datos':' '+c.raw+' días promedio'}})},
         scales:ejeBase()}
     });
   }
 
-  /* =========================================================
-     INIT
-  ========================================================= */
+  function render(modo){
+    const cData=vistaCargado(modo, diasSel), eData=vistaEmbalado(modo, diasSel);
+    const cDataAnt=vistaCargado(modo, diasAnt), eDataAnt=vistaEmbalado(modo, diasAnt);
+    actualizarEstadoBadge();
+    actualizarKPIs(cData,eData,cDataAnt,eDataAnt);
+    renderPrincipal(cData,eData);
+    generarAlertas(cData,eData);
+    generarPronostico(cData,eData);
+    generarRanking(cData,eData);
+    renderDoughnut(cData);
+    renderCanalCharts(cData,eData);
+  }
+
+  let modoMaterialActual = 'todos';
   document.querySelectorAll('.ftab').forEach(btn=>{
     btn.addEventListener('click',function(){
       document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));
       btn.classList.add('on');
-      render(btn.getAttribute('data-m'));
+      modoMaterialActual = btn.getAttribute('data-m');
+      render(modoMaterialActual);
     });
   });
 
-  (async function init(){
+  async function cargarYRenderizarTodo(){
+    document.getElementById('loadingScreen').style.display='flex';
+    document.getElementById('mainWrap').style.display='none';
     try{
-      document.getElementById('hd-fecha').textContent = 'Hoy · '+diasLabel[diasLabel.length-1];
-      await cargarTodo();
+      await cargarSemana();
       construirMetaSemanal();
       procesarDatos();
       generarTablaClientes();
-      render('todos');
+      render(modoMaterialActual);
       renderCapacidad();
-      document.getElementById('loadingScreen').style.display='none';
-      document.getElementById('mainWrap').style.display='block';
+      document.getElementById('errBox').innerHTML='';
     }catch(err){
-      document.getElementById('loadingScreen').style.display='none';
-      document.getElementById('mainWrap').style.display='block';
       document.getElementById('errBox').innerHTML = '<div class="err-box">⚠️ Error cargando datos: '+err.message+'</div>';
       console.error(err);
+    }finally{
+      document.getElementById('loadingScreen').style.display='none';
+      document.getElementById('mainWrap').style.display='block';
     }
-  })();
+  }
+
+  function irASemana(anio, semana){
+    // Normaliza semana fuera de rango (1-53) recalculando desde el lunes resultante
+    const lunes = lunesDeSemanaISO(anio, semana);
+    const info = isoWeekInfo(fechaLocalStr(new Date(lunes.getUTCFullYear(),lunes.getUTCMonth(),lunes.getUTCDate())));
+    semanaActual = info;
+    cargarYRenderizarTodo();
+  }
+
+  document.getElementById('btnSemanaPrev').addEventListener('click',()=>irASemana(semanaActual.anio, semanaActual.semana-1));
+  document.getElementById('btnSemanaNext').addEventListener('click',()=>irASemana(semanaActual.anio, semanaActual.semana+1));
+  document.getElementById('btnSemanaHoy').addEventListener('click',()=>{ const w=isoWeekInfo(hoyStr); irASemana(w.anio, w.semana); });
+
+  cargarYRenderizarTodo();
 })();
 </script>
 </body>
