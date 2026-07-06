@@ -238,17 +238,6 @@
   <div class="seccion anim d5">🏆 Ranking de Canales</div>
   <div class="card anim d5" id="cardRanking"></div>
 
-  <div class="seccion anim d5">📍 Top Clientes con Mayor Pendiente</div>
-  <div class="card anim d5">
-    <div class="card-sub" style="margin-bottom:8px">Cargado vs Embalado por cliente/destino, esta semana</div>
-    <div class="tabla-wrap">
-      <table class="destinos">
-        <thead><tr><th>Cliente</th><th>Cargado</th><th>Embalado</th><th>Pendiente</th><th>Estado</th></tr></thead>
-        <tbody id="tablaDestinos"></tbody>
-      </table>
-    </div>
-  </div>
-
   <div class="seccion anim d6">🥧 Participación por Canal</div>
   <div class="card anim d6">
     <div class="card-sub">% del total cargado esta semana</div>
@@ -401,7 +390,7 @@
   let diasLabelSel = [];
   let cargadoRaw=[], embaladoRaw=[], planRaw=[];
   let cargadoPorDiaCanalMat={}, embaladoPorDiaCanalMat={};
-  let capacidadPorDia={}, dotacionPorDia={}, clientesAgg={}, leadTimes={};
+  let capacidadPorDia={}, dotacionPorDia={}, leadTimes={};
   const metaSemanal = {};
 
   async function cargarSemana(){
@@ -449,7 +438,7 @@
 
   function procesarDatos(){
     const todasLasFechas = [...new Set(diasAnt.concat(diasSel))];
-    cargadoPorDiaCanalMat={}; embaladoPorDiaCanalMat={}; clientesAgg={};
+    cargadoPorDiaCanalMat={}; embaladoPorDiaCanalMat={};
     todasLasFechas.forEach(f=>{ cargadoPorDiaCanalMat[f]={}; embaladoPorDiaCanalMat[f]={}; });
 
     const entregaInfo = {};
@@ -464,11 +453,6 @@
       if(!cargadoPorDiaCanalMat[f][canal]) cargadoPorDiaCanalMat[f][canal]={'Maleta':0,'No Maleta':0};
       cargadoPorDiaCanalMat[f][canal][mat]+=qty;
 
-      if(diasSel.indexOf(f)!==-1){
-        const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
-        if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
-        clientesAgg[cli].cargado+=qty;
-      }
       const id=(r.id_entrega||'').toString().trim();
       if(id){ if(!entregaInfo[id]) entregaInfo[id]={fecha_carga:f,total:0}; entregaInfo[id].total+=qty; }
     });
@@ -486,11 +470,6 @@
       if(mat){
         if(!embaladoPorDiaCanalMat[f][canal]) embaladoPorDiaCanalMat[f][canal]={'Maleta':0,'No Maleta':0};
         embaladoPorDiaCanalMat[f][canal][mat]+=qty;
-      }
-      if(diasSel.indexOf(f)!==-1){
-        const cli=(r.clientenombre||'Sin cliente').trim()||'Sin cliente';
-        if(!clientesAgg[cli]) clientesAgg[cli]={cargado:0,embalado:0};
-        clientesAgg[cli].embalado+=qty;
       }
       if(!usuariosActivosPorDia[f]) usuariosActivosPorDia[f]=new Set();
       usuariosActivosPorDia[f].add(r.usuario);
@@ -548,14 +527,19 @@
     return dataObj[canales[0]].map((_,i)=>canales.reduce((s,c)=>s+dataObj[c][i],0));
   }
 
+  const metaCanalSemanal = {};
   function construirMetaSemanal(){
     Object.keys(metaSemanal).forEach(k=>delete metaSemanal[k]);
+    Object.keys(metaCanalSemanal).forEach(k=>delete metaCanalSemanal[k]);
     planRaw.forEach(r=>{
       const key=r.anio+'-'+r.semana_iso;
       metaSemanal[key]=(metaSemanal[key]||0)+(Number(r.unidades_plan)||0);
+      const keyCanal=key+'-'+(r.canal||'');
+      metaCanalSemanal[keyCanal]=(metaCanalSemanal[keyCanal]||0)+(Number(r.unidades_plan)||0);
     });
   }
   function metaSemanaDe(anio, semana){ return metaSemanal[anio+'-'+semana]||0; }
+  function metaCanalSemanaDe(anio, semana, canal){ return metaCanalSemanal[anio+'-'+semana+'-'+canal]||0; }
   function metaDiaria(fechaStr){
     const d=new Date(fechaStr+'T12:00:00');
     const dow=d.getDay();
@@ -717,44 +701,28 @@
   function generarRanking(cData,eData){
     const filas = canales.map(c=>{
       const totC=cData[c].reduce((a,b)=>a+b,0), totE=eData[c].reduce((a,b)=>a+b,0);
-      const cumpl = totC>0 ? Math.round((totE/totC)*100) : 0;
+      const planC=metaCanalSemanaDe(semanaActual.anio, semanaActual.semana, c);
+      const cumpl = planC>0 ? Math.round((totE/planC)*100) : null;
       const brecha = totC-totE;
       const tendenciaVal = eData[c][eData[c].length-1]-eData[c][0];
-      return {c,cumpl,brecha,tendenciaVal,totC};
-    }).filter(f=>f.totC>0).sort((a,b)=>b.cumpl-a.cumpl);
+      return {c,cumpl,brecha,tendenciaVal,totC,totE,planC};
+    }).filter(f=>f.planC>0 || f.totC>0).sort((a,b)=>{
+      if(a.cumpl===null) return 1;
+      if(b.cumpl===null) return -1;
+      return b.cumpl-a.cumpl;
+    });
 
     document.getElementById('cardRanking').innerHTML = filas.length ? filas.map((f,idx)=>{
-      const barColor = f.cumpl>=95?'var(--green)':f.cumpl>=80?'var(--amber)':'var(--red)';
+      const tieneCumpl = f.cumpl!==null;
+      const barColor = !tieneCumpl?'var(--txt-mute)':f.cumpl>=95?'var(--green)':f.cumpl>=80?'var(--amber)':'var(--red)';
       const tendIco = f.tendenciaVal>3?'▲':f.tendenciaVal<-3?'▼':'▬';
       const tendColor = f.tendenciaVal>3?'var(--green)':f.tendenciaVal<-3?'var(--red)':'var(--txt-mute)';
       return '<div class="rank-row">'
         +'<div class="rank-top"><div class="rank-name"><span class="rank-pos">'+(idx+1)+'</span><span class="dot" style="background:'+colores[f.c]+'"></span>'+f.c+'</div>'
-        +'<div class="rank-stats"><span class="rank-tend" style="color:'+tendColor+'">'+tendIco+'</span><span style="color:'+barColor+'">'+f.cumpl+'%</span></div></div>'
-        +'<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+Math.min(f.cumpl,100)+'%;background:'+barColor+'"></div></div>'
-        +'<div class="rank-meta"><span>Brecha: '+(f.brecha>=0?'−':'+')+fmt(Math.abs(f.brecha))+' uds</span><span>esta semana</span></div></div>';
+        +'<div class="rank-stats"><span class="rank-tend" style="color:'+tendColor+'">'+tendIco+'</span><span style="color:'+barColor+'">'+(tieneCumpl?f.cumpl+'%':'—')+'</span></div></div>'
+        +'<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+(tieneCumpl?Math.min(f.cumpl,100):0)+'%;background:'+barColor+'"></div></div>'
+        +'<div class="rank-meta"><span>Plan: '+fmt(f.planC)+'</span><span>Carg: '+fmt(f.totC)+'</span><span>Emb: '+fmt(f.totE)+'</span></div></div>';
     }).join('') : '<div class="alerta-sub">Sin datos suficientes esta semana.</div>';
-  }
-
-  function generarTablaClientes(){
-    const filas = Object.keys(clientesAgg).map(cli=>{
-      const d=clientesAgg[cli];
-      const pendiente=d.cargado-d.embalado;
-      return {cli,cargado:d.cargado,embalado:d.embalado,pendiente};
-    }).filter(f=>f.cargado>0).sort((a,b)=>b.pendiente-a.pendiente).slice(0,8);
-
-    document.getElementById('tablaDestinos').innerHTML = filas.length ? filas.map(f=>{
-      const pct = f.cargado>0 ? f.pendiente/f.cargado : 0;
-      let estado,color,bg;
-      if(pct<=0.05){estado='Al día';color='var(--green)';bg='rgba(34,197,139,.14)';}
-      else if(pct<=0.25){estado='Atento';color='var(--amber)';bg='rgba(255,182,72,.14)';}
-      else {estado='Crítico';color='var(--red)';bg='rgba(241,76,76,.14)';}
-      return '<tr>'
-        +'<td style="color:var(--txt)">'+f.cli+'</td>'
-        +'<td style="color:var(--txt-dim)">'+fmt(f.cargado)+'</td>'
-        +'<td style="color:var(--txt-dim)">'+fmt(f.embalado)+'</td>'
-        +'<td style="color:'+color+'">'+(f.pendiente>=0?'−':'+')+fmt(Math.abs(f.pendiente))+'</td>'
-        +'<td><span class="estado-pill" style="background:'+bg+';color:'+color+'">'+estado+'</span></td></tr>';
-    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--txt-mute)">Sin datos</td></tr>';
   }
 
   function renderDoughnut(cData){
@@ -902,7 +870,6 @@
       await cargarSemana();
       construirMetaSemanal();
       procesarDatos();
-      generarTablaClientes();
       render(modoMaterialActual);
       renderCapacidad();
       document.getElementById('errBox').innerHTML='';
