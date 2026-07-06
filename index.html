@@ -6688,7 +6688,7 @@ async function handlePlanFile(file){
       let hRow=-1; const sems=[];
       data.forEach((row,ri)=>{
         const ss=row.map((v,ci)=>({v,ci})).filter(({v})=>v&&/^S\d+$/.test(String(v).trim()));
-        if(ss.length>=2&&hRow===-1){hRow=ri;ss.forEach(({v,ci})=>sems.push({ci,sem:parseInt(String(v).replace('S',''))}));}
+        if(ss.length>=1&&hRow===-1){hRow=ri;ss.forEach(({v,ci})=>sems.push({ci,sem:parseInt(String(v).replace('S',''))}));}
       });
       if(hRow===-1) return;
       let cA=null;
