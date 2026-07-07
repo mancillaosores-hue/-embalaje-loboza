@@ -2881,7 +2881,7 @@ async function confirmEntregas(rows){
     lbl.textContent = `Subiendo... ${i.toLocaleString('es-CL')} / ${rows.length.toLocaleString('es-CL')}`;
 
     try{
-      const resp = await fetch(SUPA_URL+'/rest/v1/entregas_carga', {
+      const resp = await fetch(SUPA_URL+'/rest/v1/entregas_carga?on_conflict=concatenado', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
