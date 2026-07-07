@@ -6099,7 +6099,7 @@ async function cargarPlanSemanal(){
         if(_excCanal[(r.canal||'').toLowerCase().trim()]) return;
         // Excluir rutas SSTT y REGULA
         var _rutaUp = (r.ruta||'').toUpperCase().trim();
-        if(_rutaUp.includes('SSTT') || _rutaUp === 'REGULA') return;
+        if(_rutaUp.includes('SSTT') || _rutaUp.includes('REGULA')) return;
         // Excluir clientes especiales de Venta en Verde que no pasan por flujo de embalaje
         var _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
         if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && (r.canal||'').toLowerCase().trim() === 'venta en verde') return;
@@ -7791,7 +7791,7 @@ async function abrirDetalleCarga(fecha){
       var cLow = (r.canal||'').toLowerCase().trim();
       if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return false;
       var rutaUp = (r.ruta||'').toUpperCase().trim();
-      if(rutaUp.includes('SSTT') || rutaUp === 'REGULA') return false;
+      if(rutaUp.includes('SSTT') || rutaUp.includes('REGULA')) return false;
       if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && cLow === 'venta en verde') return false;
       return true;
     });
