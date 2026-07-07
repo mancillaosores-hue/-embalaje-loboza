@@ -2899,10 +2899,12 @@ async function confirmEntregas(rows){
         const err = await resp.text();
         console.error('Error chunk:', err);
         errores += chunk.length;
+        if(!window._entregasLastErr) window._entregasLastErr = `HTTP ${resp.status}: ${err.slice(0,300)}`;
       }
     }catch(e){
       console.error('Error chunk:', e);
       errores += chunk.length;
+      if(!window._entregasLastErr) window._entregasLastErr = e.message || String(e);
     }
   }
 
@@ -2912,7 +2914,9 @@ async function confirmEntregas(rows){
     <div style="margin-top:10px;padding:12px;background:#0A1F12;border:1px solid #16A34A;border-radius:8px;font-size:13px;color:#4ade80">
       ✓ Carga completada — <strong>${insertados.toLocaleString('es-CL')}</strong> registros nuevos · 
       <strong>${duplicados.toLocaleString('es-CL')}</strong> ya existían (omitidos)
-    </div>`;
+    </div>${errores?`<div style="margin-top:8px;padding:12px;background:#2A0A0A;border:1px solid #DC2626;border-radius:8px;font-size:12px;color:#FCA5A5;word-break:break-word">
+      ⚠ ${errores} filas fallaron. Detalle: ${window._entregasLastErr||'sin detalle'}
+    </div>`:''}`;
   toast('✓ Entregas cargadas: '+insertados.toLocaleString('es-CL')+' registros');
   window._pendingEntregas = null;
 }
