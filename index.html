@@ -1558,13 +1558,16 @@ function setScreen(id){
 }
 function fmtN(n){return Math.round(n).toLocaleString('es-CL')}
 function _gridCols(mobileCols, desktopMult){
-  // En pantallas anchas (PC), escala las columnas proporcionalmente
+  // En pantallas anchas (PC), convierte a fr proporcional para que la tabla
+  // ocupe todo el ancho disponible en vez de dejar espacio vacío
   if(window.innerWidth >= 900){
-    return mobileCols.split(' ').map(c=>{
+    const nums = mobileCols.split(' ').map(c=>{
       const m = c.match(/^(\d+)px$/);
-      if(!m) return c;
-      return Math.round(parseInt(m[1])*(desktopMult||1.3))+'px';
-    }).join(' ');
+      return m ? parseInt(m[1]) : null;
+    });
+    if(nums.every(n=>n!==null)){
+      return nums.map(n=>(n*(desktopMult||1)).toFixed(2)+'fr').join(' ');
+    }
   }
   return mobileCols;
 }
