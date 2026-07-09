@@ -1478,6 +1478,39 @@ const CAP_LABELS = {
   ms:'Sin VAS + Maleta', mv:'Con VAS + Maleta',
   lv:'Con VAS + No Maleta', ls:'Sin VAS + No Maleta'
 };
+
+// ============================================================
+// MOTOR DE JORNADAS LABORALES — configuración centralizada
+// Usado internamente para ajustar los 4 estándares de CAP_STANDARDS
+// según el día de la semana. NO se muestra como dato en la UI.
+// ============================================================
+const JORNADA_BASE_HORAS = 9; // jornada de referencia (Lun-Jue) = 100% del estándar
+const JORNADA_CONFIG = {
+  // key = Date.getDay() → 0=Domingo … 6=Sábado
+  // horasEfectivas queda explícito (no derivado por aritmética de horaInicio/horaTermino)
+  // para respetar exactamente los valores oficiales de jornada.
+  1:{nombre:'Lunes',    horaInicio:'08:15', horaTermino:'18:00', colacionMin:60, horasEfectivas:9},
+  2:{nombre:'Martes',   horaInicio:'08:15', horaTermino:'18:00', colacionMin:60, horasEfectivas:9},
+  3:{nombre:'Miércoles',horaInicio:'08:15', horaTermino:'18:00', colacionMin:60, horasEfectivas:9},
+  4:{nombre:'Jueves',   horaInicio:'08:15', horaTermino:'18:00', colacionMin:60, horasEfectivas:9},
+  5:{nombre:'Viernes',  horaInicio:'08:15', horaTermino:'15:00', colacionMin:60, horasEfectivas:6},
+  6:{nombre:'Sábado',   horaInicio:'08:15', horaTermino:'18:00', colacionMin:60, horasEfectivas:9},
+  0:{nombre:'Domingo',  horaInicio:'08:15', horaTermino:'18:00', colacionMin:60, horasEfectivas:9}
+};
+// Factor de jornada del día (a partir de `fecha`, NUNCA de la hora de embalaje individual)
+function jornadaFactor(fechaISO){
+  const d = new Date(fechaISO+'T12:00:00');
+  const cfg = JORNADA_CONFIG[d.getDay()] || JORNADA_CONFIG[1];
+  return cfg.horasEfectivas / JORNADA_BASE_HORAS;
+}
+// Estándares ajustados automáticamente al factor de jornada del día
+function capStandardsDelDia(fechaISO){
+  const factor = jornadaFactor(fechaISO);
+  const out = {};
+  Object.keys(CAP_STANDARDS).forEach(k=> out[k] = CAP_STANDARDS[k]*factor);
+  return out;
+}
+
 // Clasifica una fila de producción en una de las 4 categorías del mix.
 // Devuelve null si es canal online (fuera del análisis) o no clasificable.
 function capClassify(canal, cliente, tipo){
@@ -1501,9 +1534,11 @@ function capComplejidad(prodEsperada){
   if(prodEsperada >= 550) return {label:'Complejo', color:'#FF7A45'};
   return {label:'Muy Complejo', color:'#EF4444'};
 }
-// Motor de cálculo central — recibe filas de `produccion` de UN día y devuelve
-// todas las métricas del PASO 1 al PASO 9 de la spec de Capacidad Dinámica.
-function calcularCapacidadDinamica(rowsDia){
+// Motor de cálculo central — recibe filas de `produccion` de UN día (y su fecha,
+// para ajustar automáticamente los estándares según la jornada de ese día)
+// y devuelve todas las métricas del PASO 1 al PASO 9.
+function calcularCapacidadDinamica(rowsDia, fechaISO){
+  const standards = fechaISO ? capStandardsDelDia(fechaISO) : CAP_STANDARDS;
   const cats = { ms:0, mv:0, lv:0, ls:0 };
   const usuariosOperativos = new Set(); // dotación efectiva (excluye no-operarias)
   let totalOffline = 0;
@@ -1521,10 +1556,11 @@ function calcularCapacidadDinamica(rowsDia){
   const dotacion = usuariosOperativos.size;
 
   // PASO 2 y 3: participación + personas-día teóricas por categoría (método tiempo)
+  // Usa 'standards' (ya ajustado por el factor de jornada del día), no CAP_STANDARDS crudo
   const matriz = Object.keys(CAP_STANDARDS).map(k=>{
     const participacion = totalOffline ? cats[k]/totalOffline : 0;
-    const personasDia = CAP_STANDARDS[k] ? cats[k]/CAP_STANDARDS[k] : 0;
-    return { key:k, label:CAP_LABELS[k], unidades:cats[k], participacion, estandar:CAP_STANDARDS[k], personasDia };
+    const personasDia = standards[k] ? cats[k]/standards[k] : 0;
+    return { key:k, label:CAP_LABELS[k], unidades:cats[k], participacion, estandar:standards[k], personasDia };
   });
 
   // PASO 4: productividad esperada según mix (método tiempo) =
@@ -1585,7 +1621,7 @@ async function cargarCapacidadDinamicaUI(forzar){
 
   try{
     const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre&fecha=eq.${fechaISO}&order=id.asc`);
-    const r = calcularCapacidadDinamica(rows);
+    const r = calcularCapacidadDinamica(rows, fechaISO);
     _capRenderComplejidad(r);
     _capRenderKpis(r);
     _capRenderMatriz(r);
@@ -1690,7 +1726,7 @@ async function _capCargarHistorico(fechaFin){
       const d = new Date(inicio); d.setDate(d.getDate()+i);
       const iso = _capFechaLocalISO(d);
       if(porFecha[iso] && porFecha[iso].length){
-        dias.push({fecha:iso, ...calcularCapacidadDinamica(porFecha[iso])});
+        dias.push({fecha:iso, ...calcularCapacidadDinamica(porFecha[iso], iso)});
       }
     }
 
