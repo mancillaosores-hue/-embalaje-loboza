@@ -692,6 +692,7 @@ input[type="month"], input[type="week"]{
   <div style="display:flex;gap:6px;padding:0 1rem;margin-top:8px">
     <button id="ger-pill-plan" class="dtab on" onclick="gerShowView('plan',this)">Plan</button>
     <button id="ger-pill-cap" class="dtab" onclick="gerShowView('capacidad',this)">Capacidad</button>
+    <button id="ger-pill-rit" class="dtab" onclick="gerShowView('ritmo',this)">Ritmo</button>
   </div>
 
   <div id="ger-view-plan" style="padding-bottom:24px">
@@ -759,6 +760,84 @@ input[type="month"], input[type="week"]{
       </summary>
       <div style="position:relative;height:220px;margin-top:8px"><canvas id="ger-cap-chart-historico"></canvas></div>
       <div id="ger-cap-tabla-historico" style="margin-top:10px"></div>
+    </details>
+  </div>
+
+  <div id="ger-view-ritmo" style="display:none;padding:8px 1rem 24px">
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <button class="btn-ghost" onclick="navegarDiaRitmo(-1)">&#8592;</button>
+        <div style="text-align:center;flex:1">
+          <div style="font-size:16px;font-weight:800;color:var(--txt)" id="ger-rit-fecha-titulo">—</div>
+          <div style="font-size:11px;color:var(--txt2)" id="ger-rit-fecha-sub">Cargando...</div>
+        </div>
+        <button class="btn-ghost" onclick="navegarDiaRitmo(1)">&#8594;</button>
+        <button class="btn-ghost" onclick="cargarRitmoUI()">↺</button>
+      </div>
+    </div>
+
+    <div id="ger-rit-estado" style="margin-top:8px"></div>
+    <div id="ger-rit-kpis" style="margin-top:8px"></div>
+    <div id="ger-rit-resumen" style="margin-top:8px"></div>
+
+    <details class="plan-acc card" open>
+      <summary>
+        <span class="card-title">Producción por hora</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:200px;margin-top:8px"><canvas id="ger-rit-chart-hora"></canvas></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Curva acumulada</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:200px;margin-top:8px"><canvas id="ger-rit-chart-acumulado"></canvas></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Distribución horaria del mix</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:200px;margin-top:8px"><canvas id="ger-rit-chart-mix"></canvas></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Participación horaria</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="ger-rit-participacion" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Horas peak</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="ger-rit-horas-peak" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Heatmap operador × hora</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="ger-rit-heatmap" style="margin-top:8px;overflow-x:auto"></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Por operador</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="display:flex;gap:8px;margin:8px 0">
+        <input id="ger-rit-buscar-operador" placeholder="Buscar operador..." oninput="_ritRenderTablaOperador()" style="flex:1;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:var(--txt,#EAF1FF);font-size:12px">
+        <button class="btn-ghost" onclick="_ritExportarCSV()">⬇ CSV</button>
+      </div>
+      <div id="ger-rit-tabla-operador"></div>
     </details>
   </div>
 </div>
@@ -1210,6 +1289,89 @@ input[type="month"], input[type="week"]{
 
   </div>
 
+  <!-- ═══════════════════════════════════════
+       TAB: RITMO OPERACIONAL
+  ═══════════════════════════════════════ -->
+  <div id="st-ritmo" style="display:none">
+
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <button class="btn-ghost" onclick="navegarDiaRitmo(-1)">&#8592;</button>
+        <div style="text-align:center;flex:1">
+          <div style="font-size:16px;font-weight:800;color:var(--txt)" id="rit-fecha-titulo">—</div>
+          <div style="font-size:11px;color:var(--txt2)" id="rit-fecha-sub">Cargando...</div>
+        </div>
+        <button class="btn-ghost" onclick="navegarDiaRitmo(1)">&#8594;</button>
+        <button class="btn-ghost" onclick="cargarRitmoUI()">↺</button>
+      </div>
+    </div>
+
+    <div id="rit-estado" style="margin-top:8px"></div>
+    <div id="rit-kpis" style="margin-top:8px"></div>
+    <div id="rit-resumen" style="margin-top:8px"></div>
+
+    <details class="plan-acc card" open>
+      <summary>
+        <span class="card-title">Producción por hora</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:200px;margin-top:8px"><canvas id="rit-chart-hora"></canvas></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Curva acumulada</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:200px;margin-top:8px"><canvas id="rit-chart-acumulado"></canvas></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Distribución horaria del mix</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:200px;margin-top:8px"><canvas id="rit-chart-mix"></canvas></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Participación horaria</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="rit-participacion" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Horas peak</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="rit-horas-peak" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Heatmap operador × hora</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="rit-heatmap" style="margin-top:8px;overflow-x:auto"></div>
+    </details>
+
+    <details class="plan-acc card">
+      <summary>
+        <span class="card-title">Por operador</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="display:flex;gap:8px;margin:8px 0">
+        <input id="rit-buscar-operador" placeholder="Buscar operador..." oninput="_ritRenderTablaOperador()" style="flex:1;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:var(--txt,#EAF1FF);font-size:12px">
+        <button class="btn-ghost" onclick="_ritExportarCSV()">⬇ CSV</button>
+      </div>
+      <div id="rit-tabla-operador"></div>
+    </details>
+
+  </div>
+
   <nav class="bottom-nav" id="bottom-nav-sup">
     <button class="bnav-item on" onclick="bnavGo('carga',this)">
       <div class="bnav-icon">
@@ -1260,6 +1422,14 @@ input[type="month"], input[type="week"]{
         </svg>
       </div>
       <span class="bnav-lbl">Capacidad</span>
+    </button>
+    <button class="bnav-item" onclick="bnavGo('ritmo',this)">
+      <div class="bnav-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3 8 4-16 3 8h4"/>
+        </svg>
+      </div>
+      <span class="bnav-lbl">Ritmo</span>
     </button>
 
 </div>
@@ -1800,6 +1970,452 @@ async function _capCargarHistorico(fechaFin){
   }catch(e){
     if(elTabla) elTabla.innerHTML = `<div style="color:#EF4444;font-size:12px">Error histórico: ${e.message}</div>`;
   }
+}
+
+
+// ============================================================
+// RITMO OPERACIONAL — comportamiento de la producción durante el día
+// Reutiliza capClassify, CAP_STANDARDS y calcularCapacidadDinamica.
+// ============================================================
+let ritFechaActual = null;
+let _ritDataCache = null; // último resultado calculado, para búsqueda/export
+let _ritCharts = {hora:null, acumulado:null, mix:null};
+
+function _getRitEl(id){
+  const gerEl = document.getElementById('ger-'+id);
+  const supEl = document.getElementById(id);
+  const scGer = document.getElementById('sc-ger');
+  if(scGer && scGer.classList.contains('on')) return gerEl || supEl;
+  return supEl || gerEl;
+}
+function _ritFechaLocalISO(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function _ritFechaObj(){
+  return ritFechaActual ? new Date(ritFechaActual+'T12:00:00') : new Date();
+}
+function navegarDiaRitmo(delta){
+  const d = _ritFechaObj();
+  d.setDate(d.getDate()+delta);
+  ritFechaActual = _ritFechaLocalISO(d);
+  cargarRitmoUI();
+}
+function _horaABucket(horaTxt){
+  // 'HH:MM:SS' -> entero de hora (0-23). Null si no parseable.
+  if(!horaTxt) return null;
+  const m = String(horaTxt).match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  return Math.min(23, Math.max(0, parseInt(m[1],10)));
+}
+
+async function cargarRitmoUI(){
+  const d = _ritFechaObj();
+  const fechaISO = _ritFechaLocalISO(d);
+  const esHoy = fechaISO === _ritFechaLocalISO(new Date());
+
+  const elTit = _getRitEl('rit-fecha-titulo');
+  const elSub = _getRitEl('rit-fecha-sub');
+  if(elTit) elTit.textContent = esHoy ? 'Hoy' : d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  if(elSub) elSub.textContent = d.toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
+
+  ['rit-estado','rit-kpis','rit-resumen','rit-participacion','rit-horas-peak','rit-heatmap','rit-tabla-operador'].forEach(id=>{
+    const el=_getRitEl(id);
+    if(el) el.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  });
+
+  try{
+    const rows = await sbFetchAll(`produccion?select=usuario,nombre,canal,tipo,cantidad,clientenombre,hora&fecha=eq.${fechaISO}&order=id.asc`);
+    const r = _ritCalcular(rows, fechaISO, esHoy);
+    _ritDataCache = r;
+    _ritRenderEstado(r);
+    _ritRenderKpis(r);
+    _ritRenderResumen(r);
+    _ritRenderChartHora(r);
+    _ritRenderChartAcumulado(r);
+    _ritRenderChartMix(r);
+    _ritRenderParticipacion(r);
+    _ritRenderHorasPeak(r);
+    _ritRenderHeatmap(r);
+    _ritRenderTablaOperador();
+  }catch(e){
+    const el = _getRitEl('rit-kpis');
+    if(el) el.innerHTML = `<div class="card"><div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">Error: ${e.message}</div></div>`;
+  }
+}
+
+// ── Motor de cálculo ──
+function _ritCalcular(rows, fechaISO, esHoy){
+  const base = calcularCapacidadDinamica(rows, fechaISO); // reutiliza dotación, accuracy, etc.
+
+  const porHora = Array.from({length:24}, ()=>({total:0, ms:0, mv:0, lv:0, ls:0}));
+  const porOperador = {}; // usuario -> {nombre, total, primerHora, ultimaHora, primer, ultimo}
+  let horaMin = null, horaMax = null;
+  let primerHoraTxt = null, ultimaHoraTxt = null;
+
+  rows.forEach(r=>{
+    const cant = Number(r.cantidad)||0;
+    const h = _horaABucket(r.hora);
+    const key = capClassify(r.canal, r.clientenombre, r.tipo);
+
+    if(h!==null){
+      porHora[h].total += cant;
+      if(key) porHora[h][key] += cant;
+      if(horaMin===null || h<horaMin) horaMin=h;
+      if(horaMax===null || h>horaMax) horaMax=h;
+    }
+    if(!primerHoraTxt || (r.hora && r.hora < primerHoraTxt)) primerHoraTxt = r.hora;
+    if(!ultimaHoraTxt || (r.hora && r.hora > ultimaHoraTxt)) ultimaHoraTxt = r.hora;
+
+    if(key){ // solo offline clasificable cuenta para el análisis de ritmo
+      const op = r.usuario||'—';
+      if(!porOperador[op]) porOperador[op] = {usuario:op, nombre:r.nombre||op, total:0, primerHora:r.hora, ultimaHora:r.hora, porHora:{}, _maxHora:0};
+      porOperador[op].total += cant;
+      if(h!==null){
+        porOperador[op].porHora[h] = (porOperador[op].porHora[h]||0) + cant;
+        if(porOperador[op].porHora[h] > porOperador[op]._maxHora) porOperador[op]._maxHora = porOperador[op].porHora[h];
+      }
+      if(r.hora && r.hora < porOperador[op].primerHora) porOperador[op].primerHora = r.hora;
+      if(r.hora && r.hora > porOperador[op].ultimaHora) porOperador[op].ultimaHora = r.hora;
+    }
+  });
+
+  // Curva acumulada (solo offline, para que sea comparable con capacidadEsperada)
+  let acumulado = 0;
+  const curvaAcumulada = porHora.map(h=>{
+    acumulado += h.ms+h.mv+h.lv+h.ls;
+    return acumulado;
+  });
+
+  // Jornada del día (para "producción promedio por hora programada" y estado del ritmo)
+  const factor = jornadaFactor(fechaISO);
+  const horasJornada = JORNADA_BASE_HORAS * factor;
+  const cfgDia = JORNADA_CONFIG[new Date(fechaISO+'T12:00:00').getDay()];
+  const [hIniH, hIniM] = cfgDia.horaInicio.split(':').map(Number);
+  const horaInicioJornada = hIniH; // entero, para ubicar en el eje de horas
+
+  const prodPromedioHora = horasJornada ? base.totalOffline/horasJornada : 0;
+
+  // Horas peak
+  const horasConDatos = porHora.map((h,i)=>({hora:i, total:h.total})).filter(h=>h.total>0);
+  const horaPeak = horasConDatos.reduce((max,h)=> h.total>(max?max.total:-1) ? h : max, null);
+  const horaValle = horasConDatos.reduce((min,h)=> (min===null||h.total<min.total) ? h : min, null);
+
+  // Estado del ritmo
+  let horasTranscurridas;
+  if(esHoy){
+    const ahora = new Date();
+    horasTranscurridas = Math.max(0, Math.min(horasJornada, (ahora.getHours()+ahora.getMinutes()/60) - horaInicioJornada));
+  } else {
+    horasTranscurridas = horasJornada; // día cerrado: comparar jornada completa
+  }
+  const esperadoAEstaHora = prodPromedioHora * horasTranscurridas;
+  const realAcumuladoAhora = base.totalOffline;
+  const desvioRitmo = esperadoAEstaHora ? (realAcumuladoAhora-esperadoAEstaHora)/esperadoAEstaHora*100 : 0;
+  let estado;
+  if(desvioRitmo >= 5) estado = {label:'Adelantada', color:'#22C55E', icon:'🟢'};
+  else if(desvioRitmo >= -5) estado = {label:'Dentro del ritmo esperado', color:'#F5A524', icon:'🟡'};
+  else estado = {label:'Retrasada', color:'#EF4444', icon:'🔴'};
+
+  // Mix predominante (para el resumen inteligente)
+  const mixPredominante = base.matriz.reduce((max,m)=> m.unidades>(max?max.unidades:-1) ? m : max, null);
+
+  // % antes del mediodía
+  const totalDia = base.totalOffline;
+  const totalAntesMediodia = porHora.slice(0,12).reduce((s,h)=>s+h.total,0);
+  const pctAntesMediodia = totalDia ? totalAntesMediodia/totalDia*100 : 0;
+
+  // Tendencia últimas 2 horas con datos vs las 2 anteriores
+  let tendenciaTxt = '';
+  if(horasConDatos.length>=4){
+    const ultimasIdx = horasConDatos.slice(-2).map(h=>h.total);
+    const previasIdx = horasConDatos.slice(-4,-2).map(h=>h.total);
+    const avgUlt = ultimasIdx.reduce((a,b)=>a+b,0)/ultimasIdx.length;
+    const avgPrev = previasIdx.reduce((a,b)=>a+b,0)/previasIdx.length;
+    if(avgUlt < avgPrev*0.85) tendenciaTxt = 'El ritmo de producción disminuyó en las últimas horas registradas.';
+    else if(avgUlt > avgPrev*1.15) tendenciaTxt = 'El ritmo de producción aumentó en las últimas horas registradas.';
+    else tendenciaTxt = 'El ritmo de producción se mantuvo estable en las últimas horas.';
+  }
+
+  return {
+    ...base, porHora, curvaAcumulada, porOperador: Object.values(porOperador),
+    horaMin, horaMax, primerHoraTxt, ultimaHoraTxt,
+    prodPromedioHora, horasJornada, horaInicioJornada,
+    horaPeak, horaValle, estado, desvioRitmo,
+    mixPredominante, pctAntesMediodia, tendenciaTxt,
+    fechaISO, esHoy
+  };
+}
+
+// ── Render: Estado del Ritmo ──
+function _ritRenderEstado(r){
+  const el = _getRitEl('rit-estado');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;background:${r.estado.color}18;border:1px solid ${r.estado.color}55">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">${r.estado.icon}</span>
+        <div>
+          <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Estado del ritmo</div>
+          <div style="font-size:16px;font-weight:800;color:${r.estado.color}">${r.estado.label}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:800;color:${r.estado.color}">${(r.desvioRitmo>=0?'+':'')+r.desvioRitmo.toFixed(1)}%</div>
+        <div style="font-size:10px;color:var(--txt3)">vs. ritmo esperado</div>
+      </div>
+    </div>`;
+}
+
+// ── Render: KPIs ──
+function _ritRenderKpis(r){
+  const el = _getRitEl('rit-kpis');
+  if(!el) return;
+  const kpi = (lbl,val,sub,color) => `
+    <div style="background:var(--card,#152A47);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9.5px;color:var(--txt2,#8FA3C4);font-weight:700;letter-spacing:.04em;text-transform:uppercase">${lbl}</div>
+      <div style="font-size:18px;font-weight:800;margin-top:4px;color:${color||'inherit'}">${val}</div>
+      ${sub?`<div style="font-size:9.5px;color:var(--txt3,#5D7396);margin-top:2px">${sub}</div>`:''}
+    </div>`;
+  const accColor = r.accuracy>=0 ? '#22C55E' : '#EF4444';
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${kpi('Producción Total', r.totalOffline.toLocaleString('es-CL'), 'uds offline')}
+      ${kpi('Dotación', r.dotacion, 'operarias activas')}
+      ${kpi('Productividad Real', Math.round(r.productividadReal).toLocaleString('es-CL'), 'uds/persona')}
+      ${kpi('Prod. Esperada (mix)', Math.round(r.productividadEsperadaMix).toLocaleString('es-CL'), 'uds/persona')}
+      ${kpi('Capacidad Esperada', Math.round(r.capacidadEsperada).toLocaleString('es-CL'), 'uds')}
+      ${kpi('Capacidad Real', Math.round(r.capacidadReal).toLocaleString('es-CL'), 'uds')}
+      ${kpi('Accuracy', (r.accuracy>=0?'+':'')+r.accuracy.toFixed(1)+'%', 'real vs esperada', accColor)}
+      ${kpi('Prom. uds/hora prog.', r.prodPromedioHora.toFixed(1), `jornada ${r.horasJornada.toFixed(1)}h`)}
+      ${kpi('Hora Primer Embalaje', r.primerHoraTxt ? r.primerHoraTxt.slice(0,5) : '—', '')}
+      ${kpi('Hora Último Embalaje', r.ultimaHoraTxt ? r.ultimaHoraTxt.slice(0,5) : '—', '')}
+    </div>`;
+}
+
+// ── Render: Resumen inteligente ──
+function _ritRenderResumen(r){
+  const el = _getRitEl('rit-resumen');
+  if(!el) return;
+  if(!r.horaPeak){
+    el.innerHTML = `<div class="card"><div class="loading">Sin producción registrada este día.</div></div>`;
+    return;
+  }
+  const fmtHora = h => `${String(h).padStart(2,'0')}:00`;
+  const rangoPeak = `${fmtHora(r.horaPeak.hora)} y las ${fmtHora(r.horaPeak.hora+1)}`;
+  const frases = [
+    `La mayor producción se concentró entre las ${rangoPeak} (${r.horaPeak.total.toLocaleString('es-CL')} uds).`,
+    `El ${r.pctAntesMediodia.toFixed(0)}% de la producción del día fue realizada antes del mediodía.`,
+    r.mixPredominante ? `El mix predominante fue "${r.mixPredominante.label}" (${(r.mixPredominante.participacion*100).toFixed(0)}% del total).` : '',
+    `La operación cerró con un Accuracy de ${(r.accuracy>=0?'+':'')}${r.accuracy.toFixed(0)}% respecto a lo esperado según el mix del día.`,
+    r.tendenciaTxt
+  ].filter(Boolean);
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px">📋 Resumen del día</div>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--txt2,#8FA3C4);line-height:1.7">
+        ${frases.map(f=>`<li>${f}</li>`).join('')}
+      </ul>
+    </div>`;
+}
+
+// ── Render: gráfico Producción por Hora (barras + línea de promedio) ──
+function _ritRenderChartHora(r){
+  const el = _getRitEl('rit-chart-hora');
+  if(!el || !window.Chart) return;
+  const labels = r.porHora.map((h,i)=>`${String(i).padStart(2,'0')}:00`);
+  const data = r.porHora.map(h=>h.total);
+  if(_ritCharts.hora) _ritCharts.hora.destroy();
+  _ritCharts.hora = new Chart(el.getContext('2d'), {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar', label:'Producción', data, backgroundColor:'rgba(59,143,255,.55)', borderRadius:4 },
+        { type:'line', label:'Promedio esperado/hora', data:labels.map(()=>r.prodPromedioHora), borderColor:'#F5A524', borderDash:[5,4], pointRadius:0, borderWidth:2 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8FA3C4',boxWidth:10,font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#8FA3C4',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},
+        y:{ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}
+      }
+    }
+  });
+}
+
+// ── Render: Curva acumulada ──
+function _ritRenderChartAcumulado(r){
+  const el = _getRitEl('rit-chart-acumulado');
+  if(!el || !window.Chart) return;
+  const labels = r.porHora.map((h,i)=>`${String(i).padStart(2,'0')}:00`);
+  if(_ritCharts.acumulado) _ritCharts.acumulado.destroy();
+  _ritCharts.acumulado = new Chart(el.getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Acumulado', data:r.curvaAcumulada, borderColor:'#22C55E', backgroundColor:'rgba(34,197,94,.12)', fill:true, tension:.3, pointRadius:0 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8FA3C4',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},
+        y:{ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}
+      }
+    }
+  });
+}
+
+// ── Render: Distribución horaria del mix (barras apiladas) ──
+function _ritRenderChartMix(r){
+  const el = _getRitEl('rit-chart-mix');
+  if(!el || !window.Chart) return;
+  const labels = r.porHora.map((h,i)=>`${String(i).padStart(2,'0')}:00`);
+  const colores = {ms:'#F5A524', mv:'#EF4444', lv:'#3B8FFF', ls:'#22C55E'};
+  if(_ritCharts.mix) _ritCharts.mix.destroy();
+  _ritCharts.mix = new Chart(el.getContext('2d'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets: Object.keys(CAP_LABELS).map(k=>({
+        label: CAP_LABELS[k], data: r.porHora.map(h=>h[k]), backgroundColor: colores[k], stack:'mix'
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8FA3C4',boxWidth:10,font:{size:9}}}},
+      scales:{
+        x:{stacked:true,ticks:{color:'#8FA3C4',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},
+        y:{stacked:true,ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}
+      }
+    }
+  });
+}
+
+// ── Render: Participación horaria ──
+function _ritRenderParticipacion(r){
+  const el = _getRitEl('rit-participacion');
+  if(!el) return;
+  const total = r.totalOffline || 1;
+  const rows = r.porHora.map((h,i)=>({hora:i, pct: h.total/total*100})).filter(x=>x.pct>0);
+  el.innerHTML = rows.map(x=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:44px;font-size:11px;color:var(--txt2,#8FA3C4)">${String(x.hora).padStart(2,'0')}:00</div>
+      <div style="flex:1;height:7px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden">
+        <div style="width:${x.pct}%;height:100%;background:#3B8FFF;border-radius:5px"></div>
+      </div>
+      <div style="width:42px;text-align:right;font-size:11px;font-weight:700">${x.pct.toFixed(1)}%</div>
+    </div>`).join('') || '<div class="loading">Sin datos.</div>';
+}
+
+// ── Render: Horas Peak ──
+function _ritRenderHorasPeak(r){
+  const el = _getRitEl('rit-horas-peak');
+  if(!el) return;
+  if(!r.horaPeak){ el.innerHTML = '<div class="loading">Sin datos.</div>'; return; }
+  const total = r.totalOffline || 1;
+  const card = (lbl,hora,val,pct,color) => `
+    <div style="background:var(--card2,#0F2038);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:9.5px;color:var(--txt3,#5D7396);text-transform:uppercase;font-weight:700">${lbl}</div>
+      <div style="font-size:16px;font-weight:800;color:${color};margin-top:2px">${String(hora).padStart(2,'0')}:00</div>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4)">${val.toLocaleString('es-CL')} uds · ${pct.toFixed(1)}%</div>
+    </div>`;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${card('Hora peak', r.horaPeak.hora, r.horaPeak.total, r.horaPeak.total/total*100, '#22C55E')}
+      ${r.horaValle ? card('Hora más baja', r.horaValle.hora, r.horaValle.total, r.horaValle.total/total*100, '#EF4444') : ''}
+    </div>`;
+}
+
+// ── Render: Heatmap operador × hora ──
+function _ritRenderHeatmap(r){
+  const el = _getRitEl('rit-heatmap');
+  if(!el) return;
+  if(!r.porOperador.length){ el.innerHTML = '<div class="loading">Sin datos.</div>'; return; }
+
+  // Reconstruir matriz operador x hora a partir de porHora no alcanza (agregado global);
+  // se recalcula desde _ritDataCache no disponible por hora-operador, así que se arma aquí
+  // usando el mismo criterio de clasificación sobre los datos ya cacheados no es posible sin rows.
+  // Para mantenerlo liviano, se usa un heatmap agregado por operador y hora reconstruido en cargarRitmoUI.
+  const horas = r.horaMin!==null ? Array.from({length:r.horaMax-r.horaMin+1},(_,i)=>r.horaMin+i) : [];
+  const max = Math.max(1, ...r.porOperador.map(o=>o._maxHora||0));
+
+  let html = '<table style="border-collapse:collapse;font-size:10px;min-width:100%">';
+  html += '<tr><th style="text-align:left;padding:4px 8px;color:var(--txt2,#8FA3C4);position:sticky;left:0;background:var(--card,#152A47)">Operador</th>';
+  horas.forEach(h=> html += `<th style="padding:4px 6px;color:var(--txt2,#8FA3C4)">${String(h).padStart(2,'0')}</th>`);
+  html += '</tr>';
+  r.porOperador.sort((a,b)=>b.total-a.total).forEach(o=>{
+    html += `<tr><td style="padding:4px 8px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47)">${o.nombre}</td>`;
+    horas.forEach(h=>{
+      const v = (o.porHora && o.porHora[h]) || 0;
+      const intensidad = max ? Math.min(1, v/max) : 0;
+      html += `<td style="padding:4px 6px;text-align:center;background:rgba(59,143,255,${intensidad.toFixed(2)});color:${intensidad>0.5?'#fff':'#8FA3C4'}">${v||''}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+
+// ── Render: Tabla por operador (con búsqueda) ──
+function _ritRenderTablaOperador(){
+  const r = _ritDataCache;
+  const el = _getRitEl('rit-tabla-operador');
+  const inputEl = _getRitEl('rit-buscar-operador');
+  if(!el || !r) return;
+  const filtro = (inputEl && inputEl.value || '').toLowerCase().trim();
+  const total = r.totalOffline || 1;
+  const lista = [...r.porOperador]
+    .filter(o=> !filtro || o.nombre.toLowerCase().includes(filtro))
+    .sort((a,b)=>b.total-a.total);
+
+  if(!lista.length){ el.innerHTML = '<div class="loading">Sin resultados.</div>'; return; }
+
+  const rows = lista.map(o=>{
+    const horasProg = r.horasJornada || 1;
+    const promHora = o.total/horasProg;
+    return `
+    <tr>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px">${o.nombre}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;font-weight:700">${o.total.toLocaleString('es-CL')}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${(o.total/total*100).toFixed(1)}%</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${o.primerHora?o.primerHora.slice(0,5):'—'}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${promHora.toFixed(1)}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase">
+        <th style="text-align:left;padding-bottom:4px">Nombre</th>
+        <th style="text-align:right;padding-bottom:4px">Producción</th>
+        <th style="text-align:right;padding-bottom:4px">Particip.</th>
+        <th style="text-align:right;padding-bottom:4px">1er Emb.</th>
+        <th style="text-align:right;padding-bottom:4px">Últ. Emb.</th>
+        <th style="text-align:right;padding-bottom:4px">Uds/h prog.</th>
+      </tr>
+      ${rows}
+    </table>`;
+}
+
+// ── Exportar tabla operador a CSV ──
+function _ritExportarCSV(){
+  const r = _ritDataCache;
+  if(!r || !r.porOperador.length) return;
+  const total = r.totalOffline || 1;
+  const horasProg = r.horasJornada || 1;
+  const cabecera = ['Nombre','Producción','Participación %','Primer Embalaje','Último Embalaje','Uds/hora programada'];
+  const filas = r.porOperador.sort((a,b)=>b.total-a.total).map(o=>[
+    o.nombre, o.total, (o.total/total*100).toFixed(1),
+    o.primerHora||'', o.ultimaHora||'', (o.total/horasProg).toFixed(1)
+  ]);
+  const csv = [cabecera, ...filas].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `ritmo_operador_${r.fechaISO}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 
@@ -3863,7 +4479,7 @@ let _tabActual = null; // tab actualmente visible
 
 function showSupTab(tab, btn){
   // Tabs fijos dentro de sc-sup
-  ['carga','equipo','mes','alertas','plan','capacidad'].forEach(t=>{
+  ['carga','equipo','mes','alertas','plan','capacidad','ritmo'].forEach(t=>{
     const el=document.getElementById('st-'+t);
     if(el) el.style.display=t===tab?'block':'none';
   });
@@ -3894,6 +4510,9 @@ function showSupTab(tab, btn){
   }
   if(tab==='capacidad'){
     cargarCapacidadDinamicaUI();
+  }
+  if(tab==='ritmo'){
+    cargarRitmoUI();
   }
   _tabActual = tab;
 }
@@ -6361,10 +6980,13 @@ function _getCapEl(id){
 function gerShowView(view, btn){
   document.getElementById('ger-view-plan').style.display = view==='plan' ? 'block' : 'none';
   document.getElementById('ger-view-capacidad').style.display = view==='capacidad' ? 'block' : 'none';
-  document.querySelectorAll('#ger-pill-plan,#ger-pill-cap').forEach(b=>b.classList.remove('on'));
+  document.getElementById('ger-view-ritmo').style.display = view==='ritmo' ? 'block' : 'none';
+  document.querySelectorAll('#ger-pill-plan,#ger-pill-cap,#ger-pill-rit').forEach(b=>b.classList.remove('on'));
+  const pillId = view==='plan'?'ger-pill-plan':view==='capacidad'?'ger-pill-cap':'ger-pill-rit';
   if(btn) btn.classList.add('on');
-  else document.getElementById(view==='plan'?'ger-pill-plan':'ger-pill-cap').classList.add('on');
+  else document.getElementById(pillId).classList.add('on');
   if(view==='capacidad') cargarCapacidadDinamicaUI();
+  if(view==='ritmo') cargarRitmoUI();
 }
 
 
@@ -7521,6 +8143,7 @@ const BNAV_TITULOS={
   mes:'Vista mensual',
   plan:'Plan semanal',
   capacidad:'Capacidad dinámica',
+  ritmo:'Ritmo operacional',
 };
 
 function bnavGo(tab, btn){
@@ -7536,7 +8159,7 @@ function bnavGo(tab, btn){
   showSupTab(tab, {classList:{add:()=>{},remove:()=>{}}});
   // Animar el contenido activo
   setTimeout(()=>{
-    const tabs=['carga','equipo','mes','alertas','plan','capacidad'];
+    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo'];
     tabs.forEach(t=>{
       const el=document.getElementById('st-'+t);
       if(el && el.style.display!=='none') el.classList.add('anim-in');
