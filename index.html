@@ -688,8 +688,13 @@ input[type="month"], input[type="week"]{
     </div>
   </div>
 
-  <!-- Solo Plan -->
-  <div style="padding-bottom:24px">
+  <!-- Selector de vista -->
+  <div style="display:flex;gap:6px;padding:0 1rem;margin-top:8px">
+    <button id="ger-pill-plan" class="dtab on" onclick="gerShowView('plan',this)">Plan</button>
+    <button id="ger-pill-cap" class="dtab" onclick="gerShowView('capacidad',this)">Capacidad</button>
+  </div>
+
+  <div id="ger-view-plan" style="padding-bottom:24px">
 
     <div class="card" style="margin-bottom:0;margin-top:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -728,6 +733,33 @@ input[type="month"], input[type="week"]{
       <div id="ger-plan-tipo-material"></div>
     </details>
 
+  </div>
+
+  <div id="ger-view-capacidad" style="display:none;padding:8px 1rem 24px">
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <button class="btn-ghost" onclick="navegarDiaCapacidad(-1)">&#8592;</button>
+        <div style="text-align:center;flex:1">
+          <div style="font-size:16px;font-weight:800;color:var(--txt)" id="ger-cap-fecha-titulo">—</div>
+          <div style="font-size:11px;color:var(--txt2)" id="ger-cap-fecha-sub">Cargando...</div>
+        </div>
+        <button class="btn-ghost" onclick="navegarDiaCapacidad(1)">&#8594;</button>
+        <button class="btn-ghost" onclick="cargarCapacidadDinamicaUI(true)">↺</button>
+      </div>
+    </div>
+
+    <div id="ger-cap-complejidad" style="margin-top:8px"></div>
+    <div id="ger-cap-kpis" style="margin-top:8px"></div>
+    <div id="ger-cap-matriz" style="margin-top:8px"></div>
+
+    <details class="plan-acc card" open>
+      <summary>
+        <span class="card-title">Capacidad esperada vs real · histórico</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:220px;margin-top:8px"><canvas id="ger-cap-chart-historico"></canvas></div>
+      <div id="ger-cap-tabla-historico" style="margin-top:10px"></div>
+    </details>
   </div>
 </div>
 
@@ -1146,6 +1178,38 @@ input[type="month"], input[type="week"]{
 
   </div>
 
+  <!-- ═══════════════════════════════════════
+       TAB: CAPACIDAD DINÁMICA (mix)
+  ═══════════════════════════════════════ -->
+  <div id="st-capacidad" style="display:none">
+
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <button class="btn-ghost" onclick="navegarDiaCapacidad(-1)">&#8592;</button>
+        <div style="text-align:center;flex:1">
+          <div style="font-size:16px;font-weight:800;color:var(--txt)" id="cap-fecha-titulo">—</div>
+          <div style="font-size:11px;color:var(--txt2)" id="cap-fecha-sub">Cargando...</div>
+        </div>
+        <button class="btn-ghost" onclick="navegarDiaCapacidad(1)">&#8594;</button>
+        <button class="btn-ghost" onclick="cargarCapacidadDinamicaUI(true)">↺</button>
+      </div>
+    </div>
+
+    <div id="cap-complejidad" style="margin-top:8px"></div>
+    <div id="cap-kpis" style="margin-top:8px"></div>
+    <div id="cap-matriz" style="margin-top:8px"></div>
+
+    <details class="plan-acc card" open>
+      <summary>
+        <span class="card-title">Capacidad esperada vs real · histórico</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:220px;margin-top:8px"><canvas id="cap-chart-historico"></canvas></div>
+      <div id="cap-tabla-historico" style="margin-top:10px"></div>
+    </details>
+
+  </div>
+
   <nav class="bottom-nav" id="bottom-nav-sup">
     <button class="bnav-item on" onclick="bnavGo('carga',this)">
       <div class="bnav-icon">
@@ -1188,6 +1252,14 @@ input[type="month"], input[type="week"]{
         </svg>
       </div>
       <span class="bnav-lbl">Plan</span>
+    </button>
+    <button class="bnav-item" onclick="bnavGo('capacidad',this)">
+      <div class="bnav-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <span class="bnav-lbl">Capacidad</span>
     </button>
 
 </div>
@@ -1391,6 +1463,298 @@ const META = {
   "000043":1215,"000055":1215,"000190":1215,"000191":350,"000193":1215,
   "000198":1215,"001632":250,"001771":250
 };
+
+// ============================================================
+// CAPACIDAD DINÁMICA — productividades estándar por mix (PARAMETRIZABLE)
+// Editar solo estos 4 valores para recalibrar todo el módulo.
+// ============================================================
+const CAP_STANDARDS = {
+  ms: 350,   // Sin VAS + Maleta
+  mv: 120,   // Con VAS  + Maleta
+  lv: 600,   // Con VAS  + No Maleta (Línea)
+  ls: 1215   // Sin VAS  + No Maleta (Línea)
+};
+const CAP_LABELS = {
+  ms:'Sin VAS + Maleta', mv:'Con VAS + Maleta',
+  lv:'Con VAS + No Maleta', ls:'Sin VAS + No Maleta'
+};
+// Clasifica una fila de producción en una de las 4 categorías del mix.
+// Devuelve null si es canal online (fuera del análisis) o no clasificable.
+function capClassify(canal, cliente, tipo){
+  const c = (canal||'').trim();
+  const cli = (cliente||'').toUpperCase();
+  const esManeta = (tipo||'').toLowerCase()==='maleta';
+  let vas;
+  if(c==='Grandes Tiendas' || c==='Concesiones') vas = true;
+  else if(c==='Distribuidor') vas = cli.includes('MERCADO LIBRE');
+  else if(c==='Locales') vas = false;
+  else return null; // online / no offline
+  return (esManeta?'m':'l') + (vas?'v':'s');
+}
+// Clasificación de complejidad del mix según la Productividad Esperada resultante
+function capComplejidad(prodEsperada){
+  if(prodEsperada > 1150) return {label:'Muy Favorable', color:'#22C55E'};
+  if(prodEsperada >= 950) return {label:'Favorable', color:'#8BC34A'};
+  if(prodEsperada >= 750) return {label:'Normal', color:'#F5A524'};
+  if(prodEsperada >= 550) return {label:'Complejo', color:'#FF7A45'};
+  return {label:'Muy Complejo', color:'#EF4444'};
+}
+// Motor de cálculo central — recibe filas de `produccion` de UN día y devuelve
+// todas las métricas del PASO 1 al PASO 9 de la spec de Capacidad Dinámica.
+function calcularCapacidadDinamica(rowsDia){
+  const cats = { ms:0, mv:0, lv:0, ls:0 };
+  const usuariosOperativos = new Set(); // dotación efectiva (excluye no-operarias)
+  let totalOffline = 0;
+
+  rowsDia.forEach(r=>{
+    const key = capClassify(r.canal, r.clientenombre, r.tipo);
+    const cant = Number(r.cantidad)||0;
+    if(key){
+      cats[key] += cant;
+      totalOffline += cant;
+    }
+    if(META[r.usuario]!==undefined) usuariosOperativos.add(r.usuario);
+  });
+
+  const dotacion = usuariosOperativos.size;
+
+  // PASO 2 y 3: participación + aporte por categoría
+  const matriz = Object.keys(CAP_STANDARDS).map(k=>{
+    const participacion = totalOffline ? cats[k]/totalOffline : 0;
+    const aporte = participacion * CAP_STANDARDS[k];
+    return { key:k, label:CAP_LABELS[k], unidades:cats[k], participacion, estandar:CAP_STANDARDS[k], aporte };
+  });
+
+  // PASO 4: productividad esperada según mix = suma de aportes
+  const productividadEsperadaMix = matriz.reduce((s,m)=>s+m.aporte,0);
+
+  // PASO 6-9
+  const capacidadEsperada = productividadEsperadaMix * dotacion;
+  const capacidadReal = totalOffline;
+  const productividadReal = dotacion ? capacidadReal/dotacion : 0;
+  const accuracy = capacidadEsperada ? (capacidadReal-capacidadEsperada)/capacidadEsperada*100 : 0;
+  const diferencia = capacidadReal - capacidadEsperada;
+
+  return {
+    matriz, totalOffline, dotacion,
+    productividadEsperadaMix, productividadReal,
+    capacidadEsperada, capacidadReal,
+    accuracy, diferencia,
+    complejidad: capComplejidad(productividadEsperadaMix)
+  };
+}
+
+// ============================================================
+// CAPACIDAD DINÁMICA — UI (fetch, navegación, render)
+// ============================================================
+let capFechaActual = null; // 'YYYY-MM-DD', null = hoy
+let _capChartInst = null;
+
+function _capFechaLocalISO(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function _capFechaObj(){
+  return capFechaActual ? new Date(capFechaActual+'T12:00:00') : new Date();
+}
+function navegarDiaCapacidad(delta){
+  const d = _capFechaObj();
+  d.setDate(d.getDate()+delta);
+  capFechaActual = _capFechaLocalISO(d);
+  cargarCapacidadDinamicaUI();
+}
+
+async function cargarCapacidadDinamicaUI(forzar){
+  const d = _capFechaObj();
+  const fechaISO = _capFechaLocalISO(d);
+  const esHoy = fechaISO === _capFechaLocalISO(new Date());
+
+  const elTit = _getCapEl('cap-fecha-titulo');
+  const elSub = _getCapEl('cap-fecha-sub');
+  if(elTit) elTit.textContent = esHoy ? 'Hoy' : d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  if(elSub) elSub.textContent = d.toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
+
+  ['cap-complejidad','cap-kpis','cap-matriz'].forEach(id=>{
+    const el=_getCapEl(id);
+    if(el) el.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  });
+
+  try{
+    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre&fecha=eq.${fechaISO}&order=id.asc`);
+    const r = calcularCapacidadDinamica(rows);
+    _capRenderComplejidad(r);
+    _capRenderKpis(r);
+    _capRenderMatriz(r);
+    _capCargarHistorico(fechaISO);
+  }catch(e){
+    const el = _getCapEl('cap-kpis');
+    if(el) el.innerHTML = `<div class="card"><div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">Error: ${e.message}</div></div>`;
+  }
+}
+
+function _capRenderComplejidad(r){
+  const el = _getCapEl('cap-complejidad');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;background:${r.complejidad.color}18;border:1px solid ${r.complejidad.color}55">
+      <div>
+        <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Complejidad del mix</div>
+        <div style="font-size:17px;font-weight:800;color:${r.complejidad.color};margin-top:2px">${r.complejidad.label}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:20px;font-weight:800;color:${r.complejidad.color}">${Math.round(r.productividadEsperadaMix)}</div>
+        <div style="font-size:10px;color:var(--txt3)">uds/persona esperadas</div>
+      </div>
+    </div>`;
+}
+
+function _capRenderKpis(r){
+  const el = _getCapEl('cap-kpis');
+  if(!el) return;
+  const accColor = r.accuracy>=0 ? '#22C55E' : '#EF4444';
+  const kpi = (lbl,val,sub,color) => `
+    <div class="combo" style="background:var(--card,#152A47);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;letter-spacing:.04em;text-transform:uppercase">${lbl}</div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px;color:${color||'inherit'}">${val}</div>
+      ${sub?`<div style="font-size:10px;color:var(--txt3,#5D7396);margin-top:2px">${sub}</div>`:''}
+    </div>`;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${kpi('Productividad Esperada', Math.round(r.productividadEsperadaMix).toLocaleString('es-CL'), 'uds/persona · según mix hoy')}
+      ${kpi('Productividad Real', Math.round(r.productividadReal).toLocaleString('es-CL'), 'uds/persona real')}
+      ${kpi('Capacidad Esperada', Math.round(r.capacidadEsperada).toLocaleString('es-CL'), `uds · dotación ${r.dotacion}`)}
+      ${kpi('Capacidad Real', Math.round(r.capacidadReal).toLocaleString('es-CL'), 'uds embaladas offline')}
+      ${kpi('Accuracy', (r.accuracy>=0?'+':'')+r.accuracy.toFixed(1)+'%', 'real vs esperada', accColor)}
+      ${kpi('Diferencia', (r.diferencia>=0?'+':'')+Math.round(r.diferencia).toLocaleString('es-CL'), 'unidades', accColor)}
+    </div>`;
+}
+
+function _capRenderMatriz(r){
+  const el = _getCapEl('cap-matriz');
+  if(!el) return;
+  const rows = r.matriz.map(m=>`
+    <tr>
+      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07)">${m.label}</td>
+      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right">${(m.participacion*100).toFixed(2)}%</td>
+      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right">${m.estandar.toLocaleString('es-CL')}</td>
+      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-weight:700">${m.aporte.toFixed(1)}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px">Matriz del mix</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <tr style="color:var(--txt2,#8FA3C4);font-size:10px;text-transform:uppercase">
+          <th style="text-align:left;padding-bottom:6px">Categoría</th>
+          <th style="text-align:right;padding-bottom:6px">Particip.</th>
+          <th style="text-align:right;padding-bottom:6px">Estándar</th>
+          <th style="text-align:right;padding-bottom:6px">Aporte</th>
+        </tr>
+        ${rows}
+        <tr style="font-weight:800">
+          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15)">TOTAL</td>
+          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15);text-align:right">100%</td>
+          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15)"></td>
+          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15);text-align:right">${r.productividadEsperadaMix.toFixed(1)}</td>
+        </tr>
+      </table>
+    </div>`;
+}
+
+// ── Histórico (últimos 14 días) + gráfico combinado ──
+async function _capCargarHistorico(fechaFin){
+  const elTabla = _getCapEl('cap-tabla-historico');
+  if(elTabla) elTabla.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando histórico...</div>';
+
+  const fin = new Date(fechaFin+'T12:00:00');
+  const inicio = new Date(fin); inicio.setDate(inicio.getDate()-13);
+  const inicioISO = _capFechaLocalISO(inicio);
+
+  try{
+    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha&fecha=gte.${inicioISO}&fecha=lte.${fechaFin}&order=id.asc`);
+    const porFecha = {};
+    rows.forEach(r=>{ (porFecha[r.fecha] = porFecha[r.fecha]||[]).push(r); });
+
+    const dias = [];
+    for(let i=0;i<14;i++){
+      const d = new Date(inicio); d.setDate(d.getDate()+i);
+      const iso = _capFechaLocalISO(d);
+      if(porFecha[iso] && porFecha[iso].length){
+        dias.push({fecha:iso, ...calcularCapacidadDinamica(porFecha[iso])});
+      }
+    }
+
+    // Tabla
+    const filas = dias.map(d=>`
+      <tr>
+        <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px">${d.fecha.slice(5)}</td>
+        <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px">${d.dotacion}</td>
+        <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px">${Math.round(d.capacidadEsperada).toLocaleString('es-CL')}</td>
+        <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px">${Math.round(d.capacidadReal).toLocaleString('es-CL')}</td>
+        <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px;font-weight:700;color:${d.accuracy>=0?'#22C55E':'#EF4444'}">${(d.accuracy>=0?'+':'')+d.accuracy.toFixed(1)}%</td>
+      </tr>`).join('');
+
+    if(elTabla){
+      elTabla.innerHTML = dias.length ? `
+        <table style="width:100%;border-collapse:collapse">
+          <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase">
+            <th style="text-align:left;padding-bottom:4px">Fecha</th>
+            <th style="text-align:right;padding-bottom:4px">Dot.</th>
+            <th style="text-align:right;padding-bottom:4px">Esperada</th>
+            <th style="text-align:right;padding-bottom:4px">Real</th>
+            <th style="text-align:right;padding-bottom:4px">Accuracy</th>
+          </tr>
+          ${filas}
+        </table>` : '<div class="loading">Sin datos en los últimos 14 días.</div>';
+    }
+
+    // Gráfico combinado
+    const canvasId = _getCapEl('cap-chart-historico') ? _getCapEl('cap-chart-historico').id : null;
+    if(canvasId && window.Chart && dias.length){
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      if(_capChartInst) _capChartInst.destroy();
+      _capChartInst = new Chart(ctx, {
+        data: {
+          labels: dias.map(d=>d.fecha.slice(5)),
+          datasets: [
+            { type:'line', label:'Capacidad Esperada', data:dias.map(d=>Math.round(d.capacidadEsperada)), borderColor:'#3B8FFF', backgroundColor:'#3B8FFF', yAxisID:'y', tension:.3 },
+            { type:'line', label:'Capacidad Real', data:dias.map(d=>Math.round(d.capacidadReal)), borderColor:'#22C55E', backgroundColor:'#22C55E', yAxisID:'y', tension:.3 },
+            { type:'bar', label:'Accuracy %', data:dias.map(d=>+d.accuracy.toFixed(1)),
+              backgroundColor: dias.map(d=>d.accuracy>=0?'rgba(34,197,94,.5)':'rgba(239,68,68,.5)'), yAxisID:'y1' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{labels:{color:'#8FA3C4',boxWidth:10,font:{size:10}}},
+            tooltip:{callbacks:{
+              afterBody: (items)=>{
+                const idx = items[0].dataIndex; const d = dias[idx];
+                return [
+                  `Dotación: ${d.dotacion}`,
+                  `Prod. esperada: ${Math.round(d.productividadEsperadaMix)} uds/persona`,
+                  `Prod. real: ${Math.round(d.productividadReal)} uds/persona`,
+                  `Sin VAS+Línea: ${(d.matriz.find(m=>m.key==='ls').participacion*100).toFixed(1)}%`,
+                  `Con VAS+Línea: ${(d.matriz.find(m=>m.key==='lv').participacion*100).toFixed(1)}%`,
+                  `Sin VAS+Maleta: ${(d.matriz.find(m=>m.key==='ms').participacion*100).toFixed(1)}%`,
+                  `Con VAS+Maleta: ${(d.matriz.find(m=>m.key==='mv').participacion*100).toFixed(1)}%`,
+                ];
+              }
+            }}
+          },
+          scales:{
+            x:{ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{position:'left',ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Unidades',color:'#5D7396',font:{size:10}}},
+            y1:{position:'right',ticks:{color:'#8FA3C4',font:{size:10}},grid:{display:false},title:{display:true,text:'Accuracy %',color:'#5D7396',font:{size:10}}}
+          }
+        }
+      });
+    }
+  }catch(e){
+    if(elTabla) elTabla.innerHTML = `<div style="color:#EF4444;font-size:12px">Error histórico: ${e.message}</div>`;
+  }
+}
+
 
 // ============================================================
 // CAPACIDAD EQUIPO — cálculo dinámico basado en META
@@ -3452,7 +3816,7 @@ let _tabActual = null; // tab actualmente visible
 
 function showSupTab(tab, btn){
   // Tabs fijos dentro de sc-sup
-  ['carga','equipo','mes','alertas','plan'].forEach(t=>{
+  ['carga','equipo','mes','alertas','plan','capacidad'].forEach(t=>{
     const el=document.getElementById('st-'+t);
     if(el) el.style.display=t===tab?'block':'none';
   });
@@ -3480,6 +3844,9 @@ function showSupTab(tab, btn){
     if(!mismaVista || !mismoCache){
       cargarPlanSemanal();
     }
+  }
+  if(tab==='capacidad'){
+    cargarCapacidadDinamicaUI();
   }
   _tabActual = tab;
 }
@@ -5934,6 +6301,26 @@ function _getPlanEl(id){
   return supEl || gerEl;
 }
 
+// ── Helper equivalente para el módulo de Capacidad Dinámica ──
+function _getCapEl(id){
+  const gerEl = document.getElementById('ger-'+id);
+  const supEl = document.getElementById(id);
+  const scGer = document.getElementById('sc-ger');
+  if(scGer && scGer.classList.contains('on')) return gerEl || supEl;
+  return supEl || gerEl;
+}
+
+// ── Selector de vista Plan/Capacidad dentro de la pantalla Gerente ──
+function gerShowView(view, btn){
+  document.getElementById('ger-view-plan').style.display = view==='plan' ? 'block' : 'none';
+  document.getElementById('ger-view-capacidad').style.display = view==='capacidad' ? 'block' : 'none';
+  document.querySelectorAll('#ger-pill-plan,#ger-pill-cap').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  else document.getElementById(view==='plan'?'ger-pill-plan':'ger-pill-cap').classList.add('on');
+  if(view==='capacidad') cargarCapacidadDinamicaUI();
+}
+
+
 async function cargarPlanSemanal(){
   const CANALES_OFFLINE = ['Locales','Concesiones','Grandes Tiendas','Distribuidor'];
   const CANALES_ONLINE  = ['Ecommerce','Marketplace','Venta en verde'];
@@ -7086,6 +7473,7 @@ const BNAV_TITULOS={
   semana:'Vista semanal',
   mes:'Vista mensual',
   plan:'Plan semanal',
+  capacidad:'Capacidad dinámica',
 };
 
 function bnavGo(tab, btn){
@@ -7101,7 +7489,7 @@ function bnavGo(tab, btn){
   showSupTab(tab, {classList:{add:()=>{},remove:()=>{}}});
   // Animar el contenido activo
   setTimeout(()=>{
-    const tabs=['carga','equipo','mes','alertas','plan'];
+    const tabs=['carga','equipo','mes','alertas','plan','capacidad'];
     tabs.forEach(t=>{
       const el=document.getElementById('st-'+t);
       if(el && el.style.display!=='none') el.classList.add('anim-in');
