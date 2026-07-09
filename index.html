@@ -2110,21 +2110,17 @@ function _ritCalcular(rows, fechaISO, esHoy){
   const horaPeak = horasConDatos.reduce((max,h)=> h.total>(max?max.total:-1) ? h : max, null);
   const horaValle = horasConDatos.reduce((min,h)=> (min===null||h.total<min.total) ? h : min, null);
 
-  // Estado del ritmo
-  let horasTranscurridas;
-  if(esHoy){
-    const ahora = new Date();
-    horasTranscurridas = Math.max(0, Math.min(horasJornada, (ahora.getHours()+ahora.getMinutes()/60) - horaInicioJornada));
-  } else {
-    horasTranscurridas = horasJornada; // día cerrado: comparar jornada completa
-  }
-  const esperadoAEstaHora = prodPromedioHora * horasTranscurridas;
+  // Estado del ritmo — se basa en el Accuracy (real vs. esperado según el mix),
+  // que NO depende de la hora del día. La comparación por horas transcurridas
+  // solo tiene sentido con carga en vivo durante la jornada; como los datos se
+  // suben en un solo lote al cierre del día, esa comparación siempre daría 0%.
+  const desvioRitmo = base.accuracy;
+  const esperadoAEstaHora = base.capacidadEsperada;
   const realAcumuladoAhora = base.totalOffline;
-  const desvioRitmo = esperadoAEstaHora ? (realAcumuladoAhora-esperadoAEstaHora)/esperadoAEstaHora*100 : 0;
   let estado;
-  if(desvioRitmo >= 5) estado = {label:'Adelantada', color:'#22C55E', icon:'🟢'};
+  if(desvioRitmo >= 5) estado = {label:'Sobre lo esperado', color:'#22C55E', icon:'🟢'};
   else if(desvioRitmo >= -5) estado = {label:'Dentro del ritmo esperado', color:'#F5A524', icon:'🟡'};
-  else estado = {label:'Retrasada', color:'#EF4444', icon:'🔴'};
+  else estado = {label:'Bajo lo esperado', color:'#EF4444', icon:'🔴'};
 
   // Mix predominante (para el resumen inteligente)
   const mixPredominante = base.matriz.reduce((max,m)=> m.unidades>(max?max.unidades:-1) ? m : max, null);
@@ -2173,14 +2169,13 @@ function _ritRenderEstado(r){
         </div>
         <div style="text-align:right">
           <div style="font-size:18px;font-weight:800;color:${r.estado.color}">${(r.desvioRitmo>=0?'+':'')+r.desvioRitmo.toFixed(1)}%</div>
-          <div style="font-size:10px;color:var(--txt3)">vs. ritmo esperado</div>
+          <div style="font-size:10px;color:var(--txt3)">vs. capacidad esperada</div>
         </div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);font-size:11.5px;color:var(--txt2)">
-        Llevas <strong style="color:var(--txt)">${fmt(r.realAcumuladoAhora)}</strong> uds embaladas
-        ${r.esHoy ? 'hasta ahora' : 'en el día'};
-        a este punto de la jornada se esperaban <strong style="color:var(--txt)">${fmt(r.esperadoAEstaHora)}</strong> uds
-        (según el ritmo promedio necesario para cumplir la capacidad esperada del día).
+        El día cerró con <strong style="color:var(--txt)">${fmt(r.realAcumuladoAhora)}</strong> uds embaladas,
+        contra una capacidad esperada de <strong style="color:var(--txt)">${fmt(r.esperadoAEstaHora)}</strong> uds
+        según el mix de trabajo y la dotación de ese día.
       </div>
     </div>`;
 }
