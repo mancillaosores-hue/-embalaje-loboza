@@ -1483,7 +1483,9 @@ const CAP_LABELS = {
 function capClassify(canal, cliente, tipo){
   const c = (canal||'').trim();
   const cli = (cliente||'').toUpperCase();
-  const esManeta = (tipo||'').toLowerCase()==='maleta';
+  const t = (tipo||'').toLowerCase();
+  if(t==='insumo') return null; // excluir insumos, igual que el resto de la app
+  const esManeta = t==='maleta';
   let vas;
   if(c==='Grandes Tiendas' || c==='Concesiones') vas = true;
   else if(c==='Distribuidor') vas = cli.includes('MERCADO LIBRE');
