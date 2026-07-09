@@ -1518,15 +1518,17 @@ function calcularCapacidadDinamica(rowsDia){
 
   const dotacion = usuariosOperativos.size;
 
-  // PASO 2 y 3: participación + aporte por categoría
+  // PASO 2 y 3: participación + personas-día teóricas por categoría (método tiempo)
   const matriz = Object.keys(CAP_STANDARDS).map(k=>{
     const participacion = totalOffline ? cats[k]/totalOffline : 0;
-    const aporte = participacion * CAP_STANDARDS[k];
-    return { key:k, label:CAP_LABELS[k], unidades:cats[k], participacion, estandar:CAP_STANDARDS[k], aporte };
+    const personasDia = CAP_STANDARDS[k] ? cats[k]/CAP_STANDARDS[k] : 0;
+    return { key:k, label:CAP_LABELS[k], unidades:cats[k], participacion, estandar:CAP_STANDARDS[k], personasDia };
   });
 
-  // PASO 4: productividad esperada según mix = suma de aportes
-  const productividadEsperadaMix = matriz.reduce((s,m)=>s+m.aporte,0);
+  // PASO 4: productividad esperada según mix (método tiempo) =
+  // Total unidades ÷ Σ personas-día teóricas (media armónica ponderada por unidades)
+  const personasDiaTotal = matriz.reduce((s,m)=>s+m.personasDia,0);
+  const productividadEsperadaMix = personasDiaTotal ? totalOffline/personasDiaTotal : 0;
 
   // PASO 6-9
   const capacidadEsperada = productividadEsperadaMix * dotacion;
@@ -1632,31 +1634,38 @@ function _capRenderKpis(r){
 function _capRenderMatriz(r){
   const el = _getCapEl('cap-matriz');
   if(!el) return;
+  const personasDiaTotal = r.matriz.reduce((s,m)=>s+m.personasDia,0);
   const rows = r.matriz.map(m=>`
     <tr>
       <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07)">${m.label}</td>
+      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right">${m.unidades.toLocaleString('es-CL')}</td>
       <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right">${(m.participacion*100).toFixed(2)}%</td>
       <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right">${m.estandar.toLocaleString('es-CL')}</td>
-      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-weight:700">${m.aporte.toFixed(1)}</td>
+      <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-weight:700">${m.personasDia.toFixed(2)}</td>
     </tr>`).join('');
   el.innerHTML = `
     <div class="card">
-      <div class="card-title" style="margin-bottom:8px">Matriz del mix</div>
+      <div class="card-title" style="margin-bottom:8px">Matriz del mix · método tiempo</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <tr style="color:var(--txt2,#8FA3C4);font-size:10px;text-transform:uppercase">
           <th style="text-align:left;padding-bottom:6px">Categoría</th>
+          <th style="text-align:right;padding-bottom:6px">Unidades</th>
           <th style="text-align:right;padding-bottom:6px">Particip.</th>
           <th style="text-align:right;padding-bottom:6px">Estándar</th>
-          <th style="text-align:right;padding-bottom:6px">Aporte</th>
+          <th style="text-align:right;padding-bottom:6px">Pers-día</th>
         </tr>
         ${rows}
         <tr style="font-weight:800">
           <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15)">TOTAL</td>
+          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15);text-align:right">${r.totalOffline.toLocaleString('es-CL')}</td>
           <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15);text-align:right">100%</td>
           <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15)"></td>
-          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15);text-align:right">${r.productividadEsperadaMix.toFixed(1)}</td>
+          <td style="padding-top:10px;border-top:2px solid rgba(255,255,255,.15);text-align:right">${personasDiaTotal.toFixed(2)}</td>
         </tr>
       </table>
+      <div style="margin-top:8px;font-size:11px;color:var(--txt3,#5D7396)">
+        Productividad esperada = ${r.totalOffline.toLocaleString('es-CL')} uds ÷ ${personasDiaTotal.toFixed(2)} personas-día = <strong>${Math.round(r.productividadEsperadaMix).toLocaleString('es-CL')}</strong> uds/persona
+      </div>
     </div>`;
 }
 
