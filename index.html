@@ -2092,9 +2092,18 @@ function _ritCalcular(rows, fechaISO, esHoy){
   const horasJornada = JORNADA_BASE_HORAS * factor;
   const cfgDia = JORNADA_CONFIG[new Date(fechaISO+'T12:00:00').getDay()];
   const [hIniH, hIniM] = cfgDia.horaInicio.split(':').map(Number);
+  const [hFinH, hFinM] = cfgDia.horaTermino.split(':').map(Number);
   const horaInicioJornada = hIniH; // entero, para ubicar en el eje de horas
+  const horaFinJornada = hFinM>0 ? hFinH+1 : hFinH; // redondea hacia arriba si termina con minutos
 
   const prodPromedioHora = horasJornada ? base.totalOffline/horasJornada : 0;
+
+  // Rango de horas a mostrar en los gráficos: la jornada oficial, ampliada si hay
+  // registros fuera de ese rango (para no cortar datos reales), sin llegar a 0-23 siempre.
+  const horasConDatosIdx = porHora.map((h,i)=>h.total>0?i:null).filter(i=>i!==null);
+  const rangoIni = Math.min(horaInicioJornada, horasConDatosIdx.length?Math.min(...horasConDatosIdx):horaInicioJornada);
+  const rangoFin = Math.max(horaFinJornada, horasConDatosIdx.length?Math.max(...horasConDatosIdx):horaFinJornada);
+  const rangoHoras = Array.from({length:rangoFin-rangoIni+1}, (_,i)=>rangoIni+i);
 
   // Horas peak
   const horasConDatos = porHora.map((h,i)=>({hora:i, total:h.total})).filter(h=>h.total>0);
@@ -2140,8 +2149,8 @@ function _ritCalcular(rows, fechaISO, esHoy){
   return {
     ...base, porHora, curvaAcumulada, porOperador: Object.values(porOperador),
     horaMin, horaMax, primerHoraTxt, ultimaHoraTxt,
-    prodPromedioHora, horasJornada, horaInicioJornada,
-    horaPeak, horaValle, estado, desvioRitmo,
+    prodPromedioHora, horasJornada, horaInicioJornada, horaFinJornada, rangoHoras,
+    horaPeak, horaValle, estado, desvioRitmo, esperadoAEstaHora, realAcumuladoAhora,
     mixPredominante, pctAntesMediodia, tendenciaTxt,
     fechaISO, esHoy
   };
@@ -2151,18 +2160,27 @@ function _ritCalcular(rows, fechaISO, esHoy){
 function _ritRenderEstado(r){
   const el = _getRitEl('rit-estado');
   if(!el) return;
+  const fmt = n => Math.round(n).toLocaleString('es-CL');
   el.innerHTML = `
-    <div class="card" style="display:flex;align-items:center;justify-content:space-between;background:${r.estado.color}18;border:1px solid ${r.estado.color}55">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:24px">${r.estado.icon}</span>
-        <div>
-          <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Estado del ritmo</div>
-          <div style="font-size:16px;font-weight:800;color:${r.estado.color}">${r.estado.label}</div>
+    <div class="card" style="background:${r.estado.color}18;border:1px solid ${r.estado.color}55">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:24px">${r.estado.icon}</span>
+          <div>
+            <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Estado del ritmo</div>
+            <div style="font-size:16px;font-weight:800;color:${r.estado.color}">${r.estado.label}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:${r.estado.color}">${(r.desvioRitmo>=0?'+':'')+r.desvioRitmo.toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--txt3)">vs. ritmo esperado</div>
         </div>
       </div>
-      <div style="text-align:right">
-        <div style="font-size:18px;font-weight:800;color:${r.estado.color}">${(r.desvioRitmo>=0?'+':'')+r.desvioRitmo.toFixed(1)}%</div>
-        <div style="font-size:10px;color:var(--txt3)">vs. ritmo esperado</div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);font-size:11.5px;color:var(--txt2)">
+        Llevas <strong style="color:var(--txt)">${fmt(r.realAcumuladoAhora)}</strong> uds embaladas
+        ${r.esHoy ? 'hasta ahora' : 'en el día'};
+        a este punto de la jornada se esperaban <strong style="color:var(--txt)">${fmt(r.esperadoAEstaHora)}</strong> uds
+        (según el ritmo promedio necesario para cumplir la capacidad esperada del día).
       </div>
     </div>`;
 }
@@ -2223,8 +2241,8 @@ function _ritRenderResumen(r){
 function _ritRenderChartHora(r){
   const el = _getRitEl('rit-chart-hora');
   if(!el || !window.Chart) return;
-  const labels = r.porHora.map((h,i)=>`${String(i).padStart(2,'0')}:00`);
-  const data = r.porHora.map(h=>h.total);
+  const labels = r.rangoHoras.map(i=>`${String(i).padStart(2,'0')}:00`);
+  const data = r.rangoHoras.map(i=>r.porHora[i].total);
   if(_ritCharts.hora) _ritCharts.hora.destroy();
   _ritCharts.hora = new Chart(el.getContext('2d'), {
     data: {
@@ -2249,11 +2267,12 @@ function _ritRenderChartHora(r){
 function _ritRenderChartAcumulado(r){
   const el = _getRitEl('rit-chart-acumulado');
   if(!el || !window.Chart) return;
-  const labels = r.porHora.map((h,i)=>`${String(i).padStart(2,'0')}:00`);
+  const labels = r.rangoHoras.map(i=>`${String(i).padStart(2,'0')}:00`);
+  const data = r.rangoHoras.map(i=>r.curvaAcumulada[i]);
   if(_ritCharts.acumulado) _ritCharts.acumulado.destroy();
   _ritCharts.acumulado = new Chart(el.getContext('2d'), {
     type:'line',
-    data:{ labels, datasets:[{ label:'Acumulado', data:r.curvaAcumulada, borderColor:'#22C55E', backgroundColor:'rgba(34,197,94,.12)', fill:true, tension:.3, pointRadius:0 }] },
+    data:{ labels, datasets:[{ label:'Acumulado', data, borderColor:'#22C55E', backgroundColor:'rgba(34,197,94,.12)', fill:true, tension:.3, pointRadius:0 }] },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}},
@@ -2269,7 +2288,7 @@ function _ritRenderChartAcumulado(r){
 function _ritRenderChartMix(r){
   const el = _getRitEl('rit-chart-mix');
   if(!el || !window.Chart) return;
-  const labels = r.porHora.map((h,i)=>`${String(i).padStart(2,'0')}:00`);
+  const labels = r.rangoHoras.map(i=>`${String(i).padStart(2,'0')}:00`);
   const colores = {ms:'#F5A524', mv:'#EF4444', lv:'#3B8FFF', ls:'#22C55E'};
   if(_ritCharts.mix) _ritCharts.mix.destroy();
   _ritCharts.mix = new Chart(el.getContext('2d'), {
@@ -2277,7 +2296,7 @@ function _ritRenderChartMix(r){
     data:{
       labels,
       datasets: Object.keys(CAP_LABELS).map(k=>({
-        label: CAP_LABELS[k], data: r.porHora.map(h=>h[k]), backgroundColor: colores[k], stack:'mix'
+        label: CAP_LABELS[k], data: r.rangoHoras.map(i=>r.porHora[i][k]), backgroundColor: colores[k], stack:'mix'
       }))
     },
     options:{
@@ -2296,7 +2315,7 @@ function _ritRenderParticipacion(r){
   const el = _getRitEl('rit-participacion');
   if(!el) return;
   const total = r.totalOffline || 1;
-  const rows = r.porHora.map((h,i)=>({hora:i, pct: h.total/total*100})).filter(x=>x.pct>0);
+  const rows = r.rangoHoras.map(i=>({hora:i, pct: r.porHora[i].total/total*100})).filter(x=>x.pct>0);
   el.innerHTML = rows.map(x=>`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <div style="width:44px;font-size:11px;color:var(--txt2,#8FA3C4)">${String(x.hora).padStart(2,'0')}:00</div>
