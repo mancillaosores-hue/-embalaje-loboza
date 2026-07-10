@@ -2010,11 +2010,15 @@ function _horaABucket(horaTxt){
 }
 // Nombre corto: primer nombre + primer apellido (paterno) — para que quepa en celular
 const _NOMBRES_CORTOS_EXCEPCION = {
-  'Corina San Martín': 'Corina San Martín' // apellido compuesto, no cortar
+  'CORINA SAN MARTIN': 'Corina San Martín' // apellido compuesto, no cortar
 };
+function _normalizarTxt(s){
+  return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
 function _acortarNombre(nombre){
   if(!nombre) return '';
-  if(_NOMBRES_CORTOS_EXCEPCION[nombre]) return _NOMBRES_CORTOS_EXCEPCION[nombre];
+  const key = _normalizarTxt(nombre);
+  if(_NOMBRES_CORTOS_EXCEPCION[key]) return _NOMBRES_CORTOS_EXCEPCION[key];
   const partes = nombre.trim().split(/\s+/);
   if(partes.length<=2) return nombre;
   // Asume que las últimas 2 palabras son Apellido Paterno + Materno,
@@ -2411,27 +2415,29 @@ function _ritRenderTablaOperador(){
     const promHora = o.total/horasProg;
     return `
     <tr>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px">${_acortarNombre(o.nombre)}</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;font-weight:700">${o.total.toLocaleString('es-CL')}</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${(o.total/total*100).toFixed(1)}%</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:10.5px;white-space:nowrap">${o.primerHora?o.primerHora.slice(0,5):'—'}–${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;white-space:nowrap">${_horasEntreTxt(o.primerHora,o.ultimaHora)}</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${promHora.toFixed(1)}</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;white-space:nowrap">${_acortarNombre(o.nombre)}</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;font-weight:700">${o.total.toLocaleString('es-CL')}</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${(o.total/total*100).toFixed(1)}%</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:10.5px;white-space:nowrap">${o.primerHora?o.primerHora.slice(0,5):'—'}–${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;white-space:nowrap">${_horasEntreTxt(o.primerHora,o.ultimaHora)}</td>
+      <td style="padding:7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${promHora.toFixed(1)}</td>
     </tr>`;
   }).join('');
 
   el.innerHTML = `
-    <table style="width:100%;border-collapse:collapse">
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:520px">
       <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase">
-        <th style="text-align:left;padding-bottom:4px">Nombre</th>
-        <th style="text-align:right;padding-bottom:4px">Producción</th>
-        <th style="text-align:right;padding-bottom:4px">Particip.</th>
-        <th style="text-align:right;padding-bottom:4px">Horario</th>
-        <th style="text-align:right;padding-bottom:4px">Horas</th>
-        <th style="text-align:right;padding-bottom:4px">Uds/h prog.</th>
+        <th style="text-align:left;padding:0 10px 6px 0;white-space:nowrap">Nombre</th>
+        <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Producción</th>
+        <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Particip.</th>
+        <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Horario</th>
+        <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Horas</th>
+        <th style="text-align:right;padding:0 0 6px 0;white-space:nowrap">Uds/h prog.</th>
       </tr>
       ${rows}
-    </table>`;
+    </table>
+    </div>`;
 }
 
 // ── Exportar tabla operador a CSV ──
