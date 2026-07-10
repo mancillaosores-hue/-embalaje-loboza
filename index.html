@@ -2010,7 +2010,7 @@ function _horaABucket(horaTxt){
 }
 // Nombre corto: primer nombre + primer apellido (paterno) — para que quepa en celular
 const _NOMBRES_CORTOS_EXCEPCION = {
-  'CORINA SAN MARTIN': 'Corina San Martín' // apellido compuesto, no cortar
+  'CORINA SAN MARTIN': 'CORINA SAN MARTIN' // apellido compuesto, no cortar
 };
 function _normalizarTxt(s){
   return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -2380,7 +2380,7 @@ function _ritRenderHeatmap(r){
   const max = Math.max(1, ...r.porOperador.map(o=>o._maxHora||0));
 
   let html = '<table style="border-collapse:collapse;font-size:10px;min-width:100%">';
-  html += '<tr><th style="text-align:left;padding:4px 8px;color:var(--txt2,#8FA3C4);position:sticky;left:0;background:var(--card,#152A47)">Operador</th>';
+  html += '<tr><th style="text-align:left;padding:4px 8px;color:var(--txt2,#8FA3C4);position:sticky;left:0;background:var(--card,#152A47)">Nombre</th>';
   horas.forEach(h=> html += `<th style="padding:4px 6px;color:var(--txt2,#8FA3C4)">${String(h).padStart(2,'0')}</th>`);
   html += '</tr>';
   r.porOperador.sort((a,b)=>b.total-a.total).forEach(o=>{
@@ -2415,7 +2415,7 @@ function _ritRenderTablaOperador(){
     const promHora = o.total/horasProg;
     return `
     <tr>
-      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;white-space:nowrap">${_acortarNombre(o.nombre)}</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47)">${_acortarNombre(o.nombre)}</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;font-weight:700">${o.total.toLocaleString('es-CL')}</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${(o.total/total*100).toFixed(1)}%</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:10.5px;white-space:nowrap">${o.primerHora?o.primerHora.slice(0,5):'—'}–${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
@@ -2428,7 +2428,7 @@ function _ritRenderTablaOperador(){
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;min-width:520px">
       <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase">
-        <th style="text-align:left;padding:0 10px 6px 0;white-space:nowrap">Nombre</th>
+        <th style="text-align:left;padding:0 10px 6px 0;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47);z-index:1">Nombre</th>
         <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Producción</th>
         <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Particip.</th>
         <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Horario</th>
