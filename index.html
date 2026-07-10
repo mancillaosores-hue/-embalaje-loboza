@@ -2008,6 +2008,29 @@ function _horaABucket(horaTxt){
   if(!m) return null;
   return Math.min(23, Math.max(0, parseInt(m[1],10)));
 }
+// Nombre corto: primer nombre + primer apellido (paterno) — para que quepa en celular
+const _NOMBRES_CORTOS_EXCEPCION = {
+  'Corina San Martín': 'Corina San Martín' // apellido compuesto, no cortar
+};
+function _acortarNombre(nombre){
+  if(!nombre) return '';
+  if(_NOMBRES_CORTOS_EXCEPCION[nombre]) return _NOMBRES_CORTOS_EXCEPCION[nombre];
+  const partes = nombre.trim().split(/\s+/);
+  if(partes.length<=2) return nombre;
+  // Asume que las últimas 2 palabras son Apellido Paterno + Materno,
+  // y todo lo anterior son nombres. El primer apellido = penúltima palabra.
+  return partes[0] + ' ' + partes[partes.length-2];
+}
+// Horas entre dos horarios 'HH:MM:SS', formateado compacto (ej. "8h 12m" / "45m")
+function _horasEntreTxt(horaIni, horaFin){
+  if(!horaIni || !horaFin) return '—';
+  const [h1,m1] = horaIni.split(':').map(Number);
+  const [h2,m2] = horaFin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(isNaN(mins) || mins<0) return '—';
+  const h = Math.floor(mins/60), m = mins%60;
+  return h>0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 async function cargarRitmoUI(){
   const d = _ritFechaObj();
@@ -2200,7 +2223,6 @@ function _ritRenderKpis(r){
       ${kpi('Capacidad Esperada', Math.round(r.capacidadEsperada).toLocaleString('es-CL'), 'uds')}
       ${kpi('Capacidad Real', Math.round(r.capacidadReal).toLocaleString('es-CL'), 'uds')}
       ${kpi('Accuracy', (r.accuracy>=0?'+':'')+r.accuracy.toFixed(1)+'%', 'real vs esperada', accColor)}
-      ${kpi('Prom. uds/hora prog.', r.prodPromedioHora.toFixed(1), `jornada ${r.horasJornada.toFixed(1)}h`)}
       ${kpi('Hora Primer Embalaje', r.primerHoraTxt ? r.primerHoraTxt.slice(0,5) : '—', '')}
       ${kpi('Hora Último Embalaje', r.ultimaHoraTxt ? r.ultimaHoraTxt.slice(0,5) : '—', '')}
     </div>`;
@@ -2358,7 +2380,7 @@ function _ritRenderHeatmap(r){
   horas.forEach(h=> html += `<th style="padding:4px 6px;color:var(--txt2,#8FA3C4)">${String(h).padStart(2,'0')}</th>`);
   html += '</tr>';
   r.porOperador.sort((a,b)=>b.total-a.total).forEach(o=>{
-    html += `<tr><td style="padding:4px 8px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47)">${o.nombre}</td>`;
+    html += `<tr><td style="padding:4px 8px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47)">${_acortarNombre(o.nombre)}</td>`;
     horas.forEach(h=>{
       const v = (o.porHora && o.porHora[h]) || 0;
       const intensidad = max ? Math.min(1, v/max) : 0;
@@ -2389,11 +2411,11 @@ function _ritRenderTablaOperador(){
     const promHora = o.total/horasProg;
     return `
     <tr>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px">${o.nombre}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px">${_acortarNombre(o.nombre)}</td>
       <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;font-weight:700">${o.total.toLocaleString('es-CL')}</td>
       <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${(o.total/total*100).toFixed(1)}%</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${o.primerHora?o.primerHora.slice(0,5):'—'}</td>
-      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:10.5px;white-space:nowrap">${o.primerHora?o.primerHora.slice(0,5):'—'}–${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
+      <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;white-space:nowrap">${_horasEntreTxt(o.primerHora,o.ultimaHora)}</td>
       <td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${promHora.toFixed(1)}</td>
     </tr>`;
   }).join('');
@@ -2404,8 +2426,8 @@ function _ritRenderTablaOperador(){
         <th style="text-align:left;padding-bottom:4px">Nombre</th>
         <th style="text-align:right;padding-bottom:4px">Producción</th>
         <th style="text-align:right;padding-bottom:4px">Particip.</th>
-        <th style="text-align:right;padding-bottom:4px">1er Emb.</th>
-        <th style="text-align:right;padding-bottom:4px">Últ. Emb.</th>
+        <th style="text-align:right;padding-bottom:4px">Horario</th>
+        <th style="text-align:right;padding-bottom:4px">Horas</th>
         <th style="text-align:right;padding-bottom:4px">Uds/h prog.</th>
       </tr>
       ${rows}
@@ -2418,10 +2440,10 @@ function _ritExportarCSV(){
   if(!r || !r.porOperador.length) return;
   const total = r.totalOffline || 1;
   const horasProg = r.horasJornada || 1;
-  const cabecera = ['Nombre','Producción','Participación %','Primer Embalaje','Último Embalaje','Uds/hora programada'];
+  const cabecera = ['Nombre','Producción','Participación %','Primer Embalaje','Último Embalaje','Horas','Uds/hora programada'];
   const filas = r.porOperador.sort((a,b)=>b.total-a.total).map(o=>[
     o.nombre, o.total, (o.total/total*100).toFixed(1),
-    o.primerHora||'', o.ultimaHora||'', (o.total/horasProg).toFixed(1)
+    o.primerHora||'', o.ultimaHora||'', _horasEntreTxt(o.primerHora,o.ultimaHora), (o.total/horasProg).toFixed(1)
   ]);
   const csv = [cabecera, ...filas].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
