@@ -2172,11 +2172,12 @@ async function cargarBonosUI(){
       const tipoBase = BONO_TIPO_OPERARIA[usuario];
       const dias = porUsuario[usuario] || {};
       const fechas = Object.keys(dias);
-      let total = 0;
+      let total = 0, totalLinea = 0, totalMaleta = 0, totalInsumo = 0;
       const detalleDias = fechas.map(f=>{
         const d = dias[f];
         const equiv = bonoEquivalenteDia(tipoBase, d.linea, d.maleta, d.insumo);
         total += equiv;
+        totalLinea += d.linea; totalMaleta += d.maleta; totalInsumo += d.insumo;
         return {fecha:f, ...d, equiv};
       }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
       const diasTrabajados = fechas.length;
@@ -2185,7 +2186,8 @@ async function cargarBonosUI(){
       const diff = meta ? ((promedio-meta)/meta*100) : 0;
       return {
         usuario, nombre: (typeof DB!=='undefined' && DB[usuario]) || usuario,
-        tipoBase, diasTrabajados, total, promedio, meta, diff, detalleDias
+        tipoBase, diasTrabajados, total, totalLinea, totalMaleta, totalInsumo,
+        promedio, meta, diff, detalleDias
       };
     });
 
@@ -2199,16 +2201,9 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
   const conDatos = resultado.filter(o=>o.diasTrabajados>0);
   const sinDatos = resultado.filter(o=>o.diasTrabajados===0);
 
-  const nGrupos = {bajo:[], rango:[], sobre:[]};
-  conDatos.forEach(o=>{
-    if(o.diff < -10) nGrupos.bajo.push(o);
-    else if(o.diff >= 15) nGrupos.sobre.push(o);
-    else nGrupos.rango.push(o);
-  });
-  nGrupos.bajo.sort((a,b)=>a.diff-b.diff);
-  nGrupos.sobre.sort((a,b)=>b.diff-a.diff);
-  nGrupos.rango.sort((a,b)=>b.diff-a.diff);
-
+  const nBajo = conDatos.filter(o=>o.diff<-10).length;
+  const nRango = conDatos.filter(o=>o.diff>=-10 && o.diff<15).length;
+  const nSobre = conDatos.filter(o=>o.diff>=15).length;
   const promEquipo = conDatos.length ? conDatos.reduce((s,o)=>s+o.diff,0)/conDatos.length : 0;
 
   elResumen.innerHTML = `
@@ -2216,62 +2211,73 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
       <div style="display:flex;align-items:baseline;justify-content:space-between">
         <div>
           <div style="font-size:22px;font-weight:800;color:${promEquipo>=0?'#2ECC8A':'#FF6B6B'}">${promEquipo>=0?'+':''}${promEquipo.toFixed(1)}%</div>
-          <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">Promedio equipo vs meta · ${mesVal}</div>
+          <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">Promedio equipo vs meta máxima · ${mesVal}</div>
         </div>
         <div style="display:flex;gap:6px">
-          <span class="badge" style="background:#2A0B0B;color:#FF6B6B">${nGrupos.bajo.length}</span>
-          <span class="badge" style="background:#0B2040;color:#60B0FF">${nGrupos.rango.length}</span>
-          <span class="badge" style="background:#071F14;color:#2ECC8A">${nGrupos.sobre.length}</span>
+          <span class="badge" style="background:#2A0B0B;color:#FF6B6B">${nBajo}</span>
+          <span class="badge" style="background:#0B2040;color:#60B0FF">${nRango}</span>
+          <span class="badge" style="background:#071F14;color:#2ECC8A">${nSobre}</span>
         </div>
+      </div>
+      <div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07);font-size:10px;color:var(--amber-t,#FFBA4D)">
+        ⚠ Solo se conoce la meta máxima (1.215 línea · 350 maleta). Falta el mínimo por operaria para saber el rango completo de cumplimiento.
       </div>
     </div>`;
 
   const fmtN = n => Math.round(n).toLocaleString('es-CL');
+  const fmt1 = n => n.toFixed(1);
   const barColor = o => o.diff < -10 ? '#FF6B6B' : (o.diff >= 15 ? '#2ECC8A' : '#60B0FF');
 
   const filaHtml = (o, i) => {
     const pct = Math.min(o.meta ? o.promedio/o.meta*100 : 0, 200);
     const color = barColor(o);
     const rowId = 'bono-row-'+i;
+    const conv = o.tipoBase==='maleta'
+      ? `${fmtN(o.totalMaleta)} maleta directa + ${fmtN(o.totalLinea)} línea ÷4 + ${fmtN(o.totalInsumo)} insumo ÷20`
+      : `${fmtN(o.totalLinea)} línea directa + ${fmtN(o.totalMaleta)} maleta ×4 + ${fmtN(o.totalInsumo)} insumo ÷20`;
     return `
     <div class="op-row" id="${rowId}" onclick="document.getElementById('${rowId}').classList.toggle('bono-open')" style="padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-size:12.5px;font-weight:600">${o.nombre}</span>
-        <span style="font-size:13px;font-weight:800;color:${color}">${o.diff>=0?'+':''}${o.diff.toFixed(1)}%</span>
+        <span style="font-size:13px;font-weight:800;color:${color}">${o.diff>=0?'+':''}${fmt1(o.diff)}%</span>
       </div>
       <div style="position:relative;height:6px;background:rgba(255,255,255,.06);border-radius:4px">
         <div style="position:absolute;top:0;left:0;height:100%;border-radius:4px;width:${pct/200*100}%;background:${color}"></div>
         <div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--txt3);left:50%"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--txt3)">
-        <span>${o.diasTrabajados} días trabajados · tipo ${o.tipoBase}</span>
-        <span><b style="color:var(--txt2)">${fmtN(o.promedio)}</b> / ${fmtN(o.meta)} uds/día</span>
+        <span>${o.diasTrabajados} días trabajados</span>
+        <span><b style="color:var(--txt2)">${fmtN(o.promedio)}</b> / ${fmtN(o.meta)} uds/día (máx)</span>
       </div>
-      <div class="bono-detail" style="display:none;margin-top:9px;padding:9px;background:rgba(0,0,0,.18);border-radius:10px;font-size:10.5px;color:var(--txt3)">
-        Total equivalente del mes: <b style="color:var(--txt2)">${fmtN(o.total)}</b> uds ${o.tipoBase} · ${o.detalleDias.length} día(s) con datos
+      <div class="bono-detail" style="display:none;margin-top:9px;padding:9px;background:rgba(0,0,0,.18);border-radius:10px;font-size:10.5px;color:var(--txt3);line-height:1.6">
+        <div>Uds línea: <b style="color:var(--txt2)">${fmtN(o.totalLinea)}</b> · Uds maleta: <b style="color:var(--txt2)">${fmtN(o.totalMaleta)}</b> · Uds insumo: <b style="color:var(--txt2)">${fmtN(o.totalInsumo)}</b></div>
+        <div style="margin-top:3px">Conversión: ${conv} = <b style="color:var(--txt2)">${fmtN(o.total)}</b> uds ${o.tipoBase} del mes</div>
+        <div style="margin-top:3px">Promedio: ${fmtN(o.total)} ÷ ${o.diasTrabajados} días = <b style="color:var(--txt2)">${fmtN(o.promedio)}</b> uds/día</div>
       </div>
     </div>
     <style>#${rowId}.bono-open .bono-detail{display:block!important}</style>`;
   };
 
   let idx = 0, html = '';
-  const secciones = [
-    {key:'bajo', label:'Requieren atención', color:'#FF6B6B'},
-    {key:'rango', label:'En rango', color:'#60B0FF'},
-    {key:'sobre', label:'Sobre esperado', color:'#2ECC8A'},
+  const tipos = [
+    {key:'linea', label:'Línea', meta:1215, color:'#60B0FF'},
+    {key:'maleta', label:'Maleta', meta:350, color:'#9A88FF'},
   ];
-  secciones.forEach(s=>{
-    const items = nGrupos[s.key];
+  tipos.forEach(tp=>{
+    const items = conDatos.filter(o=>o.tipoBase===tp.key).sort((a,b)=>a.diff-b.diff);
     if(!items.length) return;
     html += `<div class="card" style="margin-bottom:.6rem">
-      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:${s.color};margin-bottom:6px">${s.label} <span style="color:var(--txt3);font-weight:600">(${items.length})</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:${tp.color}">${tp.label} <span style="color:var(--txt3);font-weight:600">(${items.length})</span></span>
+        <span style="font-size:9.5px;color:var(--txt3)">máx ${fmtN(tp.meta)} uds/día</span>
+      </div>
       ${items.map(o=>filaHtml(o, idx++)).join('')}
     </div>`;
   });
   if(sinDatos.length){
     html += `<div class="card">
       <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--txt3);margin-bottom:6px">Sin datos este período (${sinDatos.length})</div>
-      ${sinDatos.map(o=>`<div style="padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;color:var(--txt3)">${o.nombre}</div>`).join('')}
+      ${sinDatos.map(o=>`<div style="padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;color:var(--txt3)">${o.nombre} <span style="color:var(--txt3);font-size:10px">· tipo ${o.tipoBase}</span></div>`).join('')}
     </div>`;
   }
   elTabla.innerHTML = html;
