@@ -1657,17 +1657,24 @@ const DB = {
 };
 
 const META = {
-  "000022":1215,"000030":1215,"000036":350,"000039":1215,
-  "000043":1215,"000055":1215,"000190":1215,"000191":350,"000193":1215,
-  "000198":1215,"001632":250,"001771":1215
+  "000022":1290,"000030":1290,"000036":319,"000039":1290,
+  "000043":1290,"000055":1290,"000190":1290,"000191":319,"000193":1290,
+  "000198":1290,"001632":250,"001771":1290
+};
+// Mínimo por tipo (piso aceptable de la meta). El máximo sigue siendo META.
+// Pendiente confirmar con Diego si el rango "online" (mín 93 / máx 153) corresponde
+// al bono online de Karen (001632, hoy excluida del módulo Bonos).
+const META_MIN = {
+  "000022":673,"000030":673,"000036":166,"000039":673,
+  "000043":673,"000055":673,"000190":673,"000191":166,"000193":673,
+  "000198":673,"001771":673
 };
 
 // ============================================================
 // BONOS POR META INDIVIDUAL — conversión línea / maleta / insumo
-// Evita (000030) y Aida (001771) confirmadas como línea, meta 1215.
-// PENDIENTE: falta el mínimo por operaria (hoy solo se conoce el máximo).
-// 001632 (Karen Sepúlveda) EXCLUIDA: se paga por bono online aparte,
-// todavía no mapeado en esta app.
+// Rango confirmado: Línea 673–1290 uds/día · Maleta 166–319 uds/día.
+// PENDIENTE: confirmar si el rango "online" (mín 93 / máx 153) que dio Diego
+// corresponde al bono online de Karen (001632, hoy excluida del módulo).
 // ============================================================
 const BONO_TIPO_OPERARIA = {
   '000022':'linea', '000039':'linea', '000043':'linea', '000055':'linea',
@@ -2183,11 +2190,13 @@ async function cargarBonosUI(){
       const diasTrabajados = fechas.length;
       const promedio = diasTrabajados ? total/diasTrabajados : 0;
       const meta = META[usuario] || 0;
+      const metaMin = META_MIN[usuario] || 0;
       const diff = meta ? ((promedio-meta)/meta*100) : 0;
+      const estado = !diasTrabajados ? 'sin-datos' : (metaMin && promedio < metaMin ? 'bajo' : (promedio >= meta ? 'sobre' : 'rango'));
       return {
         usuario, nombre: (typeof DB!=='undefined' && DB[usuario]) || usuario,
         tipoBase, diasTrabajados, total, totalLinea, totalMaleta, totalInsumo,
-        promedio, meta, diff, detalleDias
+        promedio, meta, metaMin, diff, estado, detalleDias
       };
     });
 
@@ -2201,9 +2210,9 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
   const conDatos = resultado.filter(o=>o.diasTrabajados>0);
   const sinDatos = resultado.filter(o=>o.diasTrabajados===0);
 
-  const nBajo = conDatos.filter(o=>o.diff<-10).length;
-  const nRango = conDatos.filter(o=>o.diff>=-10 && o.diff<15).length;
-  const nSobre = conDatos.filter(o=>o.diff>=15).length;
+  const nBajo = conDatos.filter(o=>o.estado==='bajo').length;
+  const nRango = conDatos.filter(o=>o.estado==='rango').length;
+  const nSobre = conDatos.filter(o=>o.estado==='sobre').length;
   const promEquipo = conDatos.length ? conDatos.reduce((s,o)=>s+o.diff,0)/conDatos.length : 0;
 
   elResumen.innerHTML = `
@@ -2219,17 +2228,22 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
           <span class="badge" style="background:#071F14;color:#2ECC8A">${nSobre}</span>
         </div>
       </div>
-      <div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07);font-size:10px;color:var(--amber-t,#FFBA4D)">
-        ⚠ Solo se conoce la meta máxima (1.215 línea · 350 maleta). Falta el mínimo por operaria para saber el rango completo de cumplimiento.
+      <div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07);font-size:10px;color:var(--txt3)">
+        Rango vigente: Línea 673–1.290 uds/día · Maleta 166–319 uds/día. Rojo = bajo el mínimo, azul = dentro del rango, verde = en el máximo o sobre.
       </div>
     </div>`;
 
   const fmtN = n => Math.round(n).toLocaleString('es-CL');
   const fmt1 = n => n.toFixed(1);
-  const barColor = o => o.diff < -10 ? '#FF6B6B' : (o.diff >= 15 ? '#2ECC8A' : '#60B0FF');
+  const barColor = o => o.estado==='bajo' ? '#FF6B6B' : (o.estado==='sobre' ? '#2ECC8A' : '#60B0FF');
+  const estadoLabel = o => o.estado==='bajo' ? 'Bajo el mínimo' : (o.estado==='sobre' ? 'En el máximo o sobre' : 'En rango');
 
   const filaHtml = (o, i) => {
-    const pct = Math.min(o.meta ? o.promedio/o.meta*100 : 0, 200);
+    // Escala del bar: 0 hasta 1.3x el máximo, con marcas en el mínimo y el máximo.
+    const escala = o.meta * 1.3;
+    const pctProm = Math.min(escala ? o.promedio/escala*100 : 0, 100);
+    const pctMin = escala ? o.metaMin/escala*100 : 0;
+    const pctMax = escala ? o.meta/escala*100 : 0;
     const color = barColor(o);
     const rowId = 'bono-row-'+i;
     const conv = o.tipoBase==='maleta'
@@ -2239,20 +2253,21 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
     <div class="op-row" id="${rowId}" onclick="document.getElementById('${rowId}').classList.toggle('bono-open')" style="padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-size:12.5px;font-weight:600">${o.nombre}</span>
-        <span style="font-size:13px;font-weight:800;color:${color}">${o.diff>=0?'+':''}${fmt1(o.diff)}%</span>
+        <span style="font-size:11px;font-weight:700;color:${color}">${estadoLabel(o)}</span>
       </div>
-      <div style="position:relative;height:6px;background:rgba(255,255,255,.06);border-radius:4px">
-        <div style="position:absolute;top:0;left:0;height:100%;border-radius:4px;width:${pct/200*100}%;background:${color}"></div>
-        <div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--txt3);left:50%"></div>
+      <div style="position:relative;height:6px;background:rgba(255,255,255,.06);border-radius:4px;margin-bottom:1px">
+        <div style="position:absolute;top:0;left:0;height:100%;border-radius:4px;width:${pctProm}%;background:${color}"></div>
+        <div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:#FFBA4D;left:${pctMin}%" title="Mínimo"></div>
+        <div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--txt2);left:${pctMax}%" title="Máximo"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--txt3)">
         <span>${o.diasTrabajados} días trabajados</span>
-        <span><b style="color:var(--txt2)">${fmtN(o.promedio)}</b> / ${fmtN(o.meta)} uds/día (máx)</span>
+        <span><b style="color:var(--txt2)">${fmtN(o.promedio)}</b> uds/día · rango ${fmtN(o.metaMin)}–${fmtN(o.meta)}</span>
       </div>
       <div class="bono-detail" style="display:none;margin-top:9px;padding:9px;background:rgba(0,0,0,.18);border-radius:10px;font-size:10.5px;color:var(--txt3);line-height:1.6">
         <div>Uds línea: <b style="color:var(--txt2)">${fmtN(o.totalLinea)}</b> · Uds maleta: <b style="color:var(--txt2)">${fmtN(o.totalMaleta)}</b> · Uds insumo: <b style="color:var(--txt2)">${fmtN(o.totalInsumo)}</b></div>
         <div style="margin-top:3px">Conversión: ${conv} = <b style="color:var(--txt2)">${fmtN(o.total)}</b> uds ${o.tipoBase} del mes</div>
-        <div style="margin-top:3px">Promedio: ${fmtN(o.total)} ÷ ${o.diasTrabajados} días = <b style="color:var(--txt2)">${fmtN(o.promedio)}</b> uds/día</div>
+        <div style="margin-top:3px">Promedio: ${fmtN(o.total)} ÷ ${o.diasTrabajados} días = <b style="color:var(--txt2)">${fmtN(o.promedio)}</b> uds/día (${o.diff>=0?'+':''}${fmt1(o.diff)}% vs máximo)</div>
       </div>
     </div>
     <style>#${rowId}.bono-open .bono-detail{display:block!important}</style>`;
@@ -2260,16 +2275,16 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
 
   let idx = 0, html = '';
   const tipos = [
-    {key:'linea', label:'Línea', meta:1215, color:'#60B0FF'},
-    {key:'maleta', label:'Maleta', meta:350, color:'#9A88FF'},
+    {key:'linea', label:'Línea', min:673, max:1290, color:'#60B0FF'},
+    {key:'maleta', label:'Maleta', min:166, max:319, color:'#9A88FF'},
   ];
   tipos.forEach(tp=>{
-    const items = conDatos.filter(o=>o.tipoBase===tp.key).sort((a,b)=>a.diff-b.diff);
+    const items = conDatos.filter(o=>o.tipoBase===tp.key).sort((a,b)=>a.promedio-b.promedio);
     if(!items.length) return;
     html += `<div class="card" style="margin-bottom:.6rem">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
         <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:${tp.color}">${tp.label} <span style="color:var(--txt3);font-weight:600">(${items.length})</span></span>
-        <span style="font-size:9.5px;color:var(--txt3)">máx ${fmtN(tp.meta)} uds/día</span>
+        <span style="font-size:9.5px;color:var(--txt3)">rango ${fmtN(tp.min)}–${fmtN(tp.max)} uds/día</span>
       </div>
       ${items.map(o=>filaHtml(o, idx++)).join('')}
     </div>`;
