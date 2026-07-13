@@ -1383,7 +1383,7 @@ input[type="month"], input[type="week"]{
         <button class="btn-ghost" onclick="cargarBonosUI()">Calcular</button>
       </div>
       <div style="font-size:10.5px;color:var(--txt3);margin-top:8px;line-height:1.5">
-        Conversión: 1 maleta = 4 uds línea · 20 uds insumo = 1 ud línea o maleta (según tipo de la operaria). Karen Sepúlveda no aparece aquí — se paga por bono online aparte.
+        Conversión: 1 maleta = 4 uds línea · 20 uds insumo = 1 ud línea o maleta (según tipo de la operaria).
       </div>
     </div>
 
@@ -1659,28 +1659,28 @@ const DB = {
 const META = {
   "000022":1290,"000030":1290,"000036":319,"000039":1290,
   "000043":1290,"000055":1290,"000190":1290,"000191":319,"000193":1290,
-  "000198":1290,"001632":250,"001771":1290
+  "000198":1290,"001632":153,"001771":1290
 };
 // Mínimo por tipo (piso aceptable de la meta). El máximo sigue siendo META.
-// Pendiente confirmar con Diego si el rango "online" (mín 93 / máx 153) corresponde
-// al bono online de Karen (001632, hoy excluida del módulo Bonos).
 const META_MIN = {
   "000022":673,"000030":673,"000036":166,"000039":673,
   "000043":673,"000055":673,"000190":673,"000191":166,"000193":673,
-  "000198":673,"001771":673
+  "000198":673,"001632":93,"001771":673
 };
 
 // ============================================================
 // BONOS POR META INDIVIDUAL — conversión línea / maleta / insumo
-// Rango confirmado: Línea 673–1290 uds/día · Maleta 166–319 uds/día.
-// PENDIENTE: confirmar si el rango "online" (mín 93 / máx 153) que dio Diego
-// corresponde al bono online de Karen (001632, hoy excluida del módulo).
+// Rangos confirmados: Línea 673–1290 · Maleta 166–319 · Online 93–153 (uds/día).
+// Karen (001632) es tipo "online" — SUPUESTO: hoy usa la misma conversión que
+// línea (línea 1:1, maleta ×4, insumo ÷20) porque no se definió una fórmula
+// propia para online. Avisar a Diego si esto no es correcto.
 // ============================================================
 const BONO_TIPO_OPERARIA = {
   '000022':'linea', '000039':'linea', '000043':'linea', '000055':'linea',
   '000190':'linea', '000193':'linea', '000198':'linea',
   '000036':'maleta', '000191':'maleta',
-  '000030':'linea', '001771':'linea'
+  '000030':'linea', '001771':'linea',
+  '001632':'online'
 };
 const BONO_FACTOR_MALETA_A_LINEA = 4;  // 1 maleta = 4 unidades línea (y viceversa)
 const BONO_FACTOR_INSUMO = 20;         // 20 unidades insumo = 1 unidad línea o maleta
@@ -1691,6 +1691,7 @@ function bonoEquivalenteDia(tipoBase, cantLinea, cantMaleta, cantInsumo){
   if(tipoBase === 'maleta'){
     return cantMaleta + (cantLinea / BONO_FACTOR_MALETA_A_LINEA) + (cantInsumo / BONO_FACTOR_INSUMO);
   }
+  // 'linea' y 'online' usan la misma fórmula (línea 1:1, maleta ×4, insumo ÷20)
   return cantLinea + (cantMaleta * BONO_FACTOR_MALETA_A_LINEA) + (cantInsumo / BONO_FACTOR_INSUMO);
 }
 
@@ -2277,6 +2278,7 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
   const tipos = [
     {key:'linea', label:'Línea', min:673, max:1290, color:'#60B0FF'},
     {key:'maleta', label:'Maleta', min:166, max:319, color:'#9A88FF'},
+    {key:'online', label:'Online', min:93, max:153, color:'#FFBA4D'},
   ];
   tipos.forEach(tp=>{
     const items = conDatos.filter(o=>o.tipoBase===tp.key).sort((a,b)=>a.promedio-b.promedio);
