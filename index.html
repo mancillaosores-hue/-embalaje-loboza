@@ -446,10 +446,12 @@ input[type="month"], input[type="week"]{
   backdrop-filter:blur(28px) saturate(1.6);
   -webkit-backdrop-filter:blur(28px) saturate(1.6);
   box-shadow:0 -1px 0 rgba(59,143,255,.08), 0 -12px 40px rgba(0,0,0,.6);
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
 }
+.bottom-nav::-webkit-scrollbar{display:none}
 .bottom-nav.hidden{display:none}
 .bnav-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:0 0 auto;min-width:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:7px 2px 5px;gap:4px;
   border:none;background:transparent;cursor:pointer;
   border-radius:14px;
@@ -1372,6 +1374,24 @@ input[type="month"], input[type="week"]{
 
   </div>
 
+  <div id="st-bonos" style="display:none">
+
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title" style="margin-bottom:8px">Bonos por meta individual</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="month" id="bono-mes" style="flex:1"/>
+        <button class="btn-ghost" onclick="cargarBonosUI()">Calcular</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--txt3);margin-top:8px;line-height:1.5">
+        Conversión: 1 maleta = 4 uds línea · 20 uds insumo = 1 ud línea o maleta (según tipo de la operaria). Karen Sepúlveda no aparece aquí — se paga por bono online aparte.
+      </div>
+    </div>
+
+    <div id="bono-resumen" style="margin-top:8px"></div>
+    <div id="bono-tabla" style="margin-top:8px"></div>
+
+  </div>
+
   <nav class="bottom-nav" id="bottom-nav-sup">
     <button class="bnav-item on" onclick="bnavGo('carga',this)">
       <div class="bnav-icon">
@@ -1430,6 +1450,14 @@ input[type="month"], input[type="week"]{
         </svg>
       </div>
       <span class="bnav-lbl">Ritmo</span>
+    </button>
+    <button class="bnav-item" onclick="bnavGo('bonos',this)">
+      <div class="bnav-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.2 1.1-2 2.5-2s2.5.7 2.5 1.8-1 1.7-2.5 1.7-2.5.6-2.5 1.8 1.1 1.7 2.5 1.7 2.5-.7 2.5-1.9"/>
+        </svg>
+      </div>
+      <span class="bnav-lbl">Bonos</span>
     </button>
 
 </div>
@@ -1633,6 +1661,32 @@ const META = {
   "000043":1215,"000055":1215,"000190":1215,"000191":350,"000193":1215,
   "000198":1215,"001632":250,"001771":250
 };
+
+// ============================================================
+// BONOS POR META INDIVIDUAL — conversión línea / maleta / insumo
+// PENDIENTE: confirmar meta real (mínimo/máximo) de 000030 y 001771
+// una vez Diego suba esa info — hoy usan el valor crudo de META.
+// 001632 (Karen Sepúlveda) EXCLUIDA: se paga por bono online aparte,
+// todavía no mapeado en esta app.
+// ============================================================
+const BONO_TIPO_OPERARIA = {
+  '000022':'linea', '000039':'linea', '000043':'linea', '000055':'linea',
+  '000190':'linea', '000193':'linea', '000198':'linea',
+  '000036':'maleta', '000191':'maleta',
+  '000030':'linea', '001771':'linea'
+};
+const BONO_FACTOR_MALETA_A_LINEA = 4;  // 1 maleta = 4 unidades línea (y viceversa)
+const BONO_FACTOR_INSUMO = 20;         // 20 unidades insumo = 1 unidad línea o maleta
+
+// Convierte la producción cruda de UN día de UNA operaria (ya sumada por tipo)
+// a "unidades equivalentes" de su categoría base. Misma fórmula sin importar VAS.
+function bonoEquivalenteDia(tipoBase, cantLinea, cantMaleta, cantInsumo){
+  if(tipoBase === 'maleta'){
+    return cantMaleta + (cantLinea / BONO_FACTOR_MALETA_A_LINEA) + (cantInsumo / BONO_FACTOR_INSUMO);
+  }
+  return cantLinea + (cantMaleta * BONO_FACTOR_MALETA_A_LINEA) + (cantInsumo / BONO_FACTOR_INSUMO);
+}
+
 
 // ============================================================
 // CAPACIDAD DINÁMICA — productividades estándar por mix (PARAMETRIZABLE)
@@ -2076,6 +2130,151 @@ async function cargarRitmoUI(){
     const el = _getRitEl('rit-kpis');
     if(el) el.innerHTML = `<div class="card"><div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">Error: ${e.message}</div></div>`;
   }
+}
+
+// ============================================================
+// BONOS POR META INDIVIDUAL
+// ============================================================
+async function cargarBonosUI(){
+  const elResumen = document.getElementById('bono-resumen');
+  const elTabla = document.getElementById('bono-tabla');
+  if(!elResumen || !elTabla) return;
+  elResumen.innerHTML = `<div class="card"><div style="text-align:center;padding:14px;color:var(--txt3)">Calculando...</div></div>`;
+  elTabla.innerHTML = '';
+
+  try{
+    const mesVal = document.getElementById('bono-mes').value || currentMonth();
+    const [y,m] = mesVal.split('-').map(Number);
+    const desde = `${y}-${String(m).padStart(2,'0')}-01`;
+    const ultimoDia = new Date(y, m, 0).getDate();
+    const hoyStr = today();
+    let hasta = `${y}-${String(m).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+    if(hasta > hoyStr) hasta = hoyStr; // no proyectar días futuros
+
+    const rows = await fetchProdAll(desde, hasta);
+
+    // Filtra solo operarias mapeadas en BONO_TIPO_OPERARIA (excluye a Karen automáticamente)
+    const rowsBono = rows.filter(r => BONO_TIPO_OPERARIA.hasOwnProperty(r.usuario));
+
+    // Agrupa por usuario -> fecha -> {linea, maleta, insumo}
+    const porUsuario = {};
+    rowsBono.forEach(r=>{
+      const u = r.usuario, f = r.fecha, t = (r.tipo||'').toLowerCase(), cant = Number(r.cantidad)||0;
+      if(!porUsuario[u]) porUsuario[u] = {};
+      if(!porUsuario[u][f]) porUsuario[u][f] = {linea:0, maleta:0, insumo:0};
+      if(t === 'maleta') porUsuario[u][f].maleta += cant;
+      else if(t === 'insumo') porUsuario[u][f].insumo += cant;
+      else porUsuario[u][f].linea += cant; // cualquier otro tipo se trata como línea
+    });
+
+    // Calcula equivalente diario y agrega por operaria
+    const resultado = Object.keys(BONO_TIPO_OPERARIA).map(usuario=>{
+      const tipoBase = BONO_TIPO_OPERARIA[usuario];
+      const dias = porUsuario[usuario] || {};
+      const fechas = Object.keys(dias);
+      let total = 0;
+      const detalleDias = fechas.map(f=>{
+        const d = dias[f];
+        const equiv = bonoEquivalenteDia(tipoBase, d.linea, d.maleta, d.insumo);
+        total += equiv;
+        return {fecha:f, ...d, equiv};
+      }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+      const diasTrabajados = fechas.length;
+      const promedio = diasTrabajados ? total/diasTrabajados : 0;
+      const meta = META[usuario] || 0;
+      const diff = meta ? ((promedio-meta)/meta*100) : 0;
+      return {
+        usuario, nombre: (typeof DB!=='undefined' && DB[usuario]) || usuario,
+        tipoBase, diasTrabajados, total, promedio, meta, diff, detalleDias
+      };
+    });
+
+    _bonoRender(elResumen, elTabla, resultado, mesVal);
+  }catch(e){
+    elResumen.innerHTML = `<div class="card"><div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">Error: ${e.message}</div></div>`;
+  }
+}
+
+function _bonoRender(elResumen, elTabla, resultado, mesVal){
+  const conDatos = resultado.filter(o=>o.diasTrabajados>0);
+  const sinDatos = resultado.filter(o=>o.diasTrabajados===0);
+
+  const nGrupos = {bajo:[], rango:[], sobre:[]};
+  conDatos.forEach(o=>{
+    if(o.diff < -10) nGrupos.bajo.push(o);
+    else if(o.diff >= 15) nGrupos.sobre.push(o);
+    else nGrupos.rango.push(o);
+  });
+  nGrupos.bajo.sort((a,b)=>a.diff-b.diff);
+  nGrupos.sobre.sort((a,b)=>b.diff-a.diff);
+  nGrupos.rango.sort((a,b)=>b.diff-a.diff);
+
+  const promEquipo = conDatos.length ? conDatos.reduce((s,o)=>s+o.diff,0)/conDatos.length : 0;
+
+  elResumen.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <div>
+          <div style="font-size:22px;font-weight:800;color:${promEquipo>=0?'#2ECC8A':'#FF6B6B'}">${promEquipo>=0?'+':''}${promEquipo.toFixed(1)}%</div>
+          <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">Promedio equipo vs meta · ${mesVal}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span class="badge" style="background:#2A0B0B;color:#FF6B6B">${nGrupos.bajo.length}</span>
+          <span class="badge" style="background:#0B2040;color:#60B0FF">${nGrupos.rango.length}</span>
+          <span class="badge" style="background:#071F14;color:#2ECC8A">${nGrupos.sobre.length}</span>
+        </div>
+      </div>
+    </div>`;
+
+  const fmtN = n => Math.round(n).toLocaleString('es-CL');
+  const barColor = o => o.diff < -10 ? '#FF6B6B' : (o.diff >= 15 ? '#2ECC8A' : '#60B0FF');
+
+  const filaHtml = (o, i) => {
+    const pct = Math.min(o.meta ? o.promedio/o.meta*100 : 0, 200);
+    const color = barColor(o);
+    const rowId = 'bono-row-'+i;
+    return `
+    <div class="op-row" id="${rowId}" onclick="document.getElementById('${rowId}').classList.toggle('bono-open')" style="padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12.5px;font-weight:600">${o.nombre}</span>
+        <span style="font-size:13px;font-weight:800;color:${color}">${o.diff>=0?'+':''}${o.diff.toFixed(1)}%</span>
+      </div>
+      <div style="position:relative;height:6px;background:rgba(255,255,255,.06);border-radius:4px">
+        <div style="position:absolute;top:0;left:0;height:100%;border-radius:4px;width:${pct/200*100}%;background:${color}"></div>
+        <div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--txt3);left:50%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--txt3)">
+        <span>${o.diasTrabajados} días trabajados · tipo ${o.tipoBase}</span>
+        <span><b style="color:var(--txt2)">${fmtN(o.promedio)}</b> / ${fmtN(o.meta)} uds/día</span>
+      </div>
+      <div class="bono-detail" style="display:none;margin-top:9px;padding:9px;background:rgba(0,0,0,.18);border-radius:10px;font-size:10.5px;color:var(--txt3)">
+        Total equivalente del mes: <b style="color:var(--txt2)">${fmtN(o.total)}</b> uds ${o.tipoBase} · ${o.detalleDias.length} día(s) con datos
+      </div>
+    </div>
+    <style>#${rowId}.bono-open .bono-detail{display:block!important}</style>`;
+  };
+
+  let idx = 0, html = '';
+  const secciones = [
+    {key:'bajo', label:'Requieren atención', color:'#FF6B6B'},
+    {key:'rango', label:'En rango', color:'#60B0FF'},
+    {key:'sobre', label:'Sobre esperado', color:'#2ECC8A'},
+  ];
+  secciones.forEach(s=>{
+    const items = nGrupos[s.key];
+    if(!items.length) return;
+    html += `<div class="card" style="margin-bottom:.6rem">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:${s.color};margin-bottom:6px">${s.label} <span style="color:var(--txt3);font-weight:600">(${items.length})</span></div>
+      ${items.map(o=>filaHtml(o, idx++)).join('')}
+    </div>`;
+  });
+  if(sinDatos.length){
+    html += `<div class="card">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--txt3);margin-bottom:6px">Sin datos este período (${sinDatos.length})</div>
+      ${sinDatos.map(o=>`<div style="padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;color:var(--txt3)">${o.nombre}</div>`).join('')}
+    </div>`;
+  }
+  elTabla.innerHTML = html;
 }
 
 // ── Motor de cálculo ──
@@ -4528,7 +4727,7 @@ let _tabActual = null; // tab actualmente visible
 
 function showSupTab(tab, btn){
   // Tabs fijos dentro de sc-sup
-  ['carga','equipo','mes','alertas','plan','capacidad','ritmo'].forEach(t=>{
+  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos'].forEach(t=>{
     const el=document.getElementById('st-'+t);
     if(el) el.style.display=t===tab?'block':'none';
   });
@@ -4562,6 +4761,10 @@ function showSupTab(tab, btn){
   }
   if(tab==='ritmo'){
     cargarRitmoUI();
+  }
+  if(tab==='bonos'){
+    if(!document.getElementById('bono-mes').value) document.getElementById('bono-mes').value=currentMonth();
+    cargarBonosUI();
   }
   _tabActual = tab;
 }
@@ -8193,6 +8396,7 @@ const BNAV_TITULOS={
   plan:'Plan semanal',
   capacidad:'Capacidad dinámica',
   ritmo:'Ritmo operacional',
+  bonos:'Bonos por meta individual',
 };
 
 function bnavGo(tab, btn){
@@ -8208,7 +8412,7 @@ function bnavGo(tab, btn){
   showSupTab(tab, {classList:{add:()=>{},remove:()=>{}}});
   // Animar el contenido activo
   setTimeout(()=>{
-    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo'];
+    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos'];
     tabs.forEach(t=>{
       const el=document.getElementById('st-'+t);
       if(el && el.style.display!=='none') el.classList.add('anim-in');
