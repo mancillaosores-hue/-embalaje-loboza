@@ -7966,6 +7966,32 @@ function handlePlanDrop(e){
   if(f) handlePlanFile(f);
 }
 
+// Convierte el valor crudo de una celda del Excel de Plan a número real.
+// Blindaje: si la celda llegó como TEXTO con formato chileno ("8.900", "1.144"),
+// SheetJS la entrega como string y Number("8.900")=8.9 (interpreta el punto como
+// decimal) — eso fue el bug que hizo que S29 quedara en 2.956 en vez de 20.675.
+// Las celdas numéricas reales (typeof number) NUNCA se tocan, para no romper
+// valores con decimales genuinos (ej. promedios calculados).
+function parseNumeroPlan(v){
+  if(v===null||v===undefined||v==='') return NaN;
+  if(typeof v==='number') return v;
+  let s=String(v).trim();
+  if(s==='') return NaN;
+  if(s.includes(',')){
+    // Formato "1.234,56": punto=miles, coma=decimal
+    s=s.replace(/\./g,'').replace(',','.');
+  } else {
+    const partes=s.split('.');
+    if(partes.length>1 && partes.slice(1).every(p=>/^\d{3}$/.test(p))){
+      // Formato "8.900" / "1.144.500": todos los grupos tras el punto tienen
+      // exactamente 3 dígitos -> es separador de miles, no decimal.
+      s=partes.join('');
+    }
+    // si no calza ese patrón (ej. "7.5"), se deja el punto como decimal real
+  }
+  return Number(s);
+}
+
 async function handlePlanFile(file){
   if(!file) return;
   const progEl=document.getElementById('plan-upload-progress');
@@ -8023,9 +8049,10 @@ async function handlePlanFile(file){
         if(!tipo||!cA||SKIP_ROWS.has(c0)) return;
         sems.forEach(({ci,sem})=>{
           const v=row[ci];
-          if(v!==null&&v!==undefined&&!isNaN(Number(v))&&Number(v)>0){
+          const n=parseNumeroPlan(v);
+          if(v!==null&&v!==undefined&&!isNaN(n)&&n>0){
             const k=sem+'|'+cA+'|'+tipo;
-            agg[k]=(agg[k]||0)+Number(v);
+            agg[k]=(agg[k]||0)+n;
           }
         });
       });
