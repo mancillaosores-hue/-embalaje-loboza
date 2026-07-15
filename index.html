@@ -1695,6 +1695,29 @@ function bonoEquivalenteDia(tipoBase, cantLinea, cantMaleta, cantInsumo){
   return cantLinea + (cantMaleta * BONO_FACTOR_MALETA_A_LINEA) + (cantInsumo / BONO_FACTOR_INSUMO);
 }
 
+// Tarjeta "Equivalencia para bono" — reutilizable en Día/Semana/Mes/Historial de la
+// propia embaladora. No reemplaza el total real (el que se usa para meta y %),
+// solo lo muestra aparte para que sepan cuánto vale su producción en el bono.
+function renderBonoEquivCard(usuario, cantLinea, cantMaleta, cantInsumo, periodoLbl){
+  const tipoBase = BONO_TIPO_OPERARIA[usuario];
+  if(!tipoBase) return ''; // operaria no está mapeada en el módulo de bonos
+  const totalCrudo = (cantLinea||0) + (cantMaleta||0) + (cantInsumo||0);
+  if(totalCrudo <= 0) return '';
+  const equiv = bonoEquivalenteDia(tipoBase, cantLinea||0, cantMaleta||0, cantInsumo||0);
+  const conv = tipoBase === 'maleta'
+    ? `${fmtN(cantMaleta)} maleta + ${fmtN(cantLinea)} línea ÷4 + ${fmtN(cantInsumo)} insumo ÷20`
+    : `${fmtN(cantLinea)} línea + ${fmtN(cantMaleta)} maleta ×4 + ${fmtN(cantInsumo)} insumo ÷20`;
+  return `<div class="card" style="border:1px solid #FFBA4D33;background:linear-gradient(135deg,#1A1200,#0F1E35);margin-bottom:.6rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="card-title" style="margin-bottom:0">💰 Equivalencia para bono</div>
+      <span style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">${periodoLbl}</span>
+    </div>
+    <div style="font-size:26px;font-weight:900;color:#FFBA4D;line-height:1;letter-spacing:-.02em">${fmtN(equiv)}<span style="font-size:12px;font-weight:600;color:var(--txt3);margin-left:5px">uds equivalentes</span></div>
+    <div style="font-size:10.5px;color:var(--txt3);margin-top:6px;line-height:1.5">${conv}</div>
+    <div style="font-size:9.5px;color:var(--txt3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.07)">Tu meta y tu % de arriba se calculan con tus <b style="color:var(--txt2)">${fmtN(totalCrudo)}</b> unidades reales. Este número aparte es solo para el cálculo de tu bono.</div>
+  </div>`;
+}
+
 
 // ============================================================
 // CAPACIDAD DINÁMICA — productividades estándar por mix (PARAMETRIZABLE)
@@ -3107,6 +3130,7 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
       </div>`;
     }).join('')}
   </div>
+  ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Hoy')}
   ${Object.keys(canales).length?`<div class="card">
     <div class="card-title" style="margin-bottom:.75rem">Por canal</div>
     ${Object.entries(canales).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
@@ -3247,7 +3271,8 @@ async function loadSemana(){
     <div class="card">
       <div class="card-title" style="margin-bottom:.85rem">Por tipo de material</div>
       ${renderTipoBars(g)}
-    </div>`;
+    </div>
+    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Esta semana')}`;
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 
   // ── Canal Online banner — siempre visible ──
@@ -3341,6 +3366,10 @@ async function loadHistorial(){
     const totalTipos={maleta:0,linea:0,insumo:0,otro:0};
     rowsAll.forEach(r=>{totalTipos[r.tipo]=(totalTipos[r.tipo]||0)+r.cantidad;});
     const totalTipoSum=Object.values(totalTipos).reduce((a,b)=>a+b,0)||1;
+
+    // Mix de tipo del mes actual (para la equivalencia de bono)
+    const tiposMesAct={maleta:0,linea:0,insumo:0,otro:0};
+    rowsAll.filter(r=>r.fecha.startsWith(mesActual)).forEach(r=>{tiposMesAct[r.tipo]=(tiposMesAct[r.tipo]||0)+r.cantidad;});
 
     // Score sintético (0-100)
 
@@ -3686,6 +3715,8 @@ async function loadHistorial(){
         </div>
       </div>
     </div>
+
+    ${renderBonoEquivCard(cUser, tiposMesAct.linea, tiposMesAct.maleta, tiposMesAct.insumo, fmtMes(mesActual))}
 
     <!-- ── HEATMAP ── -->
     <div class="pf-sec pf-s8" id="pf-heatmap-container"></div>
@@ -5025,6 +5056,8 @@ async function loadMes(){
         <div style="font-size:9px;color:var(--txt3)">${g.total>0?Math.round(g.insumo/g.total*100):0}%</div>
       </div>
     </div>
+
+    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, fmtMes(ms))}
 
     <!-- Mejor día destacado -->
     ${maxDia>0?`<div style="background:linear-gradient(135deg,#1A1000,#0F1E35);border:1px solid #FFBA4D44;border-radius:var(--r);padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
