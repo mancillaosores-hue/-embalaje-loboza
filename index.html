@@ -1698,11 +1698,11 @@ function bonoEquivalenteDia(tipoBase, cantLinea, cantMaleta, cantInsumo){
 // Tarjeta "Equivalencia para bono" — reutilizable en Día/Semana/Mes/Historial de la
 // propia embaladora. No reemplaza el total real (el que se usa para meta y %),
 // solo lo muestra aparte para que sepan cuánto vale su producción en el bono.
-function renderBonoEquivCard(usuario, cantLinea, cantMaleta, cantInsumo, periodoLbl){
+function renderBonoEquivCard(usuario, cantLinea, cantMaleta, cantInsumo, periodoLbl, totalReal){
   const tipoBase = BONO_TIPO_OPERARIA[usuario];
   if(!tipoBase) return ''; // operaria no está mapeada en el módulo de bonos
-  const totalCrudo = (cantLinea||0) + (cantMaleta||0) + (cantInsumo||0);
-  if(totalCrudo <= 0) return '';
+  const totalRealN = totalReal!=null ? totalReal : ((cantLinea||0)+(cantMaleta||0));
+  if(totalRealN<=0 && (cantInsumo||0)<=0) return '';
   const equiv = bonoEquivalenteDia(tipoBase, cantLinea||0, cantMaleta||0, cantInsumo||0);
   const conv = tipoBase === 'maleta'
     ? `${fmtN(cantMaleta)} maleta + ${fmtN(cantLinea)} línea ÷4 + ${fmtN(cantInsumo)} insumo ÷20`
@@ -1714,7 +1714,7 @@ function renderBonoEquivCard(usuario, cantLinea, cantMaleta, cantInsumo, periodo
     </div>
     <div style="font-size:26px;font-weight:900;color:#FFBA4D;line-height:1;letter-spacing:-.02em">${fmtN(equiv)}<span style="font-size:12px;font-weight:600;color:var(--txt3);margin-left:5px">uds equivalentes</span></div>
     <div style="font-size:10.5px;color:var(--txt3);margin-top:6px;line-height:1.5">${conv}</div>
-    <div style="font-size:9.5px;color:var(--txt3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.07)">Tu meta y tu % de arriba se calculan con tus <b style="color:var(--txt2)">${fmtN(totalCrudo)}</b> unidades reales. Este número aparte es solo para el cálculo de tu bono.</div>
+    <div style="font-size:9.5px;color:var(--txt3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.07)">Tu meta y tu % de arriba se calculan con tus <b style="color:var(--txt2)">${fmtN(totalRealN)}</b> unidades reales. Este número aparte es solo para el cálculo de tu bono.</div>
   </div>`;
 }
 
@@ -3130,7 +3130,7 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
       </div>`;
     }).join('')}
   </div>
-  ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Hoy')}
+  ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Hoy', g.total)}
   ${Object.keys(canales).length?`<div class="card">
     <div class="card-title" style="margin-bottom:.75rem">Por canal</div>
     ${Object.entries(canales).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
@@ -3188,7 +3188,7 @@ async function loadSemana(){
       fechas.push(d.toISOString().slice(0,10));
     }
     const vals=fechas.map(f=>gf[f]?.total||0);
-    const maxVal=Math.max(...vals,1);
+    const maxVal=Math.max(...vals,meta,1);
     const mejorIdx=vals.indexOf(Math.max(...vals));
 
     el.innerHTML=`
@@ -3272,7 +3272,7 @@ async function loadSemana(){
       <div class="card-title" style="margin-bottom:.85rem">Por tipo de material</div>
       ${renderTipoBars(g)}
     </div>
-    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Esta semana')}`;
+    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Esta semana', g.total)}`;
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 
   // ── Canal Online banner — siempre visible ──
@@ -3716,7 +3716,7 @@ async function loadHistorial(){
       </div>
     </div>
 
-    ${renderBonoEquivCard(cUser, tiposMesAct.linea, tiposMesAct.maleta, tiposMesAct.insumo, fmtMes(mesActual))}
+    ${renderBonoEquivCard(cUser, tiposMesAct.linea, tiposMesAct.maleta, tiposMesAct.insumo, fmtMes(mesActual), totalMes)}
 
     <!-- ── HEATMAP ── -->
     <div class="pf-sec pf-s8" id="pf-heatmap-container"></div>
@@ -5057,7 +5057,7 @@ async function loadMes(){
       </div>
     </div>
 
-    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, fmtMes(ms))}
+    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, fmtMes(ms), g.total)}
 
     <!-- Mejor día destacado -->
     ${maxDia>0?`<div style="background:linear-gradient(135deg,#1A1000,#0F1E35);border:1px solid #FFBA4D44;border-radius:var(--r);padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
