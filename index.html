@@ -1695,27 +1695,39 @@ function bonoEquivalenteDia(tipoBase, cantLinea, cantMaleta, cantInsumo){
   return cantLinea + (cantMaleta * BONO_FACTOR_MALETA_A_LINEA) + (cantInsumo / BONO_FACTOR_INSUMO);
 }
 
-// Tarjeta "Equivalencia para bono" — reutilizable en Día/Semana/Mes/Historial de la
-// propia embaladora. No reemplaza el total real (el que se usa para meta y %),
-// solo lo muestra aparte para que sepan cuánto vale su producción en el bono.
-function renderBonoEquivCard(usuario, cantLinea, cantMaleta, cantInsumo, periodoLbl, totalReal){
+// Descompone la producción de un período (línea/maleta/insumo) en unidades
+// equivalentes POR TIPO, según la categoría base de la operaria. La suma de
+// eqLinea+eqMaleta+eqInsumo = bonoEquivalenteDia(). Devuelve null si la
+// operaria no está mapeada en BONO_TIPO_OPERARIA (para esos casos se sigue
+// usando el total crudo, sin conversión).
+function calcEquivDesglose(usuario, cantLinea, cantMaleta, cantInsumo){
   const tipoBase = BONO_TIPO_OPERARIA[usuario];
-  if(!tipoBase) return ''; // operaria no está mapeada en el módulo de bonos
-  const totalRealN = totalReal!=null ? totalReal : ((cantLinea||0)+(cantMaleta||0));
-  if(totalRealN<=0 && (cantInsumo||0)<=0) return '';
-  const equiv = bonoEquivalenteDia(tipoBase, cantLinea||0, cantMaleta||0, cantInsumo||0);
-  const conv = tipoBase === 'maleta'
-    ? `${fmtN(cantMaleta)} maleta + ${fmtN(cantLinea)} línea ÷4 + ${fmtN(cantInsumo)} insumo ÷20`
-    : `${fmtN(cantLinea)} línea + ${fmtN(cantMaleta)} maleta ×4 + ${fmtN(cantInsumo)} insumo ÷20`;
-  return `<div class="card" style="border:1px solid #FFBA4D33;background:linear-gradient(135deg,#1A1200,#0F1E35);margin-bottom:.6rem">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div class="card-title" style="margin-bottom:0">💰 Equivalencia para bono</div>
-      <span style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">${periodoLbl}</span>
-    </div>
-    <div style="font-size:26px;font-weight:900;color:#FFBA4D;line-height:1;letter-spacing:-.02em">${fmtN(equiv)}<span style="font-size:12px;font-weight:600;color:var(--txt3);margin-left:5px">uds equivalentes</span></div>
-    <div style="font-size:10.5px;color:var(--txt3);margin-top:6px;line-height:1.5">${conv}</div>
-    <div style="font-size:9.5px;color:var(--txt3);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.07)">Tu meta y tu % de arriba se calculan con tus <b style="color:var(--txt2)">${fmtN(totalRealN)}</b> unidades reales. Este número aparte es solo para el cálculo de tu bono.</div>
-  </div>`;
+  if(!tipoBase) return null;
+  const linea=cantLinea||0, maleta=cantMaleta||0, insumo=cantInsumo||0;
+  let eqLinea, eqMaleta;
+  if(tipoBase==='maleta'){
+    eqMaleta = maleta;
+    eqLinea  = linea / BONO_FACTOR_MALETA_A_LINEA;
+  } else {
+    eqLinea  = linea;
+    eqMaleta = maleta * BONO_FACTOR_MALETA_A_LINEA;
+  }
+  const eqInsumo = insumo / BONO_FACTOR_INSUMO;
+  return {
+    tipoBase, eqLinea, eqMaleta, eqInsumo,
+    total: eqLinea+eqMaleta+eqInsumo,
+    realLinea:linea, realMaleta:maleta, realInsumo:insumo, realTotal:linea+maleta
+  };
+}
+
+// Línea de referencia con el total real (transparencia), para mostrar bajo el
+// número grande cuando ese número ya está en equivalencia.
+function equivRefLineHTML(eq){
+  if(!eq) return '';
+  const conv = eq.tipoBase === 'maleta'
+    ? `${fmtN(eq.realMaleta)} maleta + ${fmtN(eq.realLinea)} línea ÷4 + ${fmtN(eq.realInsumo)} insumo ÷20`
+    : `${fmtN(eq.realLinea)} línea + ${fmtN(eq.realMaleta)} maleta ×4 + ${fmtN(eq.realInsumo)} insumo ÷20`;
+  return `<div style="font-size:9.5px;color:var(--txt3);margin-top:2px">≈ ${conv} · <span style="color:var(--txt2)">${fmtN(eq.realTotal)} uds reales</span></div>`;
 }
 
 
@@ -3057,11 +3069,19 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
   const canales={};
   rows.forEach(r=>{if(r.tipo!=='insumo') canales[r.canal]=(canales[r.canal]||0)+r.cantidad;});
 
-  // Comparativa con ayer
+  // Equivalencia (si la operaria está mapeada en BONO_TIPO_OPERARIA, esto pasa
+  // a ser la base de la meta, el % y el desglose por tipo de material)
+  const eq = calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+  const totalShow = eq ? eq.total : g.total;
+  pct = meta>0 ? Math.min(100, Math.round((totalShow/meta)*100)) : 0;
+
+  // Comparativa con ayer (misma base: equivalencia si aplica)
+  const eqAyer = calcEquivDesglose(cUser, gAyer.linea||0, gAyer.maleta||0, gAyer.insumo||0);
+  const ayerTotal = eq ? (eqAyer?eqAyer.total:0) : (gAyer.total||0);
   let compAyer='';
-  if(gAyer.total>0){
-    const diff=g.total-gAyer.total;
-    const diffPct=Math.round(Math.abs(diff)/gAyer.total*100);
+  if(ayerTotal>0){
+    const diff=totalShow-ayerTotal;
+    const diffPct=Math.round(Math.abs(diff)/ayerTotal*100);
     if(diff>0) compAyer=`<div class="mini-trend trend-up">↑ +${fmtN(diff)} uds vs ayer (+${diffPct}%)</div>`;
     else if(diff<0) compAyer=`<div class="mini-trend trend-dn">↓ ${fmtN(Math.abs(diff))} uds vs ayer (−${diffPct}%)</div>`;
     else compAyer=`<div class="mini-trend trend-eq">= Igual que ayer</div>`;
@@ -3078,7 +3098,8 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Meta del día · ${fmtFecha(fecha).slice(0,5)}</div>
-          <div style="font-size:36px;font-weight:900;color:${col};line-height:1;letter-spacing:-.03em">${fmtN(g.total)}<span style="font-size:14px;font-weight:600;color:rgba(255,255,255,.4);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
+          <div style="font-size:36px;font-weight:900;color:${col};line-height:1;letter-spacing:-.03em">${fmtN(totalShow)}<span style="font-size:14px;font-weight:600;color:rgba(255,255,255,.4);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
+          ${eq?equivRefLineHTML(eq):''}
           ${compAyer}
         </div>
         <div style="text-align:right">
@@ -3103,34 +3124,39 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
     <div class="mb-icon">🏆</div>
     <div class="mb-txt">
       <div class="mb-t">¡Meta cumplida! ¡Excelente trabajo!</div>
-      <div class="mb-s">${fmtN(g.total)} uds · ${pct}% de tu meta diaria</div>
+      <div class="mb-s">${fmtN(totalShow)} uds · ${pct}% de tu meta diaria</div>
     </div>
   </div>`:'';
 
-  // KPIs tipo de material
-  const tipos=[
-    {k:'maleta',n:'Maletas',c:'#3B8FFF'},
-    {k:'linea',n:'No maleta',c:'#2ECC8A'},
-    {k:'insumo',n:'Insumos',c:'#9A88FF'},
-    {k:'otro',n:'Otro',c:'#FFBA4D'},
-  ].filter(t=>g[t.k]>0);
-  const maxTipo=Math.max(...tipos.map(t=>g[t.k]),1);
+  // KPIs tipo de material — en equivalencia cuando aplica, para que sumen igual que el total de arriba
+  const tiposDef = eq
+    ? [
+        {k:'maleta', n:'Maletas', c:'#3B8FFF', val:eq.eqMaleta, real:eq.realMaleta, conv:eq.tipoBase==='maleta'?'directo':'×4'},
+        {k:'linea',  n:'No maleta', c:'#2ECC8A', val:eq.eqLinea, real:eq.realLinea, conv:eq.tipoBase==='maleta'?'÷4':'directo'},
+        {k:'insumo', n:'Insumos', c:'#9A88FF', val:eq.eqInsumo, real:eq.realInsumo, conv:'÷20'},
+      ].filter(t=>t.val>0)
+    : [
+        {k:'maleta', n:'Maletas', c:'#3B8FFF', val:g.maleta},
+        {k:'linea',  n:'No maleta', c:'#2ECC8A', val:g.linea},
+        {k:'insumo', n:'Insumos', c:'#9A88FF', val:g.insumo},
+        {k:'otro',   n:'Otro', c:'#FFBA4D', val:g.otro},
+      ].filter(t=>t.val>0);
+  const maxTipo=Math.max(...tiposDef.map(t=>t.val),1);
 
   return`
   ${celebracion}
-  <div style="display:grid;grid-template-columns:repeat(${Math.min(tipos.length,2)},1fr);gap:8px;margin-bottom:.7rem">
-    ${tipos.map(t=>{
-      const barW=Math.round(g[t.k]/maxTipo*100);
-      const pctT=g.total>0?Math.round(g[t.k]/g.total*100):0;
+  <div style="display:grid;grid-template-columns:repeat(${Math.min(tiposDef.length,2)},1fr);gap:8px;margin-bottom:.7rem">
+    ${tiposDef.map(t=>{
+      const barW=Math.round(t.val/maxTipo*100);
+      const pctT=totalShow>0?Math.round(t.val/totalShow*100):0;
       return`<div style="background:var(--card);border:1px solid ${t.c}33;border-radius:var(--r);padding:12px 14px;position:relative;overflow:hidden">
         <div style="position:absolute;bottom:0;left:0;height:3px;width:${barW}%;background:${t.c};border-radius:0 0 0 var(--r);transition:width .6s ease"></div>
-        <div style="font-size:9px;font-weight:700;color:${t.c};text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${t.n}</div>
-        <div style="font-size:24px;font-weight:800;color:var(--txt);line-height:1;letter-spacing:-.02em">${fmtN(g[t.k])}</div>
-        <div style="font-size:10px;color:var(--txt3);margin-top:3px">${pctT}% del total</div>
+        <div style="font-size:9px;font-weight:700;color:${t.c};text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${t.n}${eq?' · equiv.':''}</div>
+        <div style="font-size:24px;font-weight:800;color:var(--txt);line-height:1;letter-spacing:-.02em">${fmtN(t.val)}</div>
+        <div style="font-size:10px;color:var(--txt3);margin-top:3px">${pctT}% del total${eq?` · ${fmtN(t.real)} uds reales (${t.conv})`:''}</div>
       </div>`;
     }).join('')}
   </div>
-  ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Hoy', g.total)}
   ${Object.keys(canales).length?`<div class="card">
     <div class="card-title" style="margin-bottom:.75rem">Por canal</div>
     ${Object.entries(canales).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
@@ -3146,7 +3172,23 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
   </div>`:''}`;
 }
 
-function renderTipoBars(g){
+function renderTipoBars(g, eq){
+  if(eq){
+    const items=[
+      {t:'maleta', val:eq.eqMaleta, real:eq.realMaleta, conv:eq.tipoBase==='maleta'?'directo':'×4'},
+      {t:'linea',  val:eq.eqLinea,  real:eq.realLinea,  conv:eq.tipoBase==='maleta'?'÷4':'directo'},
+      {t:'insumo', val:eq.eqInsumo, real:eq.realInsumo, conv:'÷20'},
+    ].filter(i=>i.val>0);
+    const max=Math.max(...items.map(i=>i.val),1);
+    return items.map(i=>`
+    <div class="tipo-item">
+      <div class="tipo-dot" style="background:${TIPO_COLORS[i.t]}"></div>
+      <div class="tipo-name">${TIPO_NAMES[i.t]} · equiv.</div>
+      <div class="tipo-bar-wrap"><div class="tipo-bar" style="width:${Math.round(i.val/max*100)}%;background:${TIPO_COLORS[i.t]}"></div></div>
+      <div class="tipo-val">${fmtN(i.val)}</div>
+      <div class="tipo-pct">${eq.total>0?Math.round(i.val/eq.total*100):0}% <span style="opacity:.6">(${fmtN(i.real)} real ${i.conv})</span></div>
+    </div>`).join('');
+  }
   const max=Math.max(g.maleta,g.linea,g.otro)||1;
   return['maleta','linea','insumo','otro'].filter(t=>g[t]>0).map(t=>`
   <div class="tipo-item">
@@ -3179,7 +3221,11 @@ async function loadSemana(){
     const gf=groupByFecha(rows);
     const meta=META[cUser]||0;
     const metaSem=meta*5;
-    const pctSem=metaSem>0?Math.min(100,Math.round(g.total/metaSem*100)):0;
+
+    // Equivalencia (si aplica) — pasa a ser la base del total, % y desglose
+    const eq=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+    const totalShow=eq?eq.total:g.total;
+    const pctSem=metaSem>0?Math.min(100,Math.round(totalShow/metaSem*100)):0;
     const pctCol=pctSem>=100?'#2ECC8A':pctSem>=60?'#FFBA4D':'#3B8FFF';
     const dias=['Lun','Mar','Mié','Jue','Vie'];
     const fechas=[];
@@ -3187,7 +3233,13 @@ async function loadSemana(){
       const d=new Date(desde+'T12:00:00'); d.setDate(d.getDate()+i);
       fechas.push(d.toISOString().slice(0,10));
     }
-    const vals=fechas.map(f=>gf[f]?.total||0);
+    // Valores por día en la misma base (equivalencia si aplica)
+    const vals=fechas.map(f=>{
+      const d=gf[f];
+      if(!d) return 0;
+      const eqDia=calcEquivDesglose(cUser, d.linea, d.maleta, d.insumo);
+      return eqDia?eqDia.total:(d.total||0);
+    });
     const maxVal=Math.max(...vals,meta,1);
     const mejorIdx=vals.indexOf(Math.max(...vals));
 
@@ -3197,7 +3249,8 @@ async function loadSemana(){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px">
         <div>
           <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Semana ${ws.split('-W')[1]} · ${fmtFecha(desde).slice(0,5)} – ${fmtFecha(hasta).slice(0,5)}</div>
-          <div style="font-size:38px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(g.total)}<span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.35);margin-left:4px">uds</span></div>
+          <div style="font-size:38px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(totalShow)}<span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.35);margin-left:4px">uds</span></div>
+          ${eq?equivRefLineHTML(eq):''}
         </div>
         <div style="text-align:right">
           <div style="font-size:36px;font-weight:900;color:${pctCol};line-height:1">${pctSem}%</div>
@@ -3213,7 +3266,7 @@ async function loadSemana(){
 
     <!-- Barras por día -->
     <div class="card">
-      <div class="card-title" style="margin-bottom:14px">Producción por día</div>
+      <div class="card-title" style="margin-bottom:14px">Producción por día${eq?' (equivalencia)':''}</div>
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:6px;height:120px;padding:0 4px">
         ${fechas.map((f,i)=>{
           const v=vals[i];
@@ -3257,7 +3310,7 @@ async function loadSemana(){
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 12px;text-align:center">
         <div style="font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Prom.</div>
-        <div style="font-size:22px;font-weight:800;color:#3B8FFF">${fmtN(Math.round(g.total/Math.max(Object.keys(gf).length,1)))}</div>
+        <div style="font-size:22px;font-weight:800;color:#3B8FFF">${fmtN(Math.round(totalShow/Math.max(Object.keys(gf).length,1)))}</div>
         <div style="font-size:9px;color:var(--txt3)">uds/día</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 12px;text-align:center">
@@ -3270,9 +3323,8 @@ async function loadSemana(){
     <!-- Tipo de material -->
     <div class="card">
       <div class="card-title" style="margin-bottom:.85rem">Por tipo de material</div>
-      ${renderTipoBars(g)}
-    </div>
-    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, 'Esta semana', g.total)}`;
+      ${renderTipoBars(g, eq)}
+    </div>`;
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 
   // ── Canal Online banner — siempre visible ──
@@ -3302,21 +3354,28 @@ async function loadHistorial(){
     const record=Math.max(...valoresDias,0);
     const recordFecha=Object.entries(gfAll).find(([,d])=>d.total===record)?.[0]||'';
 
-    // Meta mes
+    // Meta mes — en equivalencia si la operaria está mapeada
     const metaDia=META[cUser]||0;
     const rowsMes=rowsNoInsumo.filter(r=>r.fecha.startsWith(mesActual));
-    const totalMes=rowsMes.reduce((s,r)=>s+r.cantidad,0);
+    const totalMesRaw=rowsMes.reduce((s,r)=>s+r.cantidad,0);
+    const tiposMesAct={maleta:0,linea:0,insumo:0,otro:0};
+    rowsAll.filter(r=>r.fecha.startsWith(mesActual)).forEach(r=>{tiposMesAct[r.tipo]=(tiposMesAct[r.tipo]||0)+r.cantidad;});
+    const eqMes=calcEquivDesglose(cUser, tiposMesAct.linea, tiposMesAct.maleta, tiposMesAct.insumo);
+    const totalMes=eqMes?eqMes.total:totalMesRaw;
     const metaMes=metaDia*20;
     const pctMeta=metaMes>0?Math.min(100,Math.round(totalMes/metaMes*100)):0;
     const diasMesAct=new Set(rowsMes.map(r=>r.fecha)).size;
     const promMesAct=diasMesAct>0?Math.round(totalMes/diasMesAct):0;
 
-    // Mes anterior
+    // Mes anterior (misma base)
     const [anioM,mesM]=mesActual.split('-').map(Number);
     const mesAntKey=mesM===1?`${anioM-1}-12`:`${anioM}-${String(mesM-1).padStart(2,'0')}`;
     const rowsAnt=rowsNoInsumo.filter(r=>r.fecha.startsWith(mesAntKey));
     const diasAnt=new Set(rowsAnt.map(r=>r.fecha)).size;
-    const totalAnt=rowsAnt.reduce((s,r)=>s+r.cantidad,0);
+    const tiposAnt={maleta:0,linea:0,insumo:0,otro:0};
+    rowsAll.filter(r=>r.fecha.startsWith(mesAntKey)).forEach(r=>{tiposAnt[r.tipo]=(tiposAnt[r.tipo]||0)+r.cantidad;});
+    const eqAnt=calcEquivDesglose(cUser, tiposAnt.linea, tiposAnt.maleta, tiposAnt.insumo);
+    const totalAnt=eqAnt?eqAnt.total:rowsAnt.reduce((s,r)=>s+r.cantidad,0);
     const promAnt=diasAnt>0?Math.round(totalAnt/diasAnt):0;
     const varPct=promAnt>0?Math.round((promMesAct-promAnt)/promAnt*100):null;
     const varColor=varPct!==null&&varPct>=0?'#2ECC8A':'#FF6B6B';
@@ -3366,10 +3425,6 @@ async function loadHistorial(){
     const totalTipos={maleta:0,linea:0,insumo:0,otro:0};
     rowsAll.forEach(r=>{totalTipos[r.tipo]=(totalTipos[r.tipo]||0)+r.cantidad;});
     const totalTipoSum=Object.values(totalTipos).reduce((a,b)=>a+b,0)||1;
-
-    // Mix de tipo del mes actual (para la equivalencia de bono)
-    const tiposMesAct={maleta:0,linea:0,insumo:0,otro:0};
-    rowsAll.filter(r=>r.fecha.startsWith(mesActual)).forEach(r=>{tiposMesAct[r.tipo]=(tiposMesAct[r.tipo]||0)+r.cantidad;});
 
     // Score sintético (0-100)
 
@@ -3716,7 +3771,7 @@ async function loadHistorial(){
       </div>
     </div>
 
-    ${renderBonoEquivCard(cUser, tiposMesAct.linea, tiposMesAct.maleta, tiposMesAct.insumo, fmtMes(mesActual), totalMes)}
+    ${eqMes?`<div style="font-size:10px;color:var(--txt3);text-align:center;margin:-4px 0 8px">${equivRefLineHTML(eqMes)}</div>`:''}
 
     <!-- ── HEATMAP ── -->
     <div class="pf-sec pf-s8" id="pf-heatmap-container"></div>
@@ -4988,23 +5043,36 @@ async function loadMes(){
     const g=groupByTipo(rows);
     const gf=groupByFecha(rows);
     const dias=Object.keys(gf).length;
-    const prom=dias>0?Math.round(g.total/dias):0;
     const meta=META[cUser]||0;
     const metaMes=meta*20;
-    const pctMes=metaMes>0?Math.min(100,Math.round(g.total/metaMes*100)):0;
-    const pctCol=pctMes>=100?'#2ECC8A':pctMes>=70?'#FFBA4D':'#3B8FFF';
-    const vals=Object.values(gf).map(d=>d.total);
-    const maxDia=Math.max(...vals);
-    const mejorFecha=Object.entries(gf).find(([,d])=>d.total===maxDia)?.[0]||'';
 
-    // Mes anterior desde caché
+    // Equivalencia (si aplica) — pasa a ser la base del total, % y desglose
+    const eq=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+    const totalShow=eq?eq.total:g.total;
+    const prom=dias>0?Math.round(totalShow/dias):0;
+    const pctMes=metaMes>0?Math.min(100,Math.round(totalShow/metaMes*100)):0;
+    const pctCol=pctMes>=100?'#2ECC8A':pctMes>=70?'#FFBA4D':'#3B8FFF';
+
+    // gf en la misma base (equivalencia por día si aplica), reutilizado en "mejor día" y el gráfico
+    const gfShow={};
+    Object.entries(gf).forEach(([f,d])=>{
+      const eqDia=eq?calcEquivDesglose(cUser, d.linea, d.maleta, d.insumo):null;
+      gfShow[f]={...d, total: eqDia?Math.round(eqDia.total):d.total};
+    });
+    const vals=Object.values(gfShow).map(d=>d.total);
+    const maxDia=Math.max(...vals);
+    const mejorFecha=Object.entries(gfShow).find(([,d])=>d.total===maxDia)?.[0]||'';
+
+    // Mes anterior desde caché (misma base)
     const [anioN,mesN]=ms.split('-').map(Number);
     const mesAntKey=mesN===1?`${anioN-1}-12`:`${anioN}-${String(mesN-1).padStart(2,'0')}`;
     let promAnt=0, totalAnt=0;
     if(_cache.rows){
       const rowsAnt=_cache.rows.filter(r=>r.fecha.startsWith(mesAntKey));
       const diasAnt=new Set(rowsAnt.map(r=>r.fecha)).size;
-      totalAnt=rowsAnt.reduce((s,r)=>s+r.cantidad,0);
+      const gAnt=groupByTipo(rowsAnt);
+      const eqAnt=calcEquivDesglose(cUser, gAnt.linea, gAnt.maleta, gAnt.insumo);
+      totalAnt=eqAnt?eqAnt.total:gAnt.total;
       promAnt=diasAnt>0?Math.round(totalAnt/diasAnt):0;
     }
     const varPct=promAnt>0?Math.round((prom-promAnt)/promAnt*100):null;
@@ -5017,8 +5085,9 @@ async function loadMes(){
       <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${fmtMes(ms)}</div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px">
         <div>
-          <div style="font-size:40px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(g.total)}</div>
+          <div style="font-size:40px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(totalShow)}</div>
           <div style="font-size:11px;color:var(--txt3);margin-top:3px">${dias} días trabajados · ${fmtN(prom)} uds/día</div>
+          ${eq?equivRefLineHTML(eq):''}
         </div>
         <div style="text-align:right">
           <div style="font-size:36px;font-weight:900;color:${pctCol};line-height:1">${pctMes}%</div>
@@ -5041,23 +5110,21 @@ async function loadMes(){
     <!-- KPIs 3 columnas -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
       <div style="background:var(--card);border:1px solid #3B8FFF33;border-radius:var(--r);padding:11px 12px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:#60B0FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Maletas</div>
-        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(g.maleta)}</div>
-        <div style="font-size:9px;color:var(--txt3)">${g.total>0?Math.round(g.maleta/g.total*100):0}%</div>
+        <div style="font-size:9px;font-weight:700;color:#60B0FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Maletas${eq?' · equiv.':''}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.eqMaleta:g.maleta)}</div>
+        <div style="font-size:9px;color:var(--txt3)">${totalShow>0?Math.round((eq?eq.eqMaleta:g.maleta)/totalShow*100):0}%${eq?` · ${fmtN(eq.realMaleta)} real`:''}</div>
       </div>
       <div style="background:var(--card);border:1px solid #2ECC8A33;border-radius:var(--r);padding:11px 12px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:#2ECC8A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">No maleta</div>
-        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(g.linea)}</div>
-        <div style="font-size:9px;color:var(--txt3)">${g.total>0?Math.round(g.linea/g.total*100):0}%</div>
+        <div style="font-size:9px;font-weight:700;color:#2ECC8A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">No maleta${eq?' · equiv.':''}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.eqLinea:g.linea)}</div>
+        <div style="font-size:9px;color:var(--txt3)">${totalShow>0?Math.round((eq?eq.eqLinea:g.linea)/totalShow*100):0}%${eq?` · ${fmtN(eq.realLinea)} real`:''}</div>
       </div>
       <div style="background:var(--card);border:1px solid #9A88FF33;border-radius:var(--r);padding:11px 12px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:#9A88FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Insumos</div>
-        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(g.insumo)}</div>
-        <div style="font-size:9px;color:var(--txt3)">${g.total>0?Math.round(g.insumo/g.total*100):0}%</div>
+        <div style="font-size:9px;font-weight:700;color:#9A88FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Insumos${eq?' · equiv.':''}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.eqInsumo:g.insumo)}</div>
+        <div style="font-size:9px;color:var(--txt3)">${totalShow>0?Math.round((eq?eq.eqInsumo:g.insumo)/totalShow*100):0}%${eq?` · ${fmtN(eq.realInsumo)} real`:''}</div>
       </div>
     </div>
-
-    ${renderBonoEquivCard(cUser, g.linea, g.maleta, g.insumo, fmtMes(ms), g.total)}
 
     <!-- Mejor día destacado -->
     ${maxDia>0?`<div style="background:linear-gradient(135deg,#1A1000,#0F1E35);border:1px solid #FFBA4D44;border-radius:var(--r);padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
@@ -5067,14 +5134,14 @@ async function loadMes(){
       </div>
       <div style="text-align:right">
         <div style="font-size:32px;font-weight:900;color:#FFBA4D;line-height:1">${fmtN(maxDia)}</div>
-        <div style="font-size:10px;color:var(--txt3)">unidades</div>
+        <div style="font-size:10px;color:var(--txt3)">unidades${eq?' equiv.':''}</div>
       </div>
     </div>`:''}
 
     <!-- Evolución del mes -->
     <div class="card">
-      <div class="card-title" style="margin-bottom:.85rem">Evolución del mes</div>
-      ${renderBarChart(gf,true)}
+      <div class="card-title" style="margin-bottom:.85rem">Evolución del mes${eq?' (equivalencia)':''}</div>
+      ${renderBarChart(gfShow,true)}
     </div>`;
 
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
@@ -5087,9 +5154,11 @@ function exportMiMesPDF(){
   const gf=groupByFecha(rows);
   const dias=Object.keys(gf).length;
   const meta=META[cUser]||0;
-  const prom=dias>0?Math.round(g.total/dias):0;
+  const eq=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+  const totalShow=eq?eq.total:g.total;
+  const prom=dias>0?Math.round(totalShow/dias):0;
   const metaMes=meta*dias;
-  const pct=metaMes>0?Math.round(g.total/metaMes*100)+'%':'—';
+  const pct=metaMes>0?Math.round(totalShow/metaMes*100)+'%':'—';
   const nombre=DB[cUser]||cUser;
   const mesLabel=fmtMes(ms);
 
@@ -5120,12 +5189,12 @@ function exportMiMesPDF(){
   // KPIs resumen
   let y=52;
   const kpis=[
-    ['Total mes', fmtN(g.total)+' uds', [59,143,255]],
+    ['Total mes'+(eq?' (equiv.)':''), fmtN(totalShow)+' uds', [59,143,255]],
     ['% Cumplimiento', pct, pct!=='—'&&parseInt(pct)>=100?[62,201,126]:parseInt(pct)>=70?[255,184,77]:[255,90,90]],
     ['Promedio diario', fmtN(prom)+' uds', [138,174,212]],
-    ['Maletas', fmtN(g.maleta)+' uds', [59,143,255]],
-    ['No maleta', fmtN(g.linea)+' uds', [62,201,126]],
-    ['Insumo', fmtN(g.insumo)+' uds', [165,148,255]],
+    ['Maletas'+(eq?' (equiv.)':''), fmtN(eq?eq.eqMaleta:g.maleta)+' uds', [59,143,255]],
+    ['No maleta'+(eq?' (equiv.)':''), fmtN(eq?eq.eqLinea:g.linea)+' uds', [62,201,126]],
+    ['Insumo'+(eq?' (equiv.)':''), fmtN(eq?eq.eqInsumo:g.insumo)+' uds', [165,148,255]],
   ];
   const colW=59, cols=3;
   kpis.forEach(([lbl,val,color],i)=>{
@@ -5145,10 +5214,12 @@ function exportMiMesPDF(){
   const diasEntries=Object.entries(gf).sort((a,b)=>a[0].localeCompare(b[0]));
   doc.autoTable({
     startY: y,
-    head:[['Fecha','Total','Maletas','No Maleta','Insumo','vs Meta']],
+    head:[[ 'Fecha', 'Total'+(eq?' (equiv.)':''), 'Maletas', 'No Maleta', 'Insumo', 'vs Meta' ]],
     body: diasEntries.map(([f,d])=>{
-      const pctDia=meta>0?Math.round(d.total/meta*100)+'%':'—';
-      return[fmtFecha(f), fmtN(d.total), fmtN(d.maleta||0), fmtN(d.linea||0), fmtN(d.insumo||0), pctDia];
+      const eqDia=eq?calcEquivDesglose(cUser, d.linea, d.maleta, d.insumo):null;
+      const totalDia=eqDia?Math.round(eqDia.total):d.total;
+      const pctDia=meta>0?Math.round(totalDia/meta*100)+'%':'—';
+      return[fmtFecha(f), fmtN(totalDia), fmtN(d.maleta||0), fmtN(d.linea||0), fmtN(d.insumo||0), pctDia];
     }),
     theme:'plain',
     styles:{font:'helvetica',fontSize:8.5,cellPadding:2.5,textColor:[232,241,255],fillColor:[21,37,66],lineColor:[30,58,95],lineWidth:0.3},
