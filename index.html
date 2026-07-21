@@ -1735,15 +1735,60 @@ function equivRefLineHTML(eq){
 // CAPACIDAD DINÁMICA — productividades estándar por mix (PARAMETRIZABLE)
 // Editar solo estos 4 valores para recalibrar todo el módulo.
 // ============================================================
+// ============================================================
+// ONLINE — estándares del "Matriz del mix · método tiempo"
+// (Ecommerce, Marketplace, Venta en Verde). La categoría se determina
+// por la composición de la ENTREGA completa, no de la línea individual:
+//  - Solo No Maleta (ol) = entrega con SOLO línea    → estándar 400
+//  - Solo Maleta    (om) = entrega con SOLO maleta    → estándar 250
+//  - Mixto          (ox) = entrega con maleta Y línea → estándar 180
+// ============================================================
+const CAP_STANDARDS_ONLINE = { ol: 400, om: 250, ox: 180 };
+const CAP_LABELS_ONLINE = { ol:'Online · Solo No Maleta', om:'Online · Solo Maleta', ox:'Online · Mixto' };
+const CANALES_ONLINE = ['Ecommerce','Marketplace','Venta en verde'];
+function esCanalOnline(canal){ return CANALES_ONLINE.includes((canal||'').trim()); }
+
+// Agrupa las filas ONLINE de un día por N° de entrega y clasifica cada
+// entrega según su composición (solo línea / solo maleta / mixta).
+// Filas online sin N° de entrega se clasifican individualmente por su
+// propio tipo (no hay forma de saber si pertenecen a un pedido mixto).
+function capClassifyOnlineMap(rowsDia){
+  const porEntrega = {};
+  rowsDia.forEach(r=>{
+    if(!esCanalOnline(r.canal) || (r.tipo||'').toLowerCase()==='insumo' || !r.entrega) return;
+    if(!porEntrega[r.entrega]) porEntrega[r.entrega] = {maleta:false, linea:false};
+    if(r.tipo==='maleta') porEntrega[r.entrega].maleta = true;
+    else porEntrega[r.entrega].linea = true;
+  });
+  const catPorEntrega = {};
+  Object.entries(porEntrega).forEach(([ent,c])=>{
+    catPorEntrega[ent] = (c.maleta && c.linea) ? 'ox' : (c.maleta ? 'om' : 'ol');
+  });
+  return catPorEntrega;
+}
+
+// Clasificador unificado: offline (VAS×Maleta, capClassify) + online
+// (Solo No Maleta / Solo Maleta / Mixto, según la entrega).
+function capClassifyFull(r, entregaCatMap){
+  if((r.tipo||'').toLowerCase()==='insumo') return null;
+  if(esCanalOnline(r.canal)){
+    if(r.entrega && entregaCatMap[r.entrega]) return entregaCatMap[r.entrega];
+    return r.tipo==='maleta' ? 'om' : 'ol'; // fallback: sin entrega, no se puede saber si es mixto
+  }
+  return capClassify(r.canal, r.clientenombre, r.tipo);
+}
+
 const CAP_STANDARDS = {
   ms: 350,   // Sin VAS + Maleta
   mv: 120,   // Con VAS  + Maleta
   lv: 600,   // Con VAS  + No Maleta (Línea)
-  ls: 1215   // Sin VAS  + No Maleta (Línea)
+  ls: 1215,  // Sin VAS  + No Maleta (Línea)
+  ...CAP_STANDARDS_ONLINE
 };
 const CAP_LABELS = {
   ms:'Sin VAS + Maleta', mv:'Con VAS + Maleta',
-  lv:'Con VAS + No Maleta', ls:'Sin VAS + No Maleta'
+  lv:'Con VAS + No Maleta', ls:'Sin VAS + No Maleta',
+  ...CAP_LABELS_ONLINE
 };
 
 // ============================================================
@@ -1774,7 +1819,7 @@ function jornadaFactor(fechaISO){
 function capStandardsDelDia(fechaISO){
   const factor = jornadaFactor(fechaISO);
   const out = {};
-  Object.keys(CAP_STANDARDS).forEach(k=> out[k] = CAP_STANDARDS[k]*factor);
+  Object.keys(CAP_STANDARDS).forEach(k=> out[k] = Math.round(CAP_STANDARDS[k]*factor));
   return out;
 }
 
@@ -1806,12 +1851,13 @@ function capComplejidad(prodEsperada){
 // y devuelve todas las métricas del PASO 1 al PASO 9.
 function calcularCapacidadDinamica(rowsDia, fechaISO){
   const standards = fechaISO ? capStandardsDelDia(fechaISO) : CAP_STANDARDS;
-  const cats = { ms:0, mv:0, lv:0, ls:0 };
+  const cats = {}; Object.keys(CAP_STANDARDS).forEach(k=>cats[k]=0);
+  const entregaCatMap = capClassifyOnlineMap(rowsDia);
   const usuariosOperativos = new Set(); // dotación efectiva (excluye no-operarias)
-  let totalOffline = 0;
+  let totalOffline = 0; // incluye offline + online (ambos entran a la misma matriz)
 
   rowsDia.forEach(r=>{
-    const key = capClassify(r.canal, r.clientenombre, r.tipo);
+    const key = capClassifyFull(r, entregaCatMap);
     const cant = Number(r.cantidad)||0;
     if(key){
       cats[key] += cant;
@@ -1887,7 +1933,7 @@ async function cargarCapacidadDinamicaUI(forzar){
   });
 
   try{
-    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre&fecha=eq.${fechaISO}&order=id.asc`);
+    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,entrega&fecha=eq.${fechaISO}&order=id.asc`);
     const r = calcularCapacidadDinamica(rows, fechaISO);
     _capRenderComplejidad(r);
     _capRenderKpis(r);
@@ -1930,7 +1976,7 @@ function _capRenderKpis(r){
       ${kpi('Productividad Esperada', Math.round(r.productividadEsperadaMix).toLocaleString('es-CL'), 'uds/persona · según mix hoy')}
       ${kpi('Productividad Real', Math.round(r.productividadReal).toLocaleString('es-CL'), 'uds/persona real')}
       ${kpi('Capacidad Esperada', Math.round(r.capacidadEsperada).toLocaleString('es-CL'), `uds · dotación ${r.dotacion}`)}
-      ${kpi('Capacidad Real', Math.round(r.capacidadReal).toLocaleString('es-CL'), 'uds embaladas offline')}
+      ${kpi('Capacidad Real', Math.round(r.capacidadReal).toLocaleString('es-CL'), 'uds embaladas (offline + online)')}
       ${kpi('Accuracy', (r.accuracy>=0?'+':'')+r.accuracy.toFixed(1)+'%', 'real vs esperada', accColor)}
       ${kpi('Diferencia', (r.diferencia>=0?'+':'')+Math.round(r.diferencia).toLocaleString('es-CL'), 'unidades', accColor)}
     </div>`;
@@ -1991,7 +2037,7 @@ async function _capCargarHistorico(fechaFin){
   const inicioISO = _capFechaLocalISO(inicio);
 
   try{
-    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha&fecha=gte.${inicioISO}&fecha=lte.${fechaFin}&order=id.asc`);
+    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${inicioISO}&fecha=lte.${fechaFin}&order=id.asc`);
     const porFecha = {};
     rows.forEach(r=>{ (porFecha[r.fecha] = porFecha[r.fecha]||[]).push(r); });
 
@@ -2059,6 +2105,9 @@ async function _capCargarHistorico(fechaFin){
                   `Con VAS+Línea: ${(d.matriz.find(m=>m.key==='lv').participacion*100).toFixed(1)}%`,
                   `Sin VAS+Maleta: ${(d.matriz.find(m=>m.key==='ms').participacion*100).toFixed(1)}%`,
                   `Con VAS+Maleta: ${(d.matriz.find(m=>m.key==='mv').participacion*100).toFixed(1)}%`,
+                  `Online Solo No Maleta: ${(d.matriz.find(m=>m.key==='ol').participacion*100).toFixed(1)}%`,
+                  `Online Solo Maleta: ${(d.matriz.find(m=>m.key==='om').participacion*100).toFixed(1)}%`,
+                  `Online Mixto: ${(d.matriz.find(m=>m.key==='ox').participacion*100).toFixed(1)}%`,
                 ];
               }
             }}
@@ -2156,7 +2205,7 @@ async function cargarRitmoUI(){
   });
 
   try{
-    const rows = await sbFetchAll(`produccion?select=usuario,nombre,canal,tipo,cantidad,clientenombre,hora&fecha=eq.${fechaISO}&order=id.asc`);
+    const rows = await sbFetchAll(`produccion?select=usuario,nombre,canal,tipo,cantidad,clientenombre,hora,entrega&fecha=eq.${fechaISO}&order=id.asc`);
     const r = _ritCalcular(rows, fechaISO, esHoy);
     _ritDataCache = r;
     _ritRenderEstado(r);
@@ -2338,8 +2387,11 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
 // ── Motor de cálculo ──
 function _ritCalcular(rows, fechaISO, esHoy){
   const base = calcularCapacidadDinamica(rows, fechaISO); // reutiliza dotación, accuracy, etc.
+  const entregaCatMap = capClassifyOnlineMap(rows);
 
-  const porHora = Array.from({length:24}, ()=>({total:0, ms:0, mv:0, lv:0, ls:0}));
+  const porHora = Array.from({length:24}, ()=>{
+    const o={total:0}; Object.keys(CAP_STANDARDS).forEach(k=>o[k]=0); return o;
+  });
   const porOperador = {}; // usuario -> {nombre, total, primerHora, ultimaHora, primer, ultimo}
   let horaMin = null, horaMax = null;
   let primerHoraTxt = null, ultimaHoraTxt = null;
@@ -2347,7 +2399,7 @@ function _ritCalcular(rows, fechaISO, esHoy){
   rows.forEach(r=>{
     const cant = Number(r.cantidad)||0;
     const h = _horaABucket(r.hora);
-    const key = capClassify(r.canal, r.clientenombre, r.tipo);
+    const key = capClassifyFull(r, entregaCatMap);
 
     if(h!==null){
       porHora[h].total += cant;
@@ -2358,7 +2410,7 @@ function _ritCalcular(rows, fechaISO, esHoy){
     if(!primerHoraTxt || (r.hora && r.hora < primerHoraTxt)) primerHoraTxt = r.hora;
     if(!ultimaHoraTxt || (r.hora && r.hora > ultimaHoraTxt)) ultimaHoraTxt = r.hora;
 
-    if(key){ // solo offline clasificable cuenta para el análisis de ritmo
+    if(key){ // offline + online clasificable cuenta para el análisis de ritmo
       const op = r.usuario||'—';
       if(!porOperador[op]) porOperador[op] = {usuario:op, nombre:r.nombre||op, total:0, primerHora:r.hora, ultimaHora:r.hora, porHora:{}, _maxHora:0};
       porOperador[op].total += cant;
@@ -2371,10 +2423,10 @@ function _ritCalcular(rows, fechaISO, esHoy){
     }
   });
 
-  // Curva acumulada (solo offline, para que sea comparable con capacidadEsperada)
+  // Curva acumulada (offline + online, para que sea comparable con capacidadEsperada)
   let acumulado = 0;
   const curvaAcumulada = porHora.map(h=>{
-    acumulado += h.ms+h.mv+h.lv+h.ls;
+    acumulado += Object.keys(CAP_STANDARDS).reduce((s,k)=>s+(h[k]||0),0);
     return acumulado;
   });
 
@@ -2574,7 +2626,7 @@ function _ritRenderChartMix(r){
   const el = _getRitEl('rit-chart-mix');
   if(!el || !window.Chart) return;
   const labels = r.rangoHoras.map(i=>`${String(i).padStart(2,'0')}:00`);
-  const colores = {ms:'#F5A524', mv:'#EF4444', lv:'#3B8FFF', ls:'#22C55E'};
+  const colores = {ms:'#F5A524', mv:'#EF4444', lv:'#3B8FFF', ls:'#22C55E', ol:'#06B6D4', om:'#EC4899', ox:'#A855F7'};
   if(_ritCharts.mix) _ritCharts.mix.destroy();
   _ritCharts.mix = new Chart(el.getContext('2d'), {
     type:'bar',
