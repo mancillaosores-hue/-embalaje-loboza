@@ -862,14 +862,14 @@ input[type="month"], input[type="week"]{
   <!-- TAB: CARGA -->
   <div id="st-carga">
     <div class="card">
-      <div class="card-title" style="margin-bottom:.75rem">Subir archivo diario</div>
+      <div class="card-title" style="margin-bottom:.75rem"> 📦Subir archivo Produccion </div>
       <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
            ondragover="event.preventDefault();this.classList.add('drag')"
            ondragleave="this.classList.remove('drag')"
            ondrop="handleDrop(event)">
         <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFile(this.files[0])"/>
         <div class="upload-icon">📊</div>
-        <div class="upload-txt">Arrastra el Excel aquí o haz clic para seleccionar</div>
+        <div class="upload-txt">Arrastra el Excel ConsultaSQL aquí o haz clic para seleccionar</div>
         <div class="upload-sub">Archivos .xlsx · ConsultaSQL_YYYYMMDD_HHMMSS.xlsx</div>
       </div>
       <div class="progress-upload" id="upload-progress">
@@ -880,7 +880,7 @@ input[type="month"], input[type="week"]{
     </div>
 
     <div class="card" style="margin-top:12px">
-      <div class="card-title" style="margin-bottom:.75rem">📦 Subir entregas del sistema</div>
+      <div class="card-title" style="margin-bottom:.75rem">📦 Subir archivo Entregas </div>
       <div style="font-size:12px;color:var(--txt2);margin-bottom:.85rem;line-height:1.5">
         Archivo <strong>ConsultaSQL</strong> diario de entregas. El sistema calcula automáticamente la fecha del día según la hora de carga.<br>
         <span style="color:#3B8FFF;font-size:11px">Lun: carga Vie 14:30→Lun 17:30 · Mar-Vie: día anterior 17:30→mismo día 17:30</span>
@@ -892,7 +892,7 @@ input[type="month"], input[type="week"]{
            ondrop="handleEntregasDrop(event)">
         <input type="file" id="entregas-file-input" accept=".xlsx,.xls" onchange="handleEntregasFile(this.files[0])"/>
         <div class="upload-icon">📋</div>
-        <div class="upload-txt">Arrastra el ConsultaSQL aquí o haz clic</div>
+        <div class="upload-txt">Arrastra el Excel ConsultaSQL aquí o haz clic para seleccionar</div>
         <div class="upload-sub">Archivos .xlsx · ConsultaSQL_YYYYMMDD_HHMMSS.xlsx</div>
       </div>
       <div class="progress-upload" id="entregas-progress" style="display:none">
