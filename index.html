@@ -832,7 +832,7 @@ input[type="month"], input[type="week"]{
 
     <details class="plan-acc card">
       <summary>
-        <span class="card-title">Por operador</span>
+        <span class="card-title">Ranking de eficiencia por operaria</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div style="display:flex;gap:8px;margin:8px 0">
@@ -1362,7 +1362,7 @@ input[type="month"], input[type="week"]{
 
     <details class="plan-acc card">
       <summary>
-        <span class="card-title">Por operador</span>
+        <span class="card-title">Ranking de eficiencia por operaria</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div style="display:flex;gap:8px;margin:8px 0">
@@ -2388,11 +2388,12 @@ function _bonoRender(elResumen, elTabla, resultado, mesVal){
 function _ritCalcular(rows, fechaISO, esHoy){
   const base = calcularCapacidadDinamica(rows, fechaISO); // reutiliza dotación, accuracy, etc.
   const entregaCatMap = capClassifyOnlineMap(rows);
+  const standardsMap = {}; base.matriz.forEach(m=>{ standardsMap[m.key]=m.estandar; });
 
   const porHora = Array.from({length:24}, ()=>{
     const o={total:0}; Object.keys(CAP_STANDARDS).forEach(k=>o[k]=0); return o;
   });
-  const porOperador = {}; // usuario -> {nombre, total, primerHora, ultimaHora, primer, ultimo}
+  const porOperador = {}; // usuario -> {nombre, total, primerHora, ultimaHora, primer, ultimo, cats}
   let horaMin = null, horaMax = null;
   let primerHoraTxt = null, ultimaHoraTxt = null;
 
@@ -2412,8 +2413,9 @@ function _ritCalcular(rows, fechaISO, esHoy){
 
     if(key){ // offline + online clasificable cuenta para el análisis de ritmo
       const op = r.usuario||'—';
-      if(!porOperador[op]) porOperador[op] = {usuario:op, nombre:r.nombre||op, total:0, primerHora:r.hora, ultimaHora:r.hora, porHora:{}, _maxHora:0};
+      if(!porOperador[op]) porOperador[op] = {usuario:op, nombre:r.nombre||op, total:0, primerHora:r.hora, ultimaHora:r.hora, porHora:{}, _maxHora:0, cats:{}};
       porOperador[op].total += cant;
+      porOperador[op].cats[key] = (porOperador[op].cats[key]||0) + cant;
       if(h!==null){
         porOperador[op].porHora[h] = (porOperador[op].porHora[h]||0) + cant;
         if(porOperador[op].porHora[h] > porOperador[op]._maxHora) porOperador[op]._maxHora = porOperador[op].porHora[h];
@@ -2421,6 +2423,18 @@ function _ritCalcular(rows, fechaISO, esHoy){
       if(r.hora && r.hora < porOperador[op].primerHora) porOperador[op].primerHora = r.hora;
       if(r.hora && r.hora > porOperador[op].ultimaHora) porOperador[op].ultimaHora = r.hora;
     }
+  });
+
+  // Eficiencia real vs. estándar de CADA operaria, calculada según SU PROPIO mix
+  // (no un promedio general) — 100% = rindió exactamente lo que su combinación de
+  // categorías (VAS/Maleta/Online) espera para una "persona-día" completa.
+  Object.values(porOperador).forEach(o=>{
+    let personasDiaEsperadas=0;
+    Object.entries(o.cats).forEach(([k,v])=>{ if(standardsMap[k]) personasDiaEsperadas += v/standardsMap[k]; });
+    o.personasDiaEsperadas = personasDiaEsperadas;
+    o.eficienciaPct = personasDiaEsperadas>0 ? Math.round(personasDiaEsperadas*100) : 0;
+    const catTop = Object.entries(o.cats).sort((a,b)=>b[1]-a[1])[0];
+    o.catPredominante = catTop ? CAP_LABELS[catTop[0]] : '—';
   });
 
   // Curva acumulada (offline + online, para que sea comparable con capacidadEsperada)
@@ -2722,16 +2736,22 @@ function _ritRenderTablaOperador(){
   const total = r.totalOffline || 1;
   const lista = [...r.porOperador]
     .filter(o=> !filtro || o.nombre.toLowerCase().includes(filtro))
-    .sort((a,b)=>b.total-a.total);
+    .sort((a,b)=>b.eficienciaPct-a.eficienciaPct);
 
   if(!lista.length){ el.innerHTML = '<div class="loading">Sin resultados.</div>'; return; }
 
-  const rows = lista.map(o=>{
+  const effColor = pct => pct>=105?'#22C55E':pct>=95?'#F5A524':'#EF4444';
+
+  const rows = lista.map((o,i)=>{
     const horasProg = r.horasJornada || 1;
     const promHora = o.total/horasProg;
+    const ec = effColor(o.eficienciaPct);
     return `
     <tr>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:center;font-size:10.5px;color:var(--txt3,#5D7396);width:18px">${i+1}</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47)">${_acortarNombre(o.nombre)}</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:12px;font-weight:800;color:${ec}">${o.eficienciaPct}%</td>
+      <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:left;font-size:10px;color:var(--txt3,#5D7396);white-space:nowrap">${o.catPredominante}</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px;font-weight:700">${o.total.toLocaleString('es-CL')}</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11.5px">${(o.total/total*100).toFixed(1)}%</td>
       <td style="padding:7px 10px 7px 0;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:10.5px;white-space:nowrap">${o.primerHora?o.primerHora.slice(0,5):'—'}–${o.ultimaHora?o.ultimaHora.slice(0,5):'—'}</td>
@@ -2741,10 +2761,14 @@ function _ritRenderTablaOperador(){
   }).join('');
 
   el.innerHTML = `
+    <div style="font-size:10px;color:var(--txt3,#5D7396);margin-bottom:6px">Eficiencia = producción real ÷ estándar del mix propio de cada operaria. 100% = rindió justo lo esperado para lo que embaló ese día.</div>
     <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:520px">
+    <table style="width:100%;border-collapse:collapse;min-width:680px">
       <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase">
+        <th style="padding:0 10px 6px 0"></th>
         <th style="text-align:left;padding:0 10px 6px 0;white-space:nowrap;position:sticky;left:0;background:var(--card,#152A47);z-index:1">Nombre</th>
+        <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Eficiencia</th>
+        <th style="text-align:left;padding:0 10px 6px 0;white-space:nowrap">Mix predom.</th>
         <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Producción</th>
         <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Particip.</th>
         <th style="text-align:right;padding:0 10px 6px 0;white-space:nowrap">Horario</th>
@@ -2762,9 +2786,9 @@ function _ritExportarCSV(){
   if(!r || !r.porOperador.length) return;
   const total = r.totalOffline || 1;
   const horasProg = r.horasJornada || 1;
-  const cabecera = ['Nombre','Producción','Participación %','Primer Embalaje','Último Embalaje','Horas','Uds/hora programada'];
-  const filas = r.porOperador.sort((a,b)=>b.total-a.total).map(o=>[
-    o.nombre, o.total, (o.total/total*100).toFixed(1),
+  const cabecera = ['Nombre','Eficiencia %','Mix predominante','Producción','Participación %','Primer Embalaje','Último Embalaje','Horas','Uds/hora programada'];
+  const filas = [...r.porOperador].sort((a,b)=>b.eficienciaPct-a.eficienciaPct).map(o=>[
+    o.nombre, o.eficienciaPct, o.catPredominante, o.total, (o.total/total*100).toFixed(1),
     o.primerHora||'', o.ultimaHora||'', _horasEntreTxt(o.primerHora,o.ultimaHora), (o.total/horasProg).toFixed(1)
   ]);
   const csv = [cabecera, ...filas].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
