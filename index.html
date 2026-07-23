@@ -1738,13 +1738,13 @@ function diasCalendarioMes(anio, mes){ return new Date(anio, mes, 0).getDate(); 
 
 // totalEquivMes = producción del mes YA en equivalencia (línea/maleta/insumo
 // convertidos). X = días de ausencia del mes. Y = minutos de atraso del mes.
-function calcularBonoSimulado(usuario, totalEquivMes, anio, mes, X, Y){
+function calcularBonoSimulado(usuario, totalEquivMes, anio, mes, X, Y, wOverride){
   const E = META_MIN[usuario], F = META[usuario];
   if(E==null || F==null) return null; // operaria sin piso/techo de bono configurado
 
   const diasHab = diasHabilesMes(anio, mes);
   const diasCal = diasCalendarioMes(anio, mes);
-  const W = diasHab>0 ? totalEquivMes/diasHab : 0;
+  const W = (wOverride!=null && wOverride!=='') ? Number(wOverride) : (diasHab>0 ? totalEquivMes/diasHab : 0);
 
   const G=BONO_G_AUSENTISMO_LIMITE, H=BONO_H_AUSENTISMO_OBJETIVO;
   const I=BONO_I_ATRASO_LIMITE, J=BONO_J_ATRASO_OBJETIVO;
@@ -5240,6 +5240,12 @@ async function loadMes(){
     const varCol=varPct===null?'var(--txt3)':varPct>=0?'#2ECC8A':'#FF6B6B';
     const varTxt=varPct===null?'—':varPct>=0?`↑ +${varPct}%`:`↓ ${varPct}%`;
 
+    // Promedio real para el simulador de bono: total equivalencia ÷ días HÁBILES
+    // del mes (no los días que trabajó) — precargado y editable en el simulador.
+    const [anioBono,mesBono]=ms.split('-').map(Number);
+    const diasHabBono=diasHabilesMes(anioBono,mesBono);
+    const wRealBono=diasHabBono>0?Math.round((totalShow/diasHabBono)*10)/10:0;
+
     el.innerHTML=`
     <!-- Hero mes -->
     <div style="background:linear-gradient(135deg,#0A1E3D,#061228);border:1px solid #1A3354;border-radius:var(--r);padding:16px;margin-bottom:8px">
@@ -5271,7 +5277,15 @@ async function loadMes(){
     <!-- Simulador de bono -->
     <div class="card" style="border:1px solid #FFBA4D33;margin-bottom:8px">
       <div class="card-title" style="margin-bottom:.5rem">🧮 Simulador de bono</div>
-      <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;line-height:1.4">Ingresa tus días de ausencia y minutos de atraso del mes para ver cómo afectan tu bono estimado. Es una simulación de referencia — el cálculo oficial lo hace RRHH.</div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;line-height:1.4">Precargado con tu promedio real del mes. Puedes cambiar cualquier valor para simular otros escenarios. Es una simulación de referencia — el cálculo oficial lo hace RRHH.</div>
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <label style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Promedio uds embaladas / día</label>
+          <a onclick="_simBonoReset()" style="font-size:9px;color:#60B0FF;cursor:pointer;white-space:nowrap">↺ usar mi real</a>
+        </div>
+        <input id="simbono-w" type="number" min="0" step="0.1" value="${wRealBono}" data-real="${wRealBono}" inputmode="decimal" oninput="_simBonoUpdate()" style="width:100%;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px;color:var(--txt);font-size:15px;font-weight:700;margin-top:4px;box-sizing:border-box">
+        <div style="font-size:9px;color:var(--txt3);margin-top:3px">Real: ${fmtN(wRealBono)} uds/día · ${diasHabBono} días hábiles del mes</div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <div>
           <label style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Días de ausencia</label>
@@ -5326,23 +5340,27 @@ async function loadMes(){
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 }
 
-// Recalcula el simulador de bono en vivo, a partir de los inputs de días de
-// ausencia / minutos de atraso, sin volver a pedir datos al servidor.
+// Recalcula el simulador de bono en vivo, a partir de los inputs de
+// promedio de producción / días de ausencia / minutos de atraso, sin volver
+// a pedir datos al servidor.
 function _simBonoUpdate(){
   const out=document.getElementById('simbono-resultado');
+  const wEl=document.getElementById('simbono-w');
   const xEl=document.getElementById('simbono-x');
   const yEl=document.getElementById('simbono-y');
-  if(!out || !xEl || !yEl || !mesMiCache || !mesMiCache.rows || !mesMiCache.rows.length) return;
+  if(!out || !wEl || !xEl || !yEl || !mesMiCache || !mesMiCache.rows || !mesMiCache.rows.length) return;
 
   const X=Math.max(0, Math.round(Number(xEl.value)||0));
   const Y=Math.max(0, Math.round(Number(yEl.value)||0));
+  const wRaw=wEl.value;
+  const wOverride = wRaw==='' ? null : Math.max(0, Number(wRaw)||0);
   const {rows,ms}=mesMiCache;
   const g=groupByTipo(rows);
   const eq=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
   const totalEquivMes = eq?eq.total:g.total;
   const [anio,mes]=ms.split('-').map(Number);
 
-  const r=calcularBonoSimulado(cUser, totalEquivMes, anio, mes, X, Y);
+  const r=calcularBonoSimulado(cUser, totalEquivMes, anio, mes, X, Y, wOverride);
   if(!r){
     out.innerHTML='<div style="font-size:11px;color:var(--txt3)">Tu perfil todavía no tiene piso/techo de bono configurado — avísale a tu supervisor.</div>';
     return;
@@ -5350,7 +5368,7 @@ function _simBonoUpdate(){
   const fmt$=n=>'$'+Math.round(n).toLocaleString('es-CL');
   out.innerHTML=`
     <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">
-      <span style="font-size:11px;color:var(--txt3)">Por producción (${fmtN(r.W)} uds/día prom. de ${r.diasHab} días hábiles)</span>
+      <span style="font-size:11px;color:var(--txt3)">Por producción (${fmtN(r.W)} uds/día × ${r.diasHab} días hábiles)</span>
       <span style="font-size:12.5px;font-weight:700;white-space:nowrap;margin-left:8px">${fmt$(r.Z)}</span>
     </div>
     <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">
@@ -5366,6 +5384,14 @@ function _simBonoUpdate(){
       <span style="font-size:19px;font-weight:900;color:#FFBA4D">${fmt$(r.AC)}</span>
     </div>
     <div style="font-size:9.5px;color:var(--txt3);margin-top:2px;text-align:right">Imponible aprox.: ${fmt$(r.AD)}</div>`;
+}
+
+// Vuelve el campo de promedio a su valor real (borra la simulación de producción)
+function _simBonoReset(){
+  const wEl=document.getElementById('simbono-w');
+  if(!wEl) return;
+  wEl.value = wEl.dataset.real || wEl.value;
+  _simBonoUpdate();
 }
 
 function exportMiMesPDF(){
