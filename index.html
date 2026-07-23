@@ -1705,6 +1705,71 @@ const BONO_TIPO_OPERARIA = {
 const BONO_FACTOR_MALETA_A_LINEA = 4;  // 1 maleta = 4 unidades línea (y viceversa)
 const BONO_FACTOR_INSUMO = 20;         // 20 unidades insumo = 1 unidad línea o maleta
 
+// ============================================================
+// SIMULADOR DE BONO — replica el Excel de bonos de Diego.
+// El piso y el techo de producción bonificable son POR PERSONA y ya existen
+// en la app: META_MIN[usuario] = piso, META[usuario] = techo. El resto de
+// los parámetros (límites/objetivos de ausentismo y atraso, montos de cada
+// tramo) son los mismos para todas — vienen del Excel compartido.
+// Diferencia a propósito vs. el Excel: el Excel prorratea siempre ÷30; acá
+// se usan los días CALENDARIO reales de cada mes (28-31).
+// ============================================================
+const BONO_G_AUSENTISMO_LIMITE   = 3;                 // días (bono cae a $0 en este punto)
+const BONO_H_AUSENTISMO_OBJETIVO = 0;                  // días
+const BONO_I_ATRASO_LIMITE       = 200;                // minutos (bono cae a $0 en este punto)
+const BONO_J_ATRASO_OBJETIVO     = 0;                  // minutos
+const BONO_K_MONTO_PROD_MIN      = 15000;
+const BONO_L_MONTO_PROD_OBJ      = 44814.95038126875;
+const BONO_M_MONTO_AUSENT_LIMITE = 0;
+const BONO_N_MONTO_AUSENT_OBJ    = 28009.34398829297;
+const BONO_O_MONTO_ATRASO_LIMITE = 0;
+const BONO_P_MONTO_ATRASO_OBJ    = 16805.606392975784;
+
+function diasHabilesMes(anio, mes){ // mes 1-12. Cuenta Lun-Vie del mes calendario.
+  const ultimo = new Date(anio, mes, 0).getDate();
+  let n=0;
+  for(let d=1; d<=ultimo; d++){
+    const dow = new Date(anio, mes-1, d).getDay(); // 0=Dom...6=Sáb
+    if(dow>=1 && dow<=5) n++;
+  }
+  return n;
+}
+function diasCalendarioMes(anio, mes){ return new Date(anio, mes, 0).getDate(); }
+
+// totalEquivMes = producción del mes YA en equivalencia (línea/maleta/insumo
+// convertidos). X = días de ausencia del mes. Y = minutos de atraso del mes.
+function calcularBonoSimulado(usuario, totalEquivMes, anio, mes, X, Y){
+  const E = META_MIN[usuario], F = META[usuario];
+  if(E==null || F==null) return null; // operaria sin piso/techo de bono configurado
+
+  const diasHab = diasHabilesMes(anio, mes);
+  const diasCal = diasCalendarioMes(anio, mes);
+  const W = diasHab>0 ? totalEquivMes/diasHab : 0;
+
+  const G=BONO_G_AUSENTISMO_LIMITE, H=BONO_H_AUSENTISMO_OBJETIVO;
+  const I=BONO_I_ATRASO_LIMITE, J=BONO_J_ATRASO_OBJETIVO;
+  const K=BONO_K_MONTO_PROD_MIN, L=BONO_L_MONTO_PROD_OBJ;
+  const M=BONO_M_MONTO_AUSENT_LIMITE, N=BONO_N_MONTO_AUSENT_OBJ;
+  const O=BONO_O_MONTO_ATRASO_LIMITE, P=BONO_P_MONTO_ATRASO_OBJ;
+
+  const Qp=(L-K)/(F-E), Tp=K-Qp*E;   // recta producción: (E,K) → (F,L)
+  const Ra=(N-M)/(H-G), Ua=M-Ra*G;   // recta ausentismo: (G,M) → (H,N)
+  const Sr=(P-O)/(J-I), Vr=O-Sr*I;   // recta atraso:     (I,O) → (J,P)
+
+  const montoProdBase = W<E ? 0 : (W>F ? L : Qp*W+Tp);
+  const Z = diasCal>0 ? (montoProdBase/diasCal)*(diasCal-X) : 0;      // $ por producción, prorrateado por asistencia
+
+  const AA = X>G ? 0 : (Ra*X+Ua);                                     // $ por ausentismo (sin prorrateo)
+
+  const montoAtrasoBase = Y>I ? 0 : (Sr*Y+Vr);
+  const AB = diasCal>0 ? (montoAtrasoBase/diasCal)*(diasCal-X) : 0;   // $ por atraso, prorrateado por asistencia
+
+  const AC = Z+AA+AB;      // bono líquido
+  const AD = AC*1.2;       // imponible aprox.
+
+  return {W,E,F,diasHab,diasCal,Z,AA,AB,AC,AD};
+}
+
 // Convierte la producción cruda de UN día de UNA operaria (ya sumada por tipo)
 // a "unidades equivalentes" de su categoría base. Misma fórmula sin importar VAS.
 function bonoEquivalenteDia(tipoBase, cantLinea, cantMaleta, cantInsumo){
@@ -5203,6 +5268,23 @@ async function loadMes(){
       ${pctMes>=100?'<div style="margin-top:10px;text-align:center;font-size:12px;color:#2ECC8A;font-weight:700">🏆 ¡Meta mensual completada!</div>':''}
     </div>
 
+    <!-- Simulador de bono -->
+    <div class="card" style="border:1px solid #FFBA4D33;margin-bottom:8px">
+      <div class="card-title" style="margin-bottom:.5rem">🧮 Simulador de bono</div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;line-height:1.4">Ingresa tus días de ausencia y minutos de atraso del mes para ver cómo afectan tu bono estimado. Es una simulación de referencia — el cálculo oficial lo hace RRHH.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Días de ausencia</label>
+          <input id="simbono-x" type="number" min="0" value="0" inputmode="numeric" oninput="_simBonoUpdate()" style="width:100%;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px;color:var(--txt);font-size:15px;font-weight:700;margin-top:4px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em">Minutos de atraso</label>
+          <input id="simbono-y" type="number" min="0" value="0" inputmode="numeric" oninput="_simBonoUpdate()" style="width:100%;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px;color:var(--txt);font-size:15px;font-weight:700;margin-top:4px;box-sizing:border-box">
+        </div>
+      </div>
+      <div id="simbono-resultado"></div>
+    </div>
+
     <!-- KPIs 3 columnas -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
       <div style="background:var(--card);border:1px solid #3B8FFF33;border-radius:var(--r);padding:11px 12px;text-align:center">
@@ -5239,8 +5321,51 @@ async function loadMes(){
       <div class="card-title" style="margin-bottom:.85rem">Evolución del mes${eq?' (equivalencia)':''}</div>
       ${renderBarChart(gfShow,true)}
     </div>`;
+    _simBonoUpdate();
 
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
+}
+
+// Recalcula el simulador de bono en vivo, a partir de los inputs de días de
+// ausencia / minutos de atraso, sin volver a pedir datos al servidor.
+function _simBonoUpdate(){
+  const out=document.getElementById('simbono-resultado');
+  const xEl=document.getElementById('simbono-x');
+  const yEl=document.getElementById('simbono-y');
+  if(!out || !xEl || !yEl || !mesMiCache || !mesMiCache.rows || !mesMiCache.rows.length) return;
+
+  const X=Math.max(0, Math.round(Number(xEl.value)||0));
+  const Y=Math.max(0, Math.round(Number(yEl.value)||0));
+  const {rows,ms}=mesMiCache;
+  const g=groupByTipo(rows);
+  const eq=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+  const totalEquivMes = eq?eq.total:g.total;
+  const [anio,mes]=ms.split('-').map(Number);
+
+  const r=calcularBonoSimulado(cUser, totalEquivMes, anio, mes, X, Y);
+  if(!r){
+    out.innerHTML='<div style="font-size:11px;color:var(--txt3)">Tu perfil todavía no tiene piso/techo de bono configurado — avísale a tu supervisor.</div>';
+    return;
+  }
+  const fmt$=n=>'$'+Math.round(n).toLocaleString('es-CL');
+  out.innerHTML=`
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">
+      <span style="font-size:11px;color:var(--txt3)">Por producción (${fmtN(r.W)} uds/día prom. de ${r.diasHab} días hábiles)</span>
+      <span style="font-size:12.5px;font-weight:700;white-space:nowrap;margin-left:8px">${fmt$(r.Z)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">
+      <span style="font-size:11px;color:var(--txt3)">Por asistencia (${X} día${X===1?'':'s'})</span>
+      <span style="font-size:12.5px;font-weight:700;white-space:nowrap;margin-left:8px">${fmt$(r.AA)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">
+      <span style="font-size:11px;color:var(--txt3)">Por puntualidad (${Y} min)</span>
+      <span style="font-size:12.5px;font-weight:700;white-space:nowrap;margin-left:8px">${fmt$(r.AB)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 0;margin-top:6px;border-top:1px solid #FFBA4D44">
+      <span style="font-size:12px;font-weight:700;color:#FFBA4D">Bono líquido estimado</span>
+      <span style="font-size:19px;font-weight:900;color:#FFBA4D">${fmt$(r.AC)}</span>
+    </div>
+    <div style="font-size:9.5px;color:var(--txt3);margin-top:2px;text-align:right">Imponible aprox.: ${fmt$(r.AD)}</div>`;
 }
 
 function exportMiMesPDF(){
