@@ -862,14 +862,14 @@ input[type="month"], input[type="week"]{
   <!-- TAB: CARGA -->
   <div id="st-carga">
     <div class="card">
-      <div class="card-title" style="margin-bottom:.75rem"> 📦Subir archivo Produccion </div>
+      <div class="card-title" style="margin-bottom:.75rem">Subir archivo diario</div>
       <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
            ondragover="event.preventDefault();this.classList.add('drag')"
            ondragleave="this.classList.remove('drag')"
            ondrop="handleDrop(event)">
         <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFile(this.files[0])"/>
         <div class="upload-icon">📊</div>
-        <div class="upload-txt">Arrastra el Excel ConsultaSQL aquí o haz clic para seleccionar</div>
+        <div class="upload-txt">Arrastra el Excel aquí o haz clic para seleccionar</div>
         <div class="upload-sub">Archivos .xlsx · ConsultaSQL_YYYYMMDD_HHMMSS.xlsx</div>
       </div>
       <div class="progress-upload" id="upload-progress">
@@ -880,7 +880,7 @@ input[type="month"], input[type="week"]{
     </div>
 
     <div class="card" style="margin-top:12px">
-      <div class="card-title" style="margin-bottom:.75rem">📦 Subir archivo Entregas </div>
+      <div class="card-title" style="margin-bottom:.75rem">📦 Subir entregas del sistema</div>
       <div style="font-size:12px;color:var(--txt2);margin-bottom:.85rem;line-height:1.5">
         Archivo <strong>ConsultaSQL</strong> diario de entregas. El sistema calcula automáticamente la fecha del día según la hora de carga.<br>
         <span style="color:#3B8FFF;font-size:11px">Lun: carga Vie 14:30→Lun 17:30 · Mar-Vie: día anterior 17:30→mismo día 17:30</span>
@@ -892,7 +892,7 @@ input[type="month"], input[type="week"]{
            ondrop="handleEntregasDrop(event)">
         <input type="file" id="entregas-file-input" accept=".xlsx,.xls" onchange="handleEntregasFile(this.files[0])"/>
         <div class="upload-icon">📋</div>
-        <div class="upload-txt">Arrastra el Excel ConsultaSQL aquí o haz clic para seleccionar</div>
+        <div class="upload-txt">Arrastra el ConsultaSQL aquí o haz clic</div>
         <div class="upload-sub">Archivos .xlsx · ConsultaSQL_YYYYMMDD_HHMMSS.xlsx</div>
       </div>
       <div class="progress-upload" id="entregas-progress" style="display:none">
@@ -1593,16 +1593,36 @@ async function enviarReporteEmail(){
   const fdCap = fd.charAt(0).toUpperCase()+fd.slice(1);
 
   try{
-    const htmlReporte = await buildEmailHTML(rptDatos);
-    const htmlMin = htmlReporte
+    let htmlReporte = await buildEmailHTML(rptDatos);
+    let htmlMin = htmlReporte
       .replace(/<!--[\s\S]*?-->/g,'')
       .replace(/>\s+</g,'><')
       .replace(/\s{2,}/g,' ')
       .replace(/\n\s*/g,'')
       .trim();
 
-    console.log('HTML size:', htmlMin.length, 'chars');
-    sta.textContent = 'Enviando ('+(Math.round(htmlMin.length/1024))+'KB)...';
+    // EmailJS limita el total de variables a 50KB. Si el reporte completo (con
+    // mini-gráficos de tendencia por canal/material) se pasa, se reconstruye en
+    // modo compacto (sin esos gráficos, solo totales) para que siempre se envíe.
+    let modoCompacto = false;
+    const LIMITE_SEGURO = 46000; // deja margen bajo los 50KB reales de EmailJS
+    if(htmlMin.length > LIMITE_SEGURO){
+      modoCompacto = true;
+      htmlReporte = await buildEmailHTML(rptDatos, true);
+      htmlMin = htmlReporte
+        .replace(/<!--[\s\S]*?-->/g,'')
+        .replace(/>\s+</g,'><')
+        .replace(/\s{2,}/g,' ')
+        .replace(/\n\s*/g,'')
+        .trim();
+    }
+
+    console.log('HTML size:', htmlMin.length, 'chars', modoCompacto?'(modo compacto)':'');
+    sta.textContent = 'Enviando ('+(Math.round(htmlMin.length/1024))+'KB'+(modoCompacto?', modo compacto':'')+')...';
+
+    if(htmlMin.length > 49500){
+      throw new Error('El reporte pesa '+(Math.round(htmlMin.length/1024))+'KB incluso en modo compacto — supera el límite de EmailJS (50KB). Avísale a Diego para revisar el contenido del correo.');
+    }
 
     const resp = await fetch(SUPA_URL+'/functions/v1/send-email',{
       method:'POST',
@@ -1624,8 +1644,8 @@ async function enviarReporteEmail(){
     });
     const result = await resp.json();
     if(!resp.ok) throw new Error(JSON.stringify(result?.error||result)+' ['+resp.status+']');
-    toast('✓ Reporte enviado desde '+cfg.from_name+' a '+dest);
-    sta.textContent = '✓ Enviado';
+    toast('✓ Reporte enviado desde '+cfg.from_name+' a '+dest+(modoCompacto?' (modo compacto, sin mini-gráficos)':''));
+    sta.textContent = '✓ Enviado'+(modoCompacto?' (compacto)':'');
     setTimeout(()=>{ sta.textContent=''; btn.disabled=false; },3000);
   }catch(err){
     console.error('enviarReporteEmail error:', err);
@@ -5816,7 +5836,7 @@ function buildBloqueSemanalemail(p){
 </td></tr>`;
 }
 
-async function buildEmailHTML(d){
+async function buildEmailHTML(d, compact){
   const {hoy,porCanal,porTipo,totalHoy,offline,online,insumoHoy,rawData,kpisGer,planEmail,dotacionEmail} = d;
   const fd = new Date(hoy+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const fdCap = fd.charAt(0).toUpperCase()+fd.slice(1);
@@ -5895,11 +5915,14 @@ async function buildEmailHTML(d){
   const canalFilasHTML=canalActivos.map(c=>{
     const uds=porCanal[c.key]||0;
     const pct=((uds/totalDia)*100).toFixed(1);
-    const serie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.canal===c.key&&r.tipo!=='insumo').reduce((s,r)=>s+getRaw(r),0));
-    return '<tr style="'+TRB+'">'
+    const filaHead='<tr style="'+TRB+'">'
       +'<td style="padding:8px 4px 0 0;font-size:10px;font-weight:700;color:#334155">'+c.icon+' '+c.key+'&nbsp;&nbsp;<span style="font-size:14px;font-weight:900;color:#0F172A">'+uds.toLocaleString('es-CL')+'</span></td>'
       +'<td align="right" style="padding:8px 0 0 12px;white-space:nowrap"><span style="font-size:10px;font-weight:700;color:#64748B;background:#F1F5F9;padding:2px 7px;border-radius:20px">'+pct+'%</span></td>'
-      +'</tr><tr><td colspan="2" height="6" style="height:6px;font-size:0"></td></tr>'
+      +'</tr>';
+    if(compact) return filaHead;
+    const serie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.canal===c.key&&r.tipo!=='insumo').reduce((s,r)=>s+getRaw(r),0));
+    return filaHead
+      +'<tr><td colspan="2" height="6" style="height:6px;font-size:0"></td></tr>'
       +'<tr><td colspan="2" style="padding:0 0 8px">'+miniChart(serie5,c.color,lblFechas)+'</td></tr>';
   }).join('');
 
@@ -5913,15 +5936,18 @@ async function buildEmailHTML(d){
     const uds=porTipo[k]||0;
     if(!uds) return '';
     const pct=((uds/totalDia)*100).toFixed(1);
-    const serie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.tipo===k&&r.canal!=='Anulada').reduce((s,r)=>s+getRaw(r),0));
-    return '<tr style="'+TRB+'">'
+    const filaHead='<tr style="'+TRB+'">'
       +'<td style="padding:8px 4px 0 0;font-size:10px;font-weight:700;color:#334155">'+icn+' '+lbl+'&nbsp;&nbsp;<span style="font-size:14px;font-weight:900;color:#0F172A">'+uds.toLocaleString('es-CL')+'</span></td>'
       +'<td align="right" style="padding:8px 0 0 12px;white-space:nowrap"><span style="font-size:10px;font-weight:700;color:#64748B;background:#F1F5F9;padding:2px 7px;border-radius:20px">'+pct+'%</span></td>'
-      +'</tr><tr><td colspan="2" height="6" style="height:6px;font-size:0"></td></tr>'
+      +'</tr>';
+    if(compact) return filaHead;
+    const serie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.tipo===k&&r.canal!=='Anulada').reduce((s,r)=>s+getRaw(r),0));
+    return filaHead
+      +'<tr><td colspan="2" height="6" style="height:6px;font-size:0"></td></tr>'
       +'<tr><td colspan="2" style="padding:0 0 8px">'+miniChart(serie5,c,lblFechas)+'</td></tr>';
   }).join('');
 
-  const trendChart=miniChart(totalSerie5,'#3B8FFF',lblFechas);
+  const trendChart=compact?'':miniChart(totalSerie5,'#3B8FFF',lblFechas);
 
   const planEmailSem = planEmail ? buildBloqueSemanalemail(planEmail) : '';
   const _raw = `
