@@ -9110,7 +9110,13 @@ async function mostrarWelcome(){
 
   const g=groupByTipo(rowsHoy);
   const meta=META[cUser]||0;
-  const pct=meta>0?Math.min(100,Math.round(g.total/meta*100)):0;
+  // Misma base que renderDiaHTML: si la operaria está mapeada, usar el total
+  // equivalente (no el real crudo), para que este hero nunca contradiga al
+  // que pinta loadDia() — antes quedaban descoordinados según cuál terminara
+  // de cargar último.
+  const eqWelcome=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+  const totalShow=eqWelcome?eqWelcome.total:g.total;
+  const pct=meta>0?Math.min(100,Math.round(totalShow/meta*100)):0;
   const pctCol=pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#3B8FFF';
 
   // Hora de última actualización
@@ -9124,7 +9130,8 @@ async function mostrarWelcome(){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,.45);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Meta del día · ${fmtFecha(hoy).slice(0,5)}</div>
-          <div style="font-size:34px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(g.total)}<span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.35);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
+          <div style="font-size:34px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(totalShow)}<span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.35);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
+          ${eqWelcome?equivRefLineHTML(eqWelcome):''}
         </div>
         <div style="text-align:right">
           <div style="font-size:36px;font-weight:900;color:${pctCol};line-height:1">${pct}%</div>
