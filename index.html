@@ -1815,6 +1815,41 @@ function equivRefLineHTML(eq){
   return `<div style="font-size:9.5px;color:var(--txt3);margin-top:2px">≈ ${conv} · <span style="color:var(--txt2)">${fmtN(eq.realTotal)} uds reales</span></div>`;
 }
 
+// Tarjeta "Conversión a equivalente": muestra la operación real → equivalente
+// tipo por tipo (ej. "24 × 4 = 96"), para que la operaria entienda exactamente
+// cómo se calcula su equivalente total, sin confundirlo con lo que embaló de
+// verdad. Se usa en Día, Semana, Mes e Histórico con la misma lógica.
+function equivConversionCardHTML(eq){
+  if(!eq) return '';
+  const rows=[];
+  const maletaTxt = eq.tipoBase==='maleta'
+    ? `${fmtN(eq.realMaleta)} = ${fmtN(eq.eqMaleta)}`
+    : `${fmtN(eq.realMaleta)} × 4 = ${fmtN(eq.eqMaleta)}`;
+  const lineaTxt = eq.tipoBase==='maleta'
+    ? `${fmtN(eq.realLinea)} ÷ 4 = ${fmtN(eq.eqLinea)}`
+    : `${fmtN(eq.realLinea)} = ${fmtN(eq.eqLinea)}`;
+  if(eq.tipoBase==='maleta'){
+    if(eq.realMaleta>0) rows.push({n:'Maletas',   c:'#3B8FFF', txt:maletaTxt});
+    if(eq.realLinea>0)  rows.push({n:'No maleta', c:'#2ECC8A', txt:lineaTxt});
+  } else {
+    if(eq.realLinea>0)  rows.push({n:'No maleta', c:'#2ECC8A', txt:lineaTxt});
+    if(eq.realMaleta>0) rows.push({n:'Maletas',   c:'#3B8FFF', txt:maletaTxt});
+  }
+  if(eq.realInsumo>0) rows.push({n:'Insumos', c:'#9A88FF', txt:`${fmtN(eq.realInsumo)} ÷ 20 = ${fmtN(eq.eqInsumo)}`});
+  if(!rows.length) return '';
+  return `<div class="card" style="margin-bottom:.7rem">
+    <div class="card-title" style="margin-bottom:.6rem">Conversión a equivalente</div>
+    ${rows.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+      <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt2);font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:${r.c};flex-shrink:0"></span>${r.n}</span>
+      <span style="font-size:13px;color:var(--txt);font-weight:700;font-variant-numeric:tabular-nums">${r.txt}</span>
+    </div>`).join('')}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-top:2px">
+      <span style="font-size:11px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Total equivalente</span>
+      <span style="font-size:19px;color:#3B8FFF;font-weight:900;letter-spacing:-.02em">${fmtN(eq.total)}</span>
+    </div>
+  </div>`;
+}
+
 
 // ============================================================
 // CAPACIDAD DINÁMICA — productividades estándar por mix (PARAMETRIZABLE)
@@ -3289,12 +3324,15 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
     </div>
   </div>`:'';
 
-  // KPIs tipo de material — en equivalencia cuando aplica, para que sumen igual que el total de arriba
+  // KPIs tipo de material — SIEMPRE muestran lo REAL embalado (no la equivalencia),
+  // para que la operaria vea exactamente lo que armó y no se confunda. La conversión
+  // a equivalente (la que cuenta para la meta) se muestra aparte en su propia tarjeta.
+  const totalReal = eq ? eq.realTotal : g.total;
   const tiposDef = eq
     ? [
-        {k:'maleta', n:'Maletas', c:'#3B8FFF', val:eq.eqMaleta, real:eq.realMaleta, conv:eq.tipoBase==='maleta'?'directo':'×4'},
-        {k:'linea',  n:'No maleta', c:'#2ECC8A', val:eq.eqLinea, real:eq.realLinea, conv:eq.tipoBase==='maleta'?'÷4':'directo'},
-        {k:'insumo', n:'Insumos', c:'#9A88FF', val:eq.eqInsumo, real:eq.realInsumo, conv:'÷20'},
+        {k:'maleta', n:'Maletas', c:'#3B8FFF', val:eq.realMaleta},
+        {k:'linea',  n:'No maleta', c:'#2ECC8A', val:eq.realLinea},
+        {k:'insumo', n:'Insumos', c:'#9A88FF', val:eq.realInsumo},
       ].filter(t=>t.val>0)
     : [
         {k:'maleta', n:'Maletas', c:'#3B8FFF', val:g.maleta},
@@ -3309,15 +3347,16 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
   <div style="display:grid;grid-template-columns:repeat(${Math.min(tiposDef.length,2)},1fr);gap:8px;margin-bottom:.7rem">
     ${tiposDef.map(t=>{
       const barW=Math.round(t.val/maxTipo*100);
-      const pctT=totalShow>0?Math.round(t.val/totalShow*100):0;
+      const pctT=totalReal>0?Math.round(t.val/totalReal*100):0;
       return`<div style="background:var(--card);border:1px solid ${t.c}33;border-radius:var(--r);padding:12px 14px;position:relative;overflow:hidden">
         <div style="position:absolute;bottom:0;left:0;height:3px;width:${barW}%;background:${t.c};border-radius:0 0 0 var(--r);transition:width .6s ease"></div>
-        <div style="font-size:9px;font-weight:700;color:${t.c};text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${t.n}${eq?' · equiv.':''}</div>
+        <div style="font-size:9px;font-weight:700;color:${t.c};text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${t.n}</div>
         <div style="font-size:24px;font-weight:800;color:var(--txt);line-height:1;letter-spacing:-.02em">${fmtN(t.val)}</div>
-        <div style="font-size:10px;color:var(--txt3);margin-top:3px">${pctT}% del total${eq?` · ${fmtN(t.real)} uds reales (${t.conv})`:''}</div>
+        <div style="font-size:10px;color:var(--txt3);margin-top:3px">${pctT}% de lo embalado</div>
       </div>`;
     }).join('')}
   </div>
+  ${eq?equivConversionCardHTML(eq):''}
   ${Object.keys(canales).length?`<div class="card">
     <div class="card-title" style="margin-bottom:.75rem">Por canal</div>
     ${Object.entries(canales).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
@@ -3336,18 +3375,19 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
 function renderTipoBars(g, eq){
   if(eq){
     const items=[
-      {t:'maleta', val:eq.eqMaleta, real:eq.realMaleta, conv:eq.tipoBase==='maleta'?'directo':'×4'},
-      {t:'linea',  val:eq.eqLinea,  real:eq.realLinea,  conv:eq.tipoBase==='maleta'?'÷4':'directo'},
-      {t:'insumo', val:eq.eqInsumo, real:eq.realInsumo, conv:'÷20'},
+      {t:'maleta', val:eq.realMaleta},
+      {t:'linea',  val:eq.realLinea},
+      {t:'insumo', val:eq.realInsumo},
     ].filter(i=>i.val>0);
+    const totalReal=eq.realTotal;
     const max=Math.max(...items.map(i=>i.val),1);
     return items.map(i=>`
     <div class="tipo-item">
       <div class="tipo-dot" style="background:${TIPO_COLORS[i.t]}"></div>
-      <div class="tipo-name">${TIPO_NAMES[i.t]} · equiv.</div>
+      <div class="tipo-name">${TIPO_NAMES[i.t]}</div>
       <div class="tipo-bar-wrap"><div class="tipo-bar" style="width:${Math.round(i.val/max*100)}%;background:${TIPO_COLORS[i.t]}"></div></div>
       <div class="tipo-val">${fmtN(i.val)}</div>
-      <div class="tipo-pct">${eq.total>0?Math.round(i.val/eq.total*100):0}% <span style="opacity:.6">(${fmtN(i.real)} real ${i.conv})</span></div>
+      <div class="tipo-pct">${totalReal>0?Math.round(i.val/totalReal*100):0}% de lo embalado</div>
     </div>`).join('');
   }
   const max=Math.max(g.maleta,g.linea,g.otro)||1;
@@ -3485,7 +3525,8 @@ async function loadSemana(){
     <div class="card">
       <div class="card-title" style="margin-bottom:.85rem">Por tipo de material</div>
       ${renderTipoBars(g, eq)}
-    </div>`;
+    </div>
+    ${eq?equivConversionCardHTML(eq):''}`;
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 
   // ── Canal Online banner — siempre visible ──
@@ -5299,24 +5340,25 @@ async function loadMes(){
       <div id="simbono-resultado"></div>
     </div>
 
-    <!-- KPIs 3 columnas -->
+    <!-- KPIs 3 columnas — SIEMPRE en unidades reales embaladas -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
       <div style="background:var(--card);border:1px solid #3B8FFF33;border-radius:var(--r);padding:11px 12px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:#60B0FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Maletas${eq?' · equiv.':''}</div>
-        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.eqMaleta:g.maleta)}</div>
-        <div style="font-size:9px;color:var(--txt3)">${totalShow>0?Math.round((eq?eq.eqMaleta:g.maleta)/totalShow*100):0}%${eq?` · ${fmtN(eq.realMaleta)} real`:''}</div>
+        <div style="font-size:9px;font-weight:700;color:#60B0FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Maletas</div>
+        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.realMaleta:g.maleta)}</div>
+        <div style="font-size:9px;color:var(--txt3)">${(eq?eq.realTotal:g.total)>0?Math.round((eq?eq.realMaleta:g.maleta)/(eq?eq.realTotal:g.total)*100):0}% de lo embalado</div>
       </div>
       <div style="background:var(--card);border:1px solid #2ECC8A33;border-radius:var(--r);padding:11px 12px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:#2ECC8A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">No maleta${eq?' · equiv.':''}</div>
-        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.eqLinea:g.linea)}</div>
-        <div style="font-size:9px;color:var(--txt3)">${totalShow>0?Math.round((eq?eq.eqLinea:g.linea)/totalShow*100):0}%${eq?` · ${fmtN(eq.realLinea)} real`:''}</div>
+        <div style="font-size:9px;font-weight:700;color:#2ECC8A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">No maleta</div>
+        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.realLinea:g.linea)}</div>
+        <div style="font-size:9px;color:var(--txt3)">${(eq?eq.realTotal:g.total)>0?Math.round((eq?eq.realLinea:g.linea)/(eq?eq.realTotal:g.total)*100):0}% de lo embalado</div>
       </div>
       <div style="background:var(--card);border:1px solid #9A88FF33;border-radius:var(--r);padding:11px 12px;text-align:center">
-        <div style="font-size:9px;font-weight:700;color:#9A88FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Insumos${eq?' · equiv.':''}</div>
-        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.eqInsumo:g.insumo)}</div>
-        <div style="font-size:9px;color:var(--txt3)">${totalShow>0?Math.round((eq?eq.eqInsumo:g.insumo)/totalShow*100):0}%${eq?` · ${fmtN(eq.realInsumo)} real`:''}</div>
+        <div style="font-size:9px;font-weight:700;color:#9A88FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Insumos</div>
+        <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(eq?eq.realInsumo:g.insumo)}</div>
+        <div style="font-size:9px;color:var(--txt3)">${(eq?eq.realTotal:g.total)>0?Math.round((eq?eq.realInsumo:g.insumo)/(eq?eq.realTotal:g.total)*100):0}% de lo embalado</div>
       </div>
     </div>
+    ${eq?equivConversionCardHTML(eq):''}
 
     <!-- Mejor día destacado -->
     ${maxDia>0?`<div style="background:linear-gradient(135deg,#1A1000,#0F1E35);border:1px solid #FFBA4D44;border-radius:var(--r);padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
