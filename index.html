@@ -347,6 +347,14 @@ body::after{
 /* CELEBRACIÓN OVERLAY */
 @keyframes celebOverlay{0%{opacity:0;transform:scale(.88)}15%{opacity:1;transform:scale(1.04)}30%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:scale(1.06)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+/* Micro-animación: tarjetas de material "rebotan" al aparecer, en vez de aparecer estáticas */
+@keyframes cardPop{0%{opacity:0;transform:scale(.85) translateY(6px)}60%{opacity:1;transform:scale(1.04) translateY(0)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.card-pop{animation:cardPop .45s cubic-bezier(.34,1.56,.64,1) both}
+/* Pulso sutil para el ícono de racha en el badge del header — se siente "encendido" */
+@keyframes rachaFlicker{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(1.1)}}
+.racha-flicker{display:inline-block;animation:rachaFlicker 1.6s ease-in-out infinite}
+
 #celeb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:1800;display:none;align-items:center;justify-content:center;flex-direction:column}
 #celeb-overlay.show{display:flex}
 #celeb-card{background:linear-gradient(160deg,#071A10,#0E3322);border:2px solid #2ECC8A;border-radius:24px;padding:36px 28px;text-align:center;animation:celebOverlay 3.5s ease forwards;max-width:290px;width:88%;box-shadow:0 0 60px rgba(46,204,138,.3)}
@@ -609,6 +617,20 @@ input[type="month"], input[type="week"]{
     <div id="celeb-stat" style="font-size:48px;font-weight:900;color:#fff;letter-spacing:-.03em;margin-bottom:4px"></div>
     <div style="font-size:12px;color:rgba(255,255,255,.5)">unidades hoy</div>
     <button onclick="cerrarCeleb()" style="margin-top:24px;background:#2ECC8A;color:#000;border:none;border-radius:24px;padding:12px 32px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%">¡Genial! 🎉</button>
+  </div>
+</div>
+
+<!-- RESUMEN SEMANAL (viernes, tipo "wrapped") -->
+<div id="wrapped-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);z-index:1800;display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box">
+  <div style="background:linear-gradient(160deg,#0A1E3D,#061228);border:2px solid #3B8FFF55;border-radius:24px;padding:28px 24px;text-align:center;max-width:320px;width:100%;box-shadow:0 0 60px rgba(59,143,255,.25);animation:celebOverlay .5s ease forwards">
+    <div style="font-size:11px;font-weight:700;color:#60B0FF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Tu semana en números</div>
+    <div id="wrapped-rango" style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:18px"></div>
+    <div style="font-size:52px;line-height:1;margin-bottom:6px">📦</div>
+    <div id="wrapped-total" style="font-size:44px;font-weight:900;color:#3B8FFF;letter-spacing:-.03em"></div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:18px">unidades embaladas esta semana</div>
+    <div id="wrapped-detalle" style="display:flex;justify-content:center;gap:18px;margin-bottom:18px"></div>
+    <div id="wrapped-frase" style="font-size:13px;color:#FFBA4D;font-weight:600;font-style:italic;margin-bottom:22px;line-height:1.4"></div>
+    <button onclick="cerrarWrapped()" style="background:#3B8FFF;color:#fff;border:none;border-radius:24px;padding:12px 32px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%">¡Vamos por más! 💪</button>
   </div>
 </div>
 
@@ -1826,17 +1848,17 @@ function materialRealCardsHTML(g, eq){
   const totalReal=eq?eq.realTotal:g.total;
   const pct=v=>totalReal>0?Math.round(v/totalReal*100):0;
   return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-      <div style="background:var(--card);border:1px solid #3B8FFF33;border-radius:var(--r);padding:11px 12px;text-align:center">
+      <div class="card-pop" style="animation-delay:.03s;background:var(--card);border:1px solid #3B8FFF33;border-radius:var(--r);padding:11px 12px;text-align:center">
         <div style="font-size:9px;font-weight:700;color:#60B0FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Maletas</div>
         <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(realMaleta)}</div>
         <div style="font-size:9px;color:var(--txt3)">${pct(realMaleta)}% de lo embalado</div>
       </div>
-      <div style="background:var(--card);border:1px solid #2ECC8A33;border-radius:var(--r);padding:11px 12px;text-align:center">
+      <div class="card-pop" style="animation-delay:.09s;background:var(--card);border:1px solid #2ECC8A33;border-radius:var(--r);padding:11px 12px;text-align:center">
         <div style="font-size:9px;font-weight:700;color:#2ECC8A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">No maleta</div>
         <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(realLinea)}</div>
         <div style="font-size:9px;color:var(--txt3)">${pct(realLinea)}% de lo embalado</div>
       </div>
-      <div style="background:var(--card);border:1px solid #9A88FF33;border-radius:var(--r);padding:11px 12px;text-align:center">
+      <div class="card-pop" style="animation-delay:.15s;background:var(--card);border:1px solid #9A88FF33;border-radius:var(--r);padding:11px 12px;text-align:center">
         <div style="font-size:9px;font-weight:700;color:#9A88FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Insumos</div>
         <div style="font-size:20px;font-weight:800;color:var(--txt)">${fmtN(realInsumo)}</div>
         <div style="font-size:9px;color:var(--txt3)">${pct(realInsumo)}% de lo embalado</div>
@@ -3261,6 +3283,7 @@ function doLogin(){
   // Welcome + carga paralela
   mostrarWelcome();
   loadDia();
+  setTimeout(()=>mostrarResumenSemanalSiCorresponde(), 1400);
 }
 function doLogout(){cUser=null;cIsSup=false;cIsGer=false;invalidarCache();setScreen('login')}
 function togglePass(){
@@ -3323,12 +3346,12 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Meta del día · ${fmtFecha(fecha).slice(0,5)}</div>
-          <div style="font-size:36px;font-weight:900;color:${col};line-height:1;letter-spacing:-.03em">${fmtN(totalShow)}<span style="font-size:14px;font-weight:600;color:rgba(255,255,255,.4);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
+          <div style="font-size:36px;font-weight:900;color:${col};line-height:1;letter-spacing:-.03em"><span id="hero-total-num">0</span><span style="font-size:14px;font-weight:600;color:rgba(255,255,255,.4);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
           ${eq?equivRefLineHTML(eq):''}
           ${compAyer}
         </div>
         <div style="text-align:right">
-          <div style="font-size:38px;font-weight:900;color:${col};line-height:1;letter-spacing:-.03em">${pct}%</div>
+          <div style="font-size:38px;font-weight:900;color:${col};line-height:1;letter-spacing:-.03em"><span id="hero-pct-num">0</span>%${emojiPct(pct)?`<span style="font-size:22px;margin-left:2px">${emojiPct(pct)}</span>`:''}</div>
           ${pct>=100?'<div style="font-size:10px;color:#2ECC8A;font-weight:700">¡Meta! 🏆</div>':''}
         </div>
       </div>
@@ -3342,6 +3365,10 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
         <div style="font-size:11px;color:${col};font-weight:600;font-style:italic;flex:1;line-height:1.3">${frase}</div>
         <div style="font-size:9px;color:rgba(255,255,255,.25);white-space:nowrap;flex-shrink:0">Act. ${horaStr}</div>
       </div>`;
+    if(heroMeta){
+      animateNumber(document.getElementById('hero-total-num'), totalShow, {duration:900});
+      animateNumber(document.getElementById('hero-pct-num'), pct, {duration:900, fmt:n=>String(n)});
+    }
   }
 
   // Celebración
@@ -8581,6 +8608,7 @@ async function loadDia(){
       const vals=Object.values(gfAll).map(d=>d.total);
       const record=vals.length?Math.max(...vals):0;
       const esNuevoRecord=g.total>0&&g.total>=record;
+      const cercaDelRecord=!esNuevoRecord&&g.total>0&&record>0&&g.total>=record*0.9;
 
       // Banners extra
       let extra='';
@@ -8592,14 +8620,22 @@ async function loadDia(){
             <div class="mb-t" style="color:#9A88FF">¡Nuevo récord personal!</div>
             <div class="mb-s">Superaste tu marca anterior de ${fmtN(recAnterior)} uds.</div>
           </div></div>`;
+        setTimeout(()=>{ lanzarConfettiChico(); playChime('record'); }, 500);
+      } else if(cercaDelRecord){
+        extra+=`<div class="meta-banner" style="background:linear-gradient(135deg,#1A1500,#2A2200);border-color:#FFD700">
+          <div class="mb-icon">✨</div>
+          <div class="mb-txt">
+            <div class="mb-t" style="color:#FFD700">¡Estás cerca de tu récord!</div>
+            <div class="mb-s">Te faltan ${fmtN(record-g.total)} uds para igualar tu mejor día (${fmtN(record)}).</div>
+          </div></div>`;
       }
       if(racha>=2){
-        const rc=racha>=5?'#FF8C42':racha>=3?'#FFBA4D':'#2ECC8A';
+        const rc=racha>=10?'#9A88FF':racha>=5?'#FF8C42':racha>=3?'#FFBA4D':'#2ECC8A';
         extra+=`<div class="meta-banner" style="background:linear-gradient(135deg,#1A1200,#2A2000);border-color:${rc}">
-          <div class="mb-icon">${racha>=5?'🔥':'⚡'}</div>
+          <div class="mb-icon">${emojiRacha(racha)||'✅'}</div>
           <div class="mb-txt">
             <div class="mb-t" style="color:${rc}">${racha} días consecutivos activa</div>
-            <div class="mb-s">${racha>=5?'¡Racha increíble!':racha>=3?'¡Excelente constancia!':'¡Vas muy bien!'}</div>
+            <div class="mb-s">${racha>=10?'¡Racha de diamante!':racha>=5?'¡Racha increíble!':racha>=3?'¡Excelente constancia!':'¡Vas muy bien!'}</div>
           </div></div>`;
       }
       if(extra) el.insertAdjacentHTML('afterbegin', extra);
@@ -8609,7 +8645,7 @@ async function loadDia(){
 
       // Badge racha en header
       const rachaBadgeEl=document.getElementById('dash-racha-badge');
-      if(rachaBadgeEl&&racha>=3){ rachaBadgeEl.style.display='inline-flex'; rachaBadgeEl.textContent=`🔥 ${racha} días`; }
+      if(rachaBadgeEl&&racha>=3){ rachaBadgeEl.style.display='inline-flex'; rachaBadgeEl.innerHTML=rachaBadgeTxt(racha); }
     });
 
   }catch(e){
@@ -8987,7 +9023,7 @@ function calcularLogros(gfAll, meta, totalMes, record){
 
   // Badges en header
   const rachaBadge=document.getElementById('dash-racha-badge');
-  if(rachaBadge&&racha>=3){ rachaBadge.style.display='block'; rachaBadge.textContent=`🔥 ${racha} días`; }
+  if(rachaBadge&&racha>=3){ rachaBadge.style.display='block'; rachaBadge.innerHTML=rachaBadgeTxt(racha); }
 
   return`<div class="card">
     <div class="card-title" style="margin-bottom:.85rem">🏅 Mis logros</div>
@@ -9098,6 +9134,91 @@ function getFrase(pct){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 
+// ============================================================
+// DETALLES DE EXPERIENCIA — sonido, contador animado, emojis
+// reactivos y confetti variado. Todo liviano (sin archivos externos,
+// sin librerías nuevas) para no pesar la carga de la PWA.
+// ============================================================
+
+// Acorde corto y cálido con Web Audio (sin archivos de audio que descargar).
+// Se usa solo en hitos puntuales (meta cumplida, récord) — nunca en cada carga.
+function playChime(tipo='meta'){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const notas = tipo==='record' ? [659.25,830.61,987.77] : [523.25,659.25,784.0]; // récord suena un pelín más agudo/especial
+    notas.forEach((freq,i)=>{
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      osc.type='sine'; osc.frequency.value=freq;
+      osc.connect(gain); gain.connect(ctx.destination);
+      const t0=ctx.currentTime+i*0.09;
+      gain.gain.setValueAtTime(0,t0);
+      gain.gain.linearRampToValueAtTime(0.11,t0+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,t0+0.5);
+      osc.start(t0); osc.stop(t0+0.55);
+    });
+  }catch(e){/* audio no disponible (ej. antes de la primera interacción) — silencioso, no rompe nada */}
+}
+
+// Contador "odómetro": anima un número desde 0 (o desde su valor actual) hasta
+// el valor final, con easing. Usado en el hero del día al cargar el resultado.
+function animateNumber(el, to, opts={}){
+  if(!el) return;
+  const duration=opts.duration||900;
+  const from=opts.from||0;
+  const fmt=opts.fmt||fmtN;
+  const start=performance.now();
+  function tick(now){
+    const p=Math.min(1,(now-start)/duration);
+    const eased=1-Math.pow(1-p,3);
+    el.textContent=fmt(Math.round(from+(to-from)*eased));
+    if(p<1) requestAnimationFrame(tick);
+    else el.textContent=fmt(to);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Emoji reactivo según el % de cumplimiento del día — se muestra junto al %.
+function emojiPct(pct){
+  if(pct>110) return '🚀';
+  if(pct>=100) return '🎉';
+  if(pct>=90) return '🔥';
+  return '';
+}
+
+// Emoji de racha progresivo — la constancia "sube de nivel" visualmente.
+function emojiRacha(dias){
+  if(dias>=10) return '💎';
+  if(dias>=5) return '⚡';
+  if(dias>=3) return '🔥';
+  return '';
+}
+function rachaBadgeTxt(dias){ const e=emojiRacha(dias); return `${e?`<span class="racha-flicker">${e}</span> `:''}${dias} días`; }
+
+// Confetti "chico" — para hitos secundarios (mejor día del mes, récord personal),
+// para no banalizar el confetti grande que se reserva para metas cumplidas.
+function lanzarConfettiChico(){
+  const colores=['#FFD700','#3B8FFF','#9A88FF'];
+  for(let i=0;i<18;i++){
+    setTimeout(()=>{
+      const p=document.createElement('div');
+      p.className='confetti-piece';
+      const size=Math.random()*6+3;
+      p.style.cssText=`
+        left:${Math.random()*100}vw;
+        top:-${size}px;
+        width:${size}px;
+        height:${size}px;
+        background:${colores[Math.floor(Math.random()*colores.length)]};
+        animation-duration:${Math.random()*1+0.9}s;
+        animation-delay:${Math.random()*0.2}s;
+        border-radius:${Math.random()>0.5?'50%':'2px'};
+      `;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),2200);
+    }, Math.random()*250);
+  }
+}
+
 // ── Welcome card al entrar ──
 async function mostrarWelcome(){
   const hoy=today();
@@ -9132,11 +9253,11 @@ async function mostrarWelcome(){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,.45);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Meta del día · ${fmtFecha(hoy).slice(0,5)}</div>
-          <div style="font-size:34px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em">${fmtN(totalShow)}<span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.35);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
+          <div style="font-size:34px;font-weight:900;color:${pctCol};line-height:1;letter-spacing:-.03em"><span id="hero-total-num">0</span><span style="font-size:13px;font-weight:500;color:rgba(255,255,255,.35);margin-left:4px">/ ${fmtN(meta)} uds</span></div>
           ${eqWelcome?equivRefLineHTML(eqWelcome):''}
         </div>
         <div style="text-align:right">
-          <div style="font-size:36px;font-weight:900;color:${pctCol};line-height:1">${pct}%</div>
+          <div style="font-size:36px;font-weight:900;color:${pctCol};line-height:1"><span id="hero-pct-num">0</span>%${emojiPct(pct)?`<span style="font-size:20px;margin-left:2px">${emojiPct(pct)}</span>`:''}</div>
           ${pct>=100?'<div style="font-size:10px;color:#2ECC8A;font-weight:700">¡Meta! 🏆</div>':''}
         </div>
       </div>
@@ -9147,6 +9268,8 @@ async function mostrarWelcome(){
         <div style="font-size:11px;color:${pctCol};font-weight:600;font-style:italic;flex:1;line-height:1.3">${frase}</div>
         <div style="font-size:9px;color:rgba(255,255,255,.25);white-space:nowrap;flex-shrink:0">Act. ${horaStr}</div>
       </div>`;
+    animateNumber(document.getElementById('hero-total-num'), totalShow, {duration:900});
+    animateNumber(document.getElementById('hero-pct-num'), pct, {duration:900, fmt:n=>String(n)});
   }
 
   // Celebración si cumplió meta hoy
@@ -9167,7 +9290,7 @@ async function mostrarWelcome(){
     }
     if(racha>=3){
       const rb=document.getElementById('dash-racha-badge');
-      if(rb){rb.style.display='inline-flex';rb.textContent=`🔥 ${racha} días`;}
+      if(rb){rb.style.display='inline-flex';rb.innerHTML=rachaBadgeTxt(racha);}
     }
   }
 }
@@ -9181,6 +9304,7 @@ function lanzarCelebracion(total, nombre, pct){
   document.getElementById('celeb-stat').textContent=fmtN(total);
   overlay.classList.add('show');
   lanzarConfetti();
+  playChime('meta');
   // Cerrar automáticamente después de 4s
   setTimeout(()=>cerrarCeleb(), 4000);
 }
@@ -9188,6 +9312,64 @@ function lanzarCelebracion(total, nombre, pct){
 function cerrarCeleb(){
   const overlay=document.getElementById('celeb-overlay');
   if(overlay) overlay.classList.remove('show');
+}
+
+// ── Resumen semanal "wrapped" — aparece solo los viernes, una vez por semana ──
+function cerrarWrapped(){
+  const o=document.getElementById('wrapped-overlay');
+  if(o) o.style.display='none';
+}
+async function mostrarResumenSemanalSiCorresponde(){
+  try{
+    const hoyDate=new Date();
+    if(hoyDate.getDay()!==5) return; // solo viernes
+    const wk=isoWeekActual();
+    const key=`wrapped_${hoyDate.getFullYear()}_${wk}_${cUser}`;
+    if(localStorage.getItem(key)) return; // ya se mostró esta semana
+
+    const cache=await getHistorialCache();
+    if(!cache||!cache.gfAll) return;
+    const gfAll=cache.gfAll;
+
+    // Lunes a viernes de esta semana (misma semana ISO que el resto de la app)
+    const dLun=new Date();
+    const diaSemana=dLun.getDay()===0?7:dLun.getDay();
+    dLun.setDate(dLun.getDate()-(diaSemana-1));
+    const fechas=[];
+    for(let i=0;i<5;i++){ const d=new Date(dLun); d.setDate(dLun.getDate()+i); fechas.push(d.toISOString().slice(0,10)); }
+
+    let total=0, diasActivos=0, mejorDia=0;
+    fechas.forEach(f=>{
+      const d=gfAll[f];
+      if(d&&d.total>0){
+        diasActivos++;
+        const eqDia=calcEquivDesglose(cUser, d.linea||0, d.maleta||0, d.insumo||0);
+        const totalDia=eqDia?eqDia.total:d.total;
+        total+=totalDia;
+        if(totalDia>mejorDia) mejorDia=totalDia;
+      }
+    });
+    if(total<=0) return; // sin datos esta semana — no interrumpir con un resumen vacío
+
+    const meta=META[cUser]||0;
+    const metaSemana=meta*5;
+    const pctSem=metaSemana>0?Math.round(total/metaSemana*100):0;
+
+    document.getElementById('wrapped-rango').textContent=`${fmtFecha(fechas[0]).slice(0,5)} — ${fmtFecha(fechas[4]).slice(0,5)}`;
+    document.getElementById('wrapped-detalle').innerHTML=`
+      <div><div style="font-size:20px;font-weight:800;color:#2ECC8A">${diasActivos}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">días activos</div></div>
+      <div><div style="font-size:20px;font-weight:800;color:#FFBA4D">${fmtN(mejorDia)}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">mejor día</div></div>
+      <div><div style="font-size:20px;font-weight:800;color:#3B8FFF">${pctSem}%</div><div style="font-size:9px;color:rgba(255,255,255,.4)">de tu meta</div></div>`;
+    document.getElementById('wrapped-frase').textContent = pctSem>=100?'¡Semana redonda! Nivel campeona 🏆':pctSem>=70?'¡Gran semana! Sigue con ese ritmo':'Cada semana suma — ¡la próxima va con todo!';
+
+    const overlay=document.getElementById('wrapped-overlay');
+    const totalEl=document.getElementById('wrapped-total');
+    totalEl.textContent='0';
+    overlay.style.display='flex';
+    animateNumber(totalEl, total, {duration:1100});
+    setTimeout(()=>lanzarConfettiChico(), 400);
+    localStorage.setItem(key,'1');
+  }catch(e){ /* si algo falla, simplemente no se muestra — nunca debe romper el resto de la app */ }
 }
 
 function lanzarConfetti(){
