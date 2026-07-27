@@ -3899,23 +3899,11 @@ async function loadHistorial(){
       </div>
     </div>
 
-    <!-- ── GRÁFICO 30 DÍAS ── -->
+    <!-- ── MIX DE MATERIAL DEL MES (reemplaza el gráfico de tendencia, que no se usaba) ── -->
     <div class="pf-trend-card pf-sec pf-s4">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;color:var(--txt2);display:flex;align-items:center;gap:6px"><span>📊</span><span id="pf-chart-titulo">Últimos 30 días</span></div>
-        <div style="display:flex;align-items:center;gap:4px">
-          ${['30d','90d','6m','1a'].map(p=>`<button onclick="pfCambiarPeriodo('${p}')" id="pfbtn-${p}"
-            style="background:${p==='30d'?'rgba(59,143,255,.2)':'rgba(255,255,255,.05)'};border:1px solid ${p==='30d'?'rgba(59,143,255,.5)':'rgba(255,255,255,.08)'};
-            color:${p==='30d'?'#3B8FFF':'var(--txt3)'};border-radius:6px;padding:3px 8px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s"
-          >${p}</button>`).join('')}
-        </div>
-      </div>
-      <div style="position:relative;height:130px"><canvas id="pfChart30"></canvas></div>
-      <div style="display:flex;justify-content:space-between;margin-top:5px">
-        <span id="pf-chart-desde" style="font-size:8px;color:var(--txt3)">${labels30[0]?.slice(5).replace('-','/')}</span>
-        <span style="font-size:8px;color:var(--txt3)">Hoy</span>
-      </div>
-      ${rachaActual>=2?`<div style="margin-top:8px;background:rgba(46,204,138,.08);border:1px solid rgba(46,204,138,.18);border-radius:9px;padding:7px 10px;font-size:10px;color:#2ECC8A;font-weight:600;display:flex;align-items:center;gap:6px">✅ <span>Llevas <strong>${rachaActual} días seguidos</strong> activa — ¡gran racha!</span></div>`:''}
+      <div style="font-size:10px;font-weight:700;color:var(--txt2);display:flex;align-items:center;gap:6px;margin-bottom:10px"><span>📦</span><span>Mix de material · ${fmtMes(mesActual)}</span></div>
+      ${materialRealCardsHTML({maleta:tiposMesAct.maleta, linea:tiposMesAct.linea, insumo:tiposMesAct.insumo, otro:tiposMesAct.otro, total:totalMesRaw}, eqMes)}
+      ${rachaActual>=2?`<div style="margin-top:2px;background:rgba(46,204,138,.08);border:1px solid rgba(46,204,138,.18);border-radius:9px;padding:7px 10px;font-size:10px;color:#2ECC8A;font-weight:600;display:flex;align-items:center;gap:6px">✅ <span>Llevas <strong>${rachaActual} días seguidos</strong> activa — ¡gran racha!</span></div>`:''}
     </div>
 
     <!-- ── COMPARATIVA VS SÍ MISMA ── -->
@@ -4061,80 +4049,6 @@ async function loadHistorial(){
     // ── Inyectar heatmap ──
     const hmCont=document.getElementById('pf-heatmap-container');
     if(hmCont) hmCont.innerHTML=renderHeatmap(gfAll);
-
-    // ── Chart con selector de período ──
-    if(window.Chart){
-      // Función reutilizable — se llama al init y al cambiar período
-      window._pfGfAll = gfAll;
-      window._pfMetaDia = metaDia;
-      window._pfRecord = record;
-      window._pfPromDiario = promDiario;
-
-      window.pfCambiarPeriodo = function(periodo){
-        const hoy2=today();
-        const titulos={'30d':'Últimos 30 días','90d':'Últimos 3 meses','6m':'Últimos 6 meses','1a':'Último año'};
-        const dias={'30d':30,'90d':90,'6m':180,'1a':365};
-        const n=dias[periodo]||30;
-        const inicio=new Date(hoy2+'T12:00:00'); inicio.setDate(inicio.getDate()-(n-1));
-        const desdeStr=inicio.toISOString().slice(0,10);
-        const labs=[],dat=[];
-        for(let i=0;i<n;i++){
-          const dd=new Date(desdeStr+'T12:00:00'); dd.setDate(dd.getDate()+i);
-          const f=dd.toISOString().slice(0,10);
-          labs.push(f); dat.push(window._pfGfAll[f]?.total??null);
-        }
-        // Promedio del período
-        const vals=dat.filter(v=>v!==null&&v>0);
-        const promP=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):window._pfPromDiario;
-
-        // Actualizar botones
-        ['30d','90d','6m','1a'].forEach(p=>{
-          const btn=document.getElementById('pfbtn-'+p);
-          if(!btn) return;
-          const on=p===periodo;
-          btn.style.background=on?'rgba(59,143,255,.2)':'rgba(255,255,255,.05)';
-          btn.style.borderColor=on?'rgba(59,143,255,.5)':'rgba(255,255,255,.08)';
-          btn.style.color=on?'#3B8FFF':'var(--txt3)';
-        });
-        // Actualizar título y fecha inicio
-        const tit=document.getElementById('pf-chart-titulo');
-        if(tit) tit.textContent=titulos[periodo];
-        const desde=document.getElementById('pf-chart-desde');
-        if(desde) desde.textContent=desdeStr.slice(5).replace('-','/');
-
-        // Actualizar chart
-        const ch=Chart.getChart('pfChart30');
-        if(!ch) return;
-        ch.data.labels=labs;
-        ch.data.datasets[0].data=dat;
-        ch.data.datasets[0].pointRadius=dat.map(v=>v===window._pfRecord&&v!==null?6:v!==null?( n<=30?2.5:n<=90?1.5:0):0);
-        ch.data.datasets[0].pointBackgroundColor=dat.map(v=>v===window._pfRecord?'#FFBA4D':v>=window._pfMetaDia?'#2ECC8A':'#3B8FFF');
-        ch.data.datasets[1].data=Array(n).fill(promP);
-        ch.update('active');
-      };
-
-      const existingChart=Chart.getChart('pfChart30');
-      if(existingChart) existingChart.destroy();
-      new Chart(document.getElementById('pfChart30'),{
-        type:'line',
-        data:{labels:labels30,datasets:[
-          {data:data30,borderColor:'#3B8FFF',borderWidth:2.5,
-           pointRadius:data30.map(v=>v===record&&v!==null?6:v!==null?2.5:0),
-           pointBackgroundColor:data30.map(v=>v===record?'#FFBA4D':v>=metaDia?'#2ECC8A':'#3B8FFF'),
-           tension:.35,spanGaps:true,fill:true,
-           backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,130);g.addColorStop(0,'rgba(59,143,255,.25)');g.addColorStop(1,'rgba(59,143,255,0)');return g}},
-          {data:Array(30).fill(promDiario),borderColor:'rgba(255,255,255,.2)',
-           borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
-        ]},
-        options:{responsive:true,maintainAspectRatio:false,
-          plugins:{legend:{display:false},tooltip:{backgroundColor:'#0A1628',borderColor:'#1E3A5F',borderWidth:1,
-            titleColor:'#8AAED4',bodyColor:'#EEF4FF',padding:8,
-            callbacks:{title:ctx=>fmtFecha(ctx[0].label),
-              label:ctx=>ctx.datasetIndex===0?(ctx.raw!==null?`${fmtN(ctx.raw)} uds${ctx.raw===record?' 🏆':''}` :'Sin registro'):`Prom: ${fmtN(ctx.raw)}`}}},
-          scales:{x:{display:false},y:{display:true,grid:{color:'rgba(255,255,255,.04)',drawBorder:false},
-            ticks:{color:'#4D7AAA',font:{size:8},maxTicksLimit:4,callback:v=>fmtN(v)},border:{display:false}}}}
-      });
-    }
   }catch(e){
     console.error(e);
     el.innerHTML=`<div class="empty">Error cargando perfil: ${e.message}</div>`;
