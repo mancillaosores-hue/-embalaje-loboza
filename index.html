@@ -661,6 +661,7 @@ input[type="month"], input[type="week"]{
     <button id="dtab-semana" class="dtab" onclick="showDashTab2('semana',this)">Semana</button>
     <button id="dtab-mes" class="dtab" onclick="showDashTab2('mes',this)">Mes</button>
     <button id="dtab-historial" class="dtab" onclick="showDashTab2('historial',this)">Historial</button>
+    <button id="dtab-bono" class="dtab" onclick="showDashTab2('bono',this)">🧮 Bono</button>
   </div>
 
   <!-- TAB: DÍA -->
@@ -694,6 +695,15 @@ input[type="month"], input[type="week"]{
   <!-- TAB: HISTORIAL -->
   <div id="dt-historial" style="display:none">
     <div id="hist-content"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+  </div>
+
+  <!-- TAB: BONO (simulador, vista propia) -->
+  <div id="dt-bono" style="display:none">
+    <div class="filter-bar">
+      <label>Mes:</label>
+      <input type="month" id="fil-bono" onchange="loadBono()"/>
+    </div>
+    <div id="bono-content"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
   </div>
 </div>
 
@@ -3276,7 +3286,7 @@ function doLogin(){
   document.querySelectorAll('.dtab').forEach(b=>b.classList.remove('on'));
   const dtabHoy=document.getElementById('dtab-hoy');
   if(dtabHoy) dtabHoy.classList.add('on');
-  ['dt-semana','dt-mes','dt-historial'].forEach(id=>{
+  ['dt-semana','dt-mes','dt-historial','dt-bono'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display='none';
   });
   document.getElementById('dt-dia').style.display='block';
@@ -3899,12 +3909,7 @@ async function loadHistorial(){
       </div>
     </div>
 
-    <!-- ── MIX DE MATERIAL DEL MES (reemplaza el gráfico de tendencia, que no se usaba) ── -->
-    <div class="pf-trend-card pf-sec pf-s4">
-      <div style="font-size:10px;font-weight:700;color:var(--txt2);display:flex;align-items:center;gap:6px;margin-bottom:10px"><span>📦</span><span>Mix de material · ${fmtMes(mesActual)}</span></div>
-      ${materialRealCardsHTML({maleta:tiposMesAct.maleta, linea:tiposMesAct.linea, insumo:tiposMesAct.insumo, otro:tiposMesAct.otro, total:totalMesRaw}, eqMes)}
-      ${rachaActual>=2?`<div style="margin-top:2px;background:rgba(46,204,138,.08);border:1px solid rgba(46,204,138,.18);border-radius:9px;padding:7px 10px;font-size:10px;color:#2ECC8A;font-weight:600;display:flex;align-items:center;gap:6px">✅ <span>Llevas <strong>${rachaActual} días seguidos</strong> activa — ¡gran racha!</span></div>`:''}
-    </div>
+    ${rachaActual>=2?`<div class="pf-sec pf-s4" style="margin-top:2px;margin-bottom:8px;background:rgba(46,204,138,.08);border:1px solid rgba(46,204,138,.18);border-radius:9px;padding:9px 12px;font-size:10px;color:#2ECC8A;font-weight:600;display:flex;align-items:center;gap:6px">✅ <span>Llevas <strong>${rachaActual} días seguidos</strong> activa — ¡gran racha!</span></div>`:''}
 
     <!-- ── COMPARATIVA VS SÍ MISMA ── -->
     <div class="pf-card pf-sec pf-s5">
@@ -4008,9 +4013,6 @@ async function loadHistorial(){
 
     ${eqMes?`<div style="font-size:10px;color:var(--txt3);text-align:center;margin:-4px 0 8px">${equivRefLineHTML(eqMes)}</div>`:''}
 
-    <!-- ── HEATMAP ── -->
-    <div class="pf-sec pf-s8" id="pf-heatmap-container"></div>
-
     <!-- ── INSIGHTS ── -->
     <div class="pf-card pf-sec pf-s8">
       <div class="pf-card-hdr">
@@ -4047,8 +4049,6 @@ async function loadHistorial(){
     }
 
     // ── Inyectar heatmap ──
-    const hmCont=document.getElementById('pf-heatmap-container');
-    if(hmCont) hmCont.innerHTML=renderHeatmap(gfAll);
   }catch(e){
     console.error(e);
     el.innerHTML=`<div class="empty">Error cargando perfil: ${e.message}</div>`;
@@ -5240,12 +5240,6 @@ async function loadMes(){
     const varCol=varPct===null?'var(--txt3)':varPct>=0?'#2ECC8A':'#FF6B6B';
     const varTxt=varPct===null?'—':varPct>=0?`↑ +${varPct}%`:`↓ ${varPct}%`;
 
-    // Promedio real para el simulador de bono: total equivalencia ÷ días HÁBILES
-    // del mes (no los días que trabajó) — precargado y editable en el simulador.
-    const [anioBono,mesBono]=ms.split('-').map(Number);
-    const diasHabBono=diasHabilesMes(anioBono,mesBono);
-    const wRealBono=diasHabBono>0?Math.round((totalShow/diasHabBono)*10)/10:0;
-
     el.innerHTML=`
     <!-- Hero mes -->
     <div style="background:linear-gradient(135deg,#0A1E3D,#061228);border:1px solid #1A3354;border-radius:var(--r);padding:16px;margin-bottom:8px">
@@ -5290,15 +5284,60 @@ async function loadMes(){
       </div>
     </div>`:''}
 
+    <!-- Heatmap del mes -->
+    <div id="mes-heatmap-container" class="pf-sec"></div>
+
     <!-- Evolución del mes -->
     <div class="card">
       <div class="card-title" style="margin-bottom:.85rem">Evolución del mes${eq?' (equivalencia)':''}</div>
       ${renderBarChart(gfShow,true)}
-    </div>
+    </div>`;
 
-    <!-- Simulador de bono — al final -->
+    // Heatmap reutiliza el historial completo ya cacheado (o lo carga si aún no está)
+    getHistorialCache().then(cache=>{
+      const hmCont=document.getElementById('mes-heatmap-container');
+      if(hmCont && cache && cache.gfAll) hmCont.innerHTML=renderHeatmap(cache.gfAll);
+    });
+
+  }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
+}
+
+// Recalcula el simulador de bono en vivo, a partir de los inputs de
+// promedio de producción / días de ausencia / minutos de atraso, sin volver
+// a pedir datos al servidor.
+// Vista propia del simulador de bono — antes vivía al fondo de Mes, ahora
+// es su propia pestaña para que quede sola y no se pierda entre otras tarjetas.
+async function loadBono(){
+  const msInput=document.getElementById('fil-bono');
+  if(msInput && !msInput.value) msInput.value=today().slice(0,7);
+  const ms=msInput?msInput.value:today().slice(0,7);
+  if(!ms) return;
+  const [desde,hasta]=monthRange(ms);
+  const el=document.getElementById('bono-content');
+  el.innerHTML='<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  try{
+    const hoy=today();
+    let rows;
+    if(ms===hoy.slice(0,7) && _cache.rows){
+      rows=_cache.rows.filter(r=>r.fecha>=desde&&r.fecha<=hasta);
+    } else {
+      rows=await fetchProd(cUser,desde,hasta);
+    }
+    mesMiCache={rows,ms};
+
+    const g=groupByTipo(rows);
+    const eq=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+    const totalShow=eq?eq.total:g.total;
+
+    // Promedio real para el simulador: total equivalencia ÷ días HÁBILES del
+    // mes (no los días que trabajó) — precargado y editable en el simulador.
+    const [anioBono,mesBono]=ms.split('-').map(Number);
+    const diasHabBono=diasHabilesMes(anioBono,mesBono);
+    const wRealBono=diasHabBono>0?Math.round((totalShow/diasHabBono)*10)/10:0;
+
+    el.innerHTML=`
     <div class="card" style="border:1px solid #FFBA4D33;margin-bottom:8px">
-      <div class="card-title" style="margin-bottom:.5rem">🧮 Simulador de bono</div>
+      <div class="card-title" style="margin-bottom:.5rem">🧮 Simulador de bono · ${fmtMes(ms)}</div>
       <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;line-height:1.4">Precargado con tu promedio real del mes. Puedes cambiar cualquier valor para simular otros escenarios. Es una simulación de referencia — el cálculo oficial lo hace RRHH.</div>
       <div style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -5321,13 +5360,9 @@ async function loadMes(){
       <div id="simbono-resultado"></div>
     </div>`;
     _simBonoUpdate();
-
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 }
 
-// Recalcula el simulador de bono en vivo, a partir de los inputs de
-// promedio de producción / días de ausencia / minutos de atraso, sin volver
-// a pedir datos al servidor.
 function _simBonoUpdate(){
   const out=document.getElementById('simbono-resultado');
   const wEl=document.getElementById('simbono-w');
@@ -8884,7 +8919,7 @@ setTimeout(hookBottomNav, 500);
 // ── DASHBOARD EMBALADORA: funciones nuevas ──
 
 function showDashTab2(tab, btn){
-  ['dia','semana','mes','historial'].forEach(t=>{
+  ['dia','semana','mes','historial','bono'].forEach(t=>{
     document.getElementById('dt-'+t).style.display=t===tab?'block':'none';
   });
   document.querySelectorAll('.dtab').forEach(b=>b.classList.remove('on'));
@@ -8899,6 +8934,7 @@ function showDashTab2(tab, btn){
   if(tab==='semana') loadSemana();
   else if(tab==='mes') loadMes();
   else if(tab==='historial') loadHistorial();
+  else if(tab==='bono') loadBono();
 }
 
 // Actualizar avatar e iniciales
