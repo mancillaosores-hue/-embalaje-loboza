@@ -3605,7 +3605,7 @@ async function cargarLogrosInsights(containerId, ms){
 
     const rowsNoInsumo=rowsAll.filter(r=>r.tipo!=='insumo');
     const diasActivos=Object.values(gfAll).filter(d=>d.total>0).length;
-    const totalAll=rowsNoInsumo.reduce((s,r)=>s+r.cantidad,0);
+    const totalAll=Object.values(gfAll).reduce((s,dd)=>s+dd.total,0); // gfAll ya está en equivalencia
     const promDiario=diasActivos>0?Math.round(totalAll/diasActivos):0;
     const record=Math.max(...Object.values(gfAll).map(d=>d.total),0);
 
@@ -3674,7 +3674,7 @@ async function cargarLogrosInsights(containerId, ms){
 
     // ── Inyectar logros (usa directamente el HTML que ya trae su propio .card/.card-title) ──
     const logrosCont=document.getElementById('mes-logros-container');
-    if(logrosCont) logrosCont.innerHTML=calcularLogros(gfAll,metaDia,totalMes,record,ms,esMesActual);
+    if(logrosCont) logrosCont.innerHTML=calcularLogros(gfAll,metaDia,totalMes,record,ms,esMesActual,{tiposMesAct,promDiarioHistorico:promDiario});
   }catch(e){
     console.error(e);
     cont.innerHTML='';
@@ -8581,10 +8581,22 @@ function actualizarHeroLogin(cod){
 // es el mes en curso (para saber si tiene sentido hablar de "racha hasta hoy").
 // gfAll debe venir YA en equivalencia (ver gfAllEquivalente) para que "récord"
 // y "días sobre meta" comparen manzanas con manzanas contra la meta diaria.
-function calcularLogros(gfAll, meta, totalMes, record, mesKey, esMesActual){
+function diasHabilesHasta(anio, mes, diaMax){ // cuenta Lun-Vie desde el día 1 hasta diaMax inclusive
+  let n=0;
+  for(let d=1; d<=diaMax; d++){
+    const dow=new Date(anio,mes-1,d).getDay();
+    if(dow>=1&&dow<=5) n++;
+  }
+  return n;
+}
+
+// extra: {tiposMesAct:{maleta,linea,insumo,otro}, promDiarioHistorico}
+function calcularLogros(gfAll, meta, totalMes, record, mesKey, esMesActual, extra={}){
   const hoy=today();
   mesKey = mesKey || hoy.slice(0,7);
   if(esMesActual===undefined) esMesActual = mesKey===hoy.slice(0,7);
+  const tiposMesAct = extra.tiposMesAct || {};
+  const promDiarioHistorico = extra.promDiarioHistorico || 0;
 
   // Racha: siempre "hasta hoy" — es una medida de constancia actual, no del mes que se navega
   let racha=0;
@@ -8597,12 +8609,70 @@ function calcularLogros(gfAll, meta, totalMes, record, mesKey, esMesActual){
   }
 
   // Todo lo demás, referido al MES que se está viendo
-  const diasDelMes=Object.entries(gfAll).filter(([f])=>f.startsWith(mesKey));
+  const diasDelMes=Object.entries(gfAll).filter(([f])=>f.startsWith(mesKey)).sort((a,b)=>a[0]<b[0]?-1:1);
+  const diasActivosDelMes=diasDelMes.filter(([,dd])=>dd.total>0).length;
   const diasSobreMeta=diasDelMes.filter(([,dd])=>dd.total>=(meta||Infinity)).length;
   const mejorDiaMes=diasDelMes.reduce((max,[,dd])=>Math.max(max,dd.total),0);
   const esRecordHistorico=mejorDiaMes>0&&mejorDiaMes>=record;
   const metaMensual=(meta||0)*20;
   const metaMesCumplida=metaMensual>0&&totalMes>=metaMensual;
+  const promMesAct=diasActivosDelMes>0?totalMes/diasActivosDelMes:0;
+
+  // Días hábiles del mes (totales y transcurridos, para "mes perfecto"/"meta anticipada")
+  const [anioM,mesNumM]=mesKey.split('-').map(Number);
+  const diaMaxDelMes=diasCalendarioMes(anioM,mesNumM);
+  const diaMaxParaContar=esMesActual?new Date(hoy+'T12:00:00').getDate():diaMaxDelMes;
+  const diasHabTranscurridos=diasHabilesHasta(anioM,mesNumM,diaMaxParaContar);
+
+  // 1) Mes perfecto — trabajó TODOS los días hábiles transcurridos del mes
+  const mesPerfecto=diasHabTranscurridos>=3&&diasActivosDelMes>=diasHabTranscurridos;
+
+  // 2) Doble meta — algún día llegó a 150%+ de la meta diaria
+  const dobleMeta=meta>0&&diasDelMes.some(([,dd])=>dd.total>=meta*1.5);
+
+  // 3) Superó su propio promedio histórico
+  const superoPromedio=promDiarioHistorico>0&&promMesAct>promDiarioHistorico;
+
+  // 4) Todo terreno — trabajó los 3 tipos de material en el mes
+  const todoTerreno=(tiposMesAct.linea>0)&&(tiposMesAct.maleta>0)&&(tiposMesAct.insumo>0);
+
+  // 5) Sin días flojos — ningún día que trabajó estuvo bajo el 50% de la meta
+  const sinDiasFlojos=diasActivosDelMes>0&&meta>0&&diasDelMes.every(([,dd])=>dd.total===0||dd.total>=meta*0.5);
+
+  // Agrupar el mes por semana ISO (para "semana completa" y "remontada")
+  const porSemana={};
+  diasDelMes.forEach(([f,dd])=>{
+    const dt=new Date(f+'T12:00:00');
+    const jan4=new Date(dt.getFullYear(),0,4);
+    const s=new Date(jan4); s.setDate(jan4.getDate()-(jan4.getDay()||7)+1);
+    const sem=Math.ceil(((dt-s)/86400000+1)/7);
+    const key=`${dt.getFullYear()}-S${String(sem).padStart(2,'0')}`;
+    if(!porSemana[key]) porSemana[key]={total:0,diasActivos:0};
+    porSemana[key].total+=dd.total;
+    if(dd.total>0) porSemana[key].diasActivos++;
+  });
+  const semanasOrdenadas=Object.entries(porSemana).sort((a,b)=>a[0]<b[0]?-1:1);
+
+  // 6) Semana completa — alguna semana del mes con 5 días activos
+  const semanaCompleta=semanasOrdenadas.some(([,s])=>s.diasActivos>=5);
+
+  // 7) Meta anticipada — llegó a la meta mensual con días hábiles de sobra
+  let metaAnticipada=false;
+  if(metaMesCumplida&&metaMensual>0){
+    let acum=0, diaCumplio=null;
+    for(const [f,dd] of diasDelMes){ acum+=dd.total; if(acum>=metaMensual){ diaCumplio=+f.slice(8,10); break; } }
+    if(diaCumplio){
+      const habRestantes=diasHabilesHasta(anioM,mesNumM,diaMaxDelMes)-diasHabilesHasta(anioM,mesNumM,diaCumplio);
+      metaAnticipada=habRestantes>=1;
+    }
+  }
+
+  // 8) Remontada — una semana floja (<70% del promedio del mes) seguida de otra 20%+ mejor
+  let remontada=false;
+  for(let i=0;i<semanasOrdenadas.length-1;i++){
+    const actual=semanasOrdenadas[i][1].total, siguiente=semanasOrdenadas[i+1][1].total;
+    if(actual>0&&promMesAct>0&&actual<promMesAct*3.5*0.7&&siguiente>=actual*1.2){ remontada=true; break; }
+  }
 
   const logros=[
     {id:'racha3',icon:'🔥',nombre:'Racha 3 días',desc:'3 días seguidos activa',ok:racha>=3},
@@ -8611,6 +8681,14 @@ function calcularLogros(gfAll, meta, totalMes, record, mesKey, esMesActual){
     {id:'record',icon:'🏆',nombre:esRecordHistorico?'¡Récord histórico!':'Mejor día del mes',desc:mejorDiaMes>0?`${fmtN(mejorDiaMes)} uds equiv.`:'Sin datos este mes',ok:mejorDiaMes>0},
     {id:'sobre5',icon:'⭐',nombre:'5 días meta',desc:'5 días sobre meta este mes',ok:diasSobreMeta>=5},
     {id:'metames',icon:'🎉',nombre:'Meta mensual',desc:metaMensual>0?`${fmtN(totalMes)} / ${fmtN(metaMensual)} uds`:'Sin meta configurada',ok:metaMesCumplida},
+    {id:'mesperfecto',icon:'📆',nombre:'Mes perfecto',desc:diasHabTranscurridos>0?`${diasActivosDelMes} de ${diasHabTranscurridos} días hábiles`:'Sin días hábiles aún',ok:mesPerfecto},
+    {id:'dobleMeta',icon:'🚀',nombre:'Doble meta',desc:'Un día a 150%+ de tu meta',ok:dobleMeta},
+    {id:'superoProm',icon:'📊',nombre:'Superó su promedio',desc:'Mejor que tu promedio histórico',ok:superoPromedio},
+    {id:'todoTerreno',icon:'🧳',nombre:'Todo terreno',desc:'Trabajaste línea, maleta e insumo',ok:todoTerreno},
+    {id:'sinFlojos',icon:'💪',nombre:'Sin días flojos',desc:'Ningún día bajo el 50% de meta',ok:sinDiasFlojos},
+    {id:'semanaCompleta',icon:'✅',nombre:'Semana completa',desc:'5 días activos en una semana',ok:semanaCompleta},
+    {id:'metaAnticipada',icon:'⏱️',nombre:'Meta anticipada',desc:'Cumpliste con días de sobra',ok:metaAnticipada},
+    {id:'remontada',icon:'🔄',nombre:'Remontada',desc:'Semana floja seguida de +20%',ok:remontada},
   ];
 
   // Badge en header — solo tiene sentido si se está viendo el mes en curso
