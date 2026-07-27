@@ -3591,28 +3591,29 @@ async function loadSemana(){
 // vivía en la pantalla de Historial (donut de mix histórico, KPIs sueltos,
 // comparación como card aparte, etc.) se eliminó por pedido de Diego: esa
 // pantalla ya no existe, Logros e Insights ahora viven dentro de Mes.
-async function cargarLogrosInsights(containerId){
+async function cargarLogrosInsights(containerId, ms){
   const cont=document.getElementById(containerId);
   if(!cont) return;
   try{
     const hoy=today();
+    ms = ms || hoy.slice(0,7);
+    const esMesActual = ms===hoy.slice(0,7);
     const cache=await getHistorialCache();
-    const {rows:rowsAll,gfAll}=cache;
+    const {rows:rowsAll,gfAll:gfAllRaw}=cache;
     if(!rowsAll.length){ cont.innerHTML=''; return; }
+    const gfAll=gfAllEquivalente(gfAllRaw); // todo lo que sigue compara en equivalencia
 
-    const mesActual=hoy.slice(0,7);
     const rowsNoInsumo=rowsAll.filter(r=>r.tipo!=='insumo');
     const diasActivos=Object.values(gfAll).filter(d=>d.total>0).length;
     const totalAll=rowsNoInsumo.reduce((s,r)=>s+r.cantidad,0);
     const promDiario=diasActivos>0?Math.round(totalAll/diasActivos):0;
-    const valoresDias=Object.values(gfAll).map(d=>d.total);
-    const record=Math.max(...valoresDias,0);
+    const record=Math.max(...Object.values(gfAll).map(d=>d.total),0);
 
     const metaDia=META[cUser]||0;
-    const rowsMes=rowsNoInsumo.filter(r=>r.fecha.startsWith(mesActual));
+    const rowsMes=rowsNoInsumo.filter(r=>r.fecha.startsWith(ms));
     const totalMesRaw=rowsMes.reduce((s,r)=>s+r.cantidad,0);
     const tiposMesAct={maleta:0,linea:0,insumo:0,otro:0};
-    rowsAll.filter(r=>r.fecha.startsWith(mesActual)).forEach(r=>{tiposMesAct[r.tipo]=(tiposMesAct[r.tipo]||0)+r.cantidad;});
+    rowsAll.filter(r=>r.fecha.startsWith(ms)).forEach(r=>{tiposMesAct[r.tipo]=(tiposMesAct[r.tipo]||0)+r.cantidad;});
     const eqMes=calcEquivDesglose(cUser, tiposMesAct.linea, tiposMesAct.maleta, tiposMesAct.insumo);
     const totalMes=eqMes?eqMes.total:totalMesRaw;
     const metaMes=metaDia*20;
@@ -3620,8 +3621,8 @@ async function cargarLogrosInsights(containerId){
     const diasMesAct=new Set(rowsMes.map(r=>r.fecha)).size;
     const promMesAct=diasMesAct>0?Math.round(totalMes/diasMesAct):0;
 
-    // Mes anterior (misma base) — solo para el texto de comparación del insight
-    const [anioM,mesM]=mesActual.split('-').map(Number);
+    // Mes anterior AL MES QUE SE ESTÁ VIENDO (no siempre "el mes pasado real")
+    const [anioM,mesM]=ms.split('-').map(Number);
     const mesAntKey=mesM===1?`${anioM-1}-12`:`${anioM}-${String(mesM-1).padStart(2,'0')}`;
     const rowsAnt=rowsNoInsumo.filter(r=>r.fecha.startsWith(mesAntKey));
     const diasAnt=new Set(rowsAnt.map(r=>r.fecha)).size;
@@ -3632,7 +3633,7 @@ async function cargarLogrosInsights(containerId){
     const promAnt=diasAnt>0?Math.round(totalAnt/diasAnt):0;
     const varPct=promAnt>0?Math.round((promMesAct-promAnt)/promAnt*100):null;
 
-    // Racha actual
+    // Racha: siempre "hasta hoy" (constancia actual), independiente del mes que se navega
     let rachaActual=0;
     let dRacha=new Date(hoy+'T12:00:00');
     for(let i=0;i<90;i++){
@@ -3642,40 +3643,38 @@ async function cargarLogrosInsights(containerId){
       dRacha.setDate(dRacha.getDate()-1);
     }
 
-    // Insights dinámicos
+    // Mejor día DENTRO del mes que se está viendo
+    const mejorDiaMes=Object.entries(gfAll).filter(([f])=>f.startsWith(ms)).reduce((max,[,dd])=>Math.max(max,dd.total),0);
+
+    // Insights — referidos al mes que se está viendo
     const insights=[];
     if(varPct!==null&&varPct>0) insights.push({ico:'📈',col:'#2ECC8A',txt:`Mejoraste <strong>+${varPct}%</strong> vs el mes anterior. ¡Gran tendencia!`});
     else if(varPct!==null&&varPct<0) insights.push({ico:'📉',col:'#FF6B6B',txt:`Bajaste <strong>${varPct}%</strong> vs el mes anterior. ¡Tú puedes recuperarlo!`});
-    if(rachaActual>=5) insights.push({ico:'🔥',col:'#FF6B6B',txt:`¡Llevas <strong>${rachaActual} días seguidos</strong> activa! Racha increíble.`});
-    else if(rachaActual>=2) insights.push({ico:'⚡',col:'#FFBA4D',txt:`Llevas <strong>${rachaActual} días consecutivos</strong> activa. ¡Sigue así!`});
-    if(pctMeta>=100) insights.push({ico:'🏆',col:'#FFBA4D',txt:`<strong>¡Meta del mes cumplida!</strong> Eres la número uno este mes.`});
-    else if(metaMes>0) insights.push({ico:'🎯',col:'#3B8FFF',txt:`Vas en <strong>${pctMeta}% de tu meta mensual</strong> (${fmtN(totalMes)} de ${fmtN(metaMes)} uds).`});
-    if(record>=metaDia&&metaDia>0) insights.push({ico:'💎',col:'#9A88FF',txt:`Tu récord histórico es <strong>${fmtN(record)} uds</strong> — superaste la meta en ese día.`});
-    insights.push({ico:'📅',col:'#7090C0',txt:`Has estado activa <strong>${diasActivos} días</strong> con un promedio de <strong>${fmtN(promDiario)} uds/día</strong>.`});
+    if(esMesActual&&rachaActual>=5) insights.push({ico:'🔥',col:'#FF6B6B',txt:`¡Llevas <strong>${rachaActual} días seguidos</strong> activa! Racha increíble.`});
+    else if(esMesActual&&rachaActual>=2) insights.push({ico:'⚡',col:'#FFBA4D',txt:`Llevas <strong>${rachaActual} días consecutivos</strong> activa. ¡Sigue así!`});
+    if(pctMeta>=100) insights.push({ico:'🏆',col:'#FFBA4D',txt:`<strong>¡Meta de ${fmtMes(ms)} cumplida!</strong> Excelente mes.`});
+    else if(metaMes>0) insights.push({ico:'🎯',col:'#3B8FFF',txt:`Vas en <strong>${pctMeta}% de la meta de ${fmtMes(ms)}</strong> (${fmtN(totalMes)} de ${fmtN(metaMes)} uds).`});
+    if(mejorDiaMes>0&&mejorDiaMes>=record) insights.push({ico:'💎',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> (${fmtN(mejorDiaMes)} uds) es también tu <strong>récord histórico</strong>.`});
+    else if(mejorDiaMes>0) insights.push({ico:'📌',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> fue <strong>${fmtN(mejorDiaMes)} uds</strong> (récord histórico: ${fmtN(record)}).`});
+    insights.push({ico:'📅',col:'#7090C0',txt:`Llevas <strong>${diasActivos} días activos</strong> en total, con un promedio de <strong>${fmtN(promDiario)} uds/día</strong>.`});
 
     cont.innerHTML=`
-    <div class="pf-card pf-sec" id="mes-logros-container" style="margin-bottom:8px"></div>
-    <div class="pf-card pf-sec">
-      <div class="pf-card-hdr">
-        <div class="pf-card-ttl"><span>⚡</span> Insights</div>
-        <div style="width:22px;height:22px;background:rgba(59,143,255,.15);border:1px solid rgba(59,143,255,.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#3B8FFF">IA</div>
+    <div id="mes-logros-container" style="margin-bottom:8px"></div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
+        <span>⚡ Insights</span>
+        <span style="width:20px;height:20px;background:rgba(59,143,255,.15);border:1px solid rgba(59,143,255,.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#3B8FFF">IA</span>
       </div>
       ${insights.map(ins=>`
-        <div class="pf-ins-item" style="border-left-color:${ins.col}">
-          <div class="pf-ins-ico">${ins.ico}</div>
-          <div class="pf-ins-txt">${ins.txt}</div>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:15px;line-height:1.3;flex-shrink:0">${ins.ico}</div>
+          <div style="font-size:11.5px;color:var(--txt2);line-height:1.45">${ins.txt}</div>
         </div>`).join('')}
     </div>`;
 
-    // ── Inyectar logros ──
+    // ── Inyectar logros (usa directamente el HTML que ya trae su propio .card/.card-title) ──
     const logrosCont=document.getElementById('mes-logros-container');
-    if(logrosCont){
-      const tmpL=document.createElement('div');
-      tmpL.innerHTML=calcularLogros(gfAll,metaDia,totalMes,record);
-      const grid=tmpL.querySelector('.logro-grid');
-      logrosCont.innerHTML=`<div class="pf-card-hdr" style="margin-bottom:12px"><div class="pf-card-ttl"><span style="display:inline-block;width:3px;height:14px;background:var(--amber);border-radius:2px"></span>🏅 Logros</div></div>`;
-      if(grid) logrosCont.appendChild(grid);
-    }
+    if(logrosCont) logrosCont.innerHTML=calcularLogros(gfAll,metaDia,totalMes,record,ms,esMesActual);
   }catch(e){
     console.error(e);
     cont.innerHTML='';
@@ -4927,9 +4926,9 @@ async function loadMes(){
     // Heatmap reutiliza el historial completo ya cacheado (o lo carga si aún no está)
     getHistorialCache().then(cache=>{
       const hmCont=document.getElementById('mes-heatmap-container');
-      if(hmCont && cache && cache.gfAll) hmCont.innerHTML=renderHeatmap(cache.gfAll);
+      if(hmCont && cache && cache.gfAll) hmCont.innerHTML=renderHeatmap(gfAllEquivalente(cache.gfAll));
     });
-    cargarLogrosInsights('mes-logros-insights');
+    cargarLogrosInsights('mes-logros-insights', ms);
 
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 }
@@ -8578,9 +8577,16 @@ function actualizarHeroLogin(cod){
 }
 
 // Calcular y mostrar logros
-function calcularLogros(gfAll, meta, totalMes, record){
+// mesKey: el mes que se está mirando (ej. '2026-07'). esMesActual: si ese mes
+// es el mes en curso (para saber si tiene sentido hablar de "racha hasta hoy").
+// gfAll debe venir YA en equivalencia (ver gfAllEquivalente) para que "récord"
+// y "días sobre meta" comparen manzanas con manzanas contra la meta diaria.
+function calcularLogros(gfAll, meta, totalMes, record, mesKey, esMesActual){
   const hoy=today();
-  // Racha actual
+  mesKey = mesKey || hoy.slice(0,7);
+  if(esMesActual===undefined) esMesActual = mesKey===hoy.slice(0,7);
+
+  // Racha: siempre "hasta hoy" — es una medida de constancia actual, no del mes que se navega
   let racha=0;
   let d=new Date(hoy+'T12:00:00');
   for(let i=0;i<60;i++){
@@ -8589,25 +8595,32 @@ function calcularLogros(gfAll, meta, totalMes, record){
     else if(racha>0) break;
     d.setDate(d.getDate()-1);
   }
-  // Días sobre meta este mes
-  const mesKey=hoy.slice(0,7);
-  const diasSobreMeta=Object.entries(gfAll).filter(([f,d])=>f.startsWith(mesKey)&&d.total>=(meta||Infinity)).length;
+
+  // Todo lo demás, referido al MES que se está viendo
+  const diasDelMes=Object.entries(gfAll).filter(([f])=>f.startsWith(mesKey));
+  const diasSobreMeta=diasDelMes.filter(([,dd])=>dd.total>=(meta||Infinity)).length;
+  const mejorDiaMes=diasDelMes.reduce((max,[,dd])=>Math.max(max,dd.total),0);
+  const esRecordHistorico=mejorDiaMes>0&&mejorDiaMes>=record;
+  const metaMensual=(meta||0)*20;
+  const metaMesCumplida=metaMensual>0&&totalMes>=metaMensual;
 
   const logros=[
     {id:'racha3',icon:'🔥',nombre:'Racha 3 días',desc:'3 días seguidos activa',ok:racha>=3},
     {id:'racha5',icon:'⚡',nombre:'Racha 5 días',desc:'5 días seguidos activa',ok:racha>=5},
-    {id:'meta',icon:'🎯',nombre:'Meta del día',desc:'Cumpliste tu meta hoy',ok:!!(gfAll[hoy]&&gfAll[hoy].total>=(meta||Infinity))},
-    {id:'record',icon:'🏆',nombre:'Nuevo récord',desc:'Tu mejor día de siempre',ok:!!(gfAll[hoy]&&gfAll[hoy].total===record&&record>0)},
+    {id:'sobremeta',icon:'🎯',nombre:'Días sobre meta',desc:diasSobreMeta>0?`${diasSobreMeta} día${diasSobreMeta===1?'':'s'} este mes`:'Aún ninguno este mes',ok:diasSobreMeta>=1},
+    {id:'record',icon:'🏆',nombre:esRecordHistorico?'¡Récord histórico!':'Mejor día del mes',desc:mejorDiaMes>0?`${fmtN(mejorDiaMes)} uds equiv.`:'Sin datos este mes',ok:mejorDiaMes>0},
     {id:'sobre5',icon:'⭐',nombre:'5 días meta',desc:'5 días sobre meta este mes',ok:diasSobreMeta>=5},
-    {id:'mil',icon:'💎',nombre:'1.000 uds/día',desc:'Superaste las 1.000 unidades',ok:record>=1000},
+    {id:'metames',icon:'🎉',nombre:'Meta mensual',desc:metaMensual>0?`${fmtN(totalMes)} / ${fmtN(metaMensual)} uds`:'Sin meta configurada',ok:metaMesCumplida},
   ];
 
-  // Badges en header
-  const rachaBadge=document.getElementById('dash-racha-badge');
-  if(rachaBadge&&racha>=3){ rachaBadge.style.display='block'; rachaBadge.innerHTML=rachaBadgeTxt(racha); }
+  // Badge en header — solo tiene sentido si se está viendo el mes en curso
+  if(esMesActual){
+    const rachaBadge=document.getElementById('dash-racha-badge');
+    if(rachaBadge&&racha>=3){ rachaBadge.style.display='block'; rachaBadge.innerHTML=rachaBadgeTxt(racha); }
+  }
 
   return`<div class="card">
-    <div class="card-title" style="margin-bottom:.85rem">🏅 Mis logros</div>
+    <div class="card-title" style="margin-bottom:.85rem">🏅 Mis logros · ${fmtMes(mesKey)}</div>
     <div class="logro-grid">
       ${logros.map(l=>`
         <div class="logro-card ${l.ok?'desbloqueado':'bloqueado'}">
@@ -8623,6 +8636,19 @@ function calcularLogros(gfAll, meta, totalMes, record){
 }
 
 // Heatmap mensual con tooltip al tocar
+// Convierte gfAll (sumas reales por día) a una versión con .total en
+// equivalencia — para que el mapa de calor y los logros comparen contra la
+// meta de forma consistente con el resto de la app (que siempre usa
+// equivalencia para todo lo que se mide contra una meta).
+function gfAllEquivalente(gfAll){
+  const out={};
+  Object.entries(gfAll).forEach(([f,dd])=>{
+    const eq=calcEquivDesglose(cUser, dd.linea||0, dd.maleta||0, dd.insumo||0);
+    out[f]={...dd, total: eq?eq.total:dd.total};
+  });
+  return out;
+}
+
 function renderHeatmap(gfAll){
   const hoy=today();
   const mesKey=hoy.slice(0,7);
