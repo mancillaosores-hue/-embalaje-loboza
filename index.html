@@ -8733,6 +8733,12 @@ function gfAllEquivalente(gfAll){
 }
 
 function renderHeatmap(gfAll){
+  // Si un tap anterior movió el tooltip a <body> (ver hmTooltip), hay que
+  // sacarlo de ahí antes de volver a renderizar el heatmap — si no, queda
+  // un tooltip huérfano acumulándose en el body cada vez que se repinta.
+  const ttHuerfano=document.body.querySelector(':scope > #hm-tooltip');
+  if(ttHuerfano) ttHuerfano.remove();
+
   const hoy=today();
   const mesKey=hoy.slice(0,7);
   const primerDia=new Date(mesKey+'-01T12:00:00');
@@ -9094,6 +9100,14 @@ function hmTooltip(cell, txt, bg){
 
   const tt=document.getElementById('hm-tooltip');
   if(!tt) return;
+
+  // Mover el tooltip a un hijo directo de <body>. Si se queda anidado dentro
+  // de alguna tarjeta con animación (usan transform para el efecto "rebote"),
+  // cualquier transform en un ancestro rompe position:fixed y lo posiciona
+  // relativo a ese ancestro en vez de la pantalla real — por eso aparecía
+  // "muy arriba" en vez de junto a la celda tocada.
+  if(tt.parentElement!==document.body) document.body.appendChild(tt);
+
   tt.textContent=txt;
   tt.style.borderColor=bg==='rgba(255,255,255,.06)'?'#1E3A5F':bg;
 
