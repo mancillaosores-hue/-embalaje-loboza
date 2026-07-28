@@ -4816,6 +4816,10 @@ async function loadMes(){
   const [desde,hasta]=monthRange(ms);
   const el=document.getElementById('mes-content');
   el.innerHTML='<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  // Adelantamos la carga del histórico completo (la necesitan el heatmap y
+  // Logros/Insights) en paralelo, para que no se sienta que "carga después
+  // de todo" — arranca aquí en vez de esperar a que el resto ya esté pintado.
+  const historialPromise=getHistorialCache();
   try{
     // Usar caché para el mes actual
     const hoy=today();
@@ -4912,7 +4916,7 @@ async function loadMes(){
     </div>`:''}
 
     <!-- Heatmap del mes -->
-    <div id="mes-heatmap-container" class="pf-sec"></div>
+    <div id="mes-heatmap-container" class="pf-sec"><div class="loading" style="padding:1.2rem 0"><span class="spinner"></span>Cargando actividad del mes...</div></div>
 
     <!-- Evolución del mes -->
     <div class="card">
@@ -4921,10 +4925,11 @@ async function loadMes(){
     </div>
 
     <!-- Logros e Insights (antes vivían en Historial, ahora se integran aquí) -->
-    <div id="mes-logros-insights"></div>`;
+    <div id="mes-logros-insights"><div class="loading" style="padding:1.2rem 0"><span class="spinner"></span>Cargando logros...</div></div>`;
 
-    // Heatmap reutiliza el historial completo ya cacheado (o lo carga si aún no está)
-    getHistorialCache().then(cache=>{
+    // El histórico completo (necesario para heatmap y Logros/Insights) ya se
+    // pidió al inicio de la función — aquí solo lo consumimos.
+    historialPromise.then(cache=>{
       const hmCont=document.getElementById('mes-heatmap-container');
       if(hmCont && cache && cache.gfAll) hmCont.innerHTML=renderHeatmap(gfAllEquivalente(cache.gfAll));
     });
