@@ -8798,7 +8798,7 @@ function renderHeatmap(gfAll){
       ${maxVal>0?`<div style="font-size:10px;color:var(--txt3)">🏆 <span style="color:#FFD700;font-weight:600">${fmtN(maxVal)}</span> mejor día</div>`:''}
     </div>
     <!-- Tooltip flotante -->
-    <div id="hm-tooltip" style="display:none;position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);
+    <div id="hm-tooltip" style="display:none;position:fixed;
       background:#0A1628;border:1px solid #1E3A5F;border-radius:12px;padding:10px 18px;
       font-size:12px;font-weight:600;color:#EEF4FF;z-index:1050;white-space:nowrap;
       box-shadow:0 4px 20px rgba(0,0,0,.5);pointer-events:none;
@@ -9095,8 +9095,21 @@ function hmTooltip(cell, txt, bg){
   const tt=document.getElementById('hm-tooltip');
   if(!tt) return;
   tt.textContent=txt;
-  tt.style.display='block';
   tt.style.borderColor=bg==='rgba(255,255,255,.06)'?'#1E3A5F':bg;
+
+  // Anclar el tooltip a la celda tocada (no a un punto fijo de la pantalla)
+  // — en Chrome Android la barra de direcciones se muestra/oculta al hacer
+  // scroll y desplaza el viewport justo al tocar, lo que puede dejar un
+  // tooltip de posición fija fuera de lo visible. Anclado a la celda, esto
+  // no pasa nunca.
+  tt.style.display='block';
+  const r=cell.getBoundingClientRect();
+  const ttWidth=tt.offsetWidth||140;
+  let left=r.left+r.width/2-ttWidth/2;
+  left=Math.max(8, Math.min(left, window.innerWidth-ttWidth-8));
+  tt.style.left=left+'px';
+  if(r.top>60){ tt.style.top=(r.top-46)+'px'; }
+  else{ tt.style.top=(r.bottom+8)+'px'; }
 
   clearTimeout(_hmTimer);
   _hmTimer=setTimeout(()=>{ tt.style.display='none'; }, 2200);
