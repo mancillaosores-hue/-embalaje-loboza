@@ -8183,7 +8183,12 @@ async function loadDia(){
     const rows=await fetchProd(cUser,fecha,fecha);
     const g=groupByTipo(rows);
     const meta=META[cUser]||0;
-    const pct=meta>0?Math.min(100,Math.round((g.total/meta)*100)):0;
+    // Igual que en renderDiaHTML: si la operaria está mapeada, todo se mide
+    // en equivalencia (no en la suma real de maleta+no maleta), para que el
+    // % y el confeti coincidan siempre con lo que se ve en el hero.
+    const eqDia=calcEquivDesglose(cUser, g.linea, g.maleta, g.insumo);
+    const totalShowDia=eqDia?eqDia.total:g.total;
+    const pct=meta>0?Math.min(100,Math.round((totalShowDia/meta)*100)):0;
 
     if(!rows.length){
       if(heroMeta) heroMeta.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;padding:4px">Sin datos para hoy</div>';
@@ -8198,20 +8203,20 @@ async function loadDia(){
     el.innerHTML=renderDiaHTML(g,meta,pct,fecha,rows,{},{});
 
     // Celebración si el día cargado cumplió la meta — se dispara acá, en el
-    // primer render, porque ya tenemos todo lo que necesita (g.total y pct
-    // salen del fetch del día, sin depender del caché histórico). Antes
+    // primer render, porque ya tenemos todo lo que necesita (totalShowDia y
+    // pct salen del fetch del día, sin depender del caché histórico). Antes
     // esperaba el segundo render (el que trae racha/récord) y se sentía
     // como que aparecía tarde, en una "segunda carga". Se dispara cada vez
     // que se carga un día sobre meta (no solo la primera vez).
-    if(pct>=100 && g.total>0){
+    if(pct>=100 && totalShowDia>0){
       const primerNombre=(DB[cUser]||'').trim().split(/\s+/)[0];
-      lanzarCelebracion(g.total, primerNombre, pct);
+      lanzarCelebracion(totalShowDia, primerNombre, pct);
     }
 
     // Luego enriquecer con datos del caché cuando lleguen
     cachePromise.then(cache=>{
       if(!cache.gfAll) return;
-      const gfAll=cache.gfAll;
+      const gfAll=gfAllEquivalente(cache.gfAll); // igual criterio que Mes/Logros: comparar en equivalencia
 
       // Ayer desde caché
       const ayer=new Date(fecha+'T12:00:00');
@@ -8222,16 +8227,16 @@ async function loadDia(){
       // Racha desde caché
       const racha=calcularRachaActual(gfAll, fecha);
 
-      // Récord desde caché
+      // Récord desde caché (en equivalencia, igual que g.total de hoy)
       const vals=Object.values(gfAll).map(d=>d.total);
       const record=vals.length?Math.max(...vals):0;
-      const esNuevoRecord=g.total>0&&g.total>=record;
-      const cercaDelRecord=!esNuevoRecord&&g.total>0&&record>0&&g.total>=record*0.9;
+      const esNuevoRecord=totalShowDia>0&&totalShowDia>=record;
+      const cercaDelRecord=!esNuevoRecord&&totalShowDia>0&&record>0&&totalShowDia>=record*0.9;
 
       // Banners extra
       let extra='';
-      if(esNuevoRecord&&g.total>0){
-        const recAnterior=vals.filter(v=>v<g.total).length?Math.max(...vals.filter(v=>v<g.total)):0;
+      if(esNuevoRecord&&totalShowDia>0){
+        const recAnterior=vals.filter(v=>v<totalShowDia).length?Math.max(...vals.filter(v=>v<totalShowDia)):0;
         extra+=`<div class="meta-banner" style="background:linear-gradient(135deg,#1A1040,#2E1A6A);border-color:#9A88FF">
           <div class="mb-icon">🏅</div>
           <div class="mb-txt">
@@ -8244,7 +8249,7 @@ async function loadDia(){
           <div class="mb-icon">✨</div>
           <div class="mb-txt">
             <div class="mb-t" style="color:#FFD700">¡Estás cerca de tu récord!</div>
-            <div class="mb-s">Te faltan ${fmtN(record-g.total)} uds para igualar tu mejor día (${fmtN(record)}).</div>
+            <div class="mb-s">Te faltan ${fmtN(record-totalShowDia)} uds para igualar tu mejor día (${fmtN(record)}).</div>
           </div></div>`;
       }
       if(racha>=2){
