@@ -3591,16 +3591,74 @@ async function loadSemana(){
 // vivía en la pantalla de Historial (donut de mix histórico, KPIs sueltos,
 // comparación como card aparte, etc.) se eliminó por pedido de Diego: esa
 // pantalla ya no existe, Logros e Insights ahora viven dentro de Mes.
-async function cargarLogrosInsights(containerId, ms){
+// Arma y pinta el HTML de Logros + Insights a partir de datos ya calculados.
+// esRapido=true → primera pasada, usando solo el mes (sin esperar el
+// histórico completo); esRapido=false → pasada final con todo el histórico
+// (récord real, racha correcta, comparación vs mes anterior).
+function renderLogrosInsightsHTML(cont, ms, esMesActual, d, esRapido){
+  const insights=[];
+  if(!esRapido){
+    if(d.varPct!==null&&d.varPct>0) insights.push({ico:'📈',col:'#2ECC8A',txt:`Mejoraste <strong>+${d.varPct}%</strong> vs el mes anterior. ¡Gran tendencia!`});
+    else if(d.varPct!==null&&d.varPct<0) insights.push({ico:'📉',col:'#FF6B6B',txt:`Bajaste <strong>${d.varPct}%</strong> vs el mes anterior. ¡Tú puedes recuperarlo!`});
+  }
+  if(esMesActual&&d.rachaActual>=5) insights.push({ico:'🔥',col:'#FF6B6B',txt:`¡Llevas <strong>${d.rachaActual} días seguidos</strong> activa! Racha increíble.`});
+  else if(esMesActual&&d.rachaActual>=2) insights.push({ico:'⚡',col:'#FFBA4D',txt:`Llevas <strong>${d.rachaActual} días consecutivos</strong> activa. ¡Sigue así!`});
+  if(d.pctMeta>=100) insights.push({ico:'🏆',col:'#FFBA4D',txt:`<strong>¡Meta de ${fmtMes(ms)} cumplida!</strong> Excelente mes.`});
+  else if(d.metaMes>0) insights.push({ico:'🎯',col:'#3B8FFF',txt:`Vas en <strong>${d.pctMeta}% de la meta de ${fmtMes(ms)}</strong> (${fmtN(d.totalMes)} de ${fmtN(d.metaMes)} uds).`});
+  if(!esRapido){
+    if(d.mejorDiaMes>0&&d.mejorDiaMes>=d.record) insights.push({ico:'💎',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> (${fmtN(d.mejorDiaMes)} uds) es también tu <strong>récord histórico</strong>.`});
+    else if(d.mejorDiaMes>0) insights.push({ico:'📌',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> fue <strong>${fmtN(d.mejorDiaMes)} uds</strong> (récord histórico: ${fmtN(d.record)}).`});
+    insights.push({ico:'📅',col:'#7090C0',txt:`Llevas <strong>${d.diasActivos} días activos</strong> en total, con un promedio de <strong>${fmtN(d.promDiario)} uds/día</strong>.`});
+  } else if(d.mejorDiaMes>0){
+    insights.push({ico:'📌',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> fue <strong>${fmtN(d.mejorDiaMes)} uds</strong>.`});
+  }
+
+  cont.innerHTML=`
+  <div id="mes-logros-container" style="margin-bottom:8px"></div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
+      <span>⚡ Insights</span>
+      <span style="width:20px;height:20px;background:rgba(59,143,255,.15);border:1px solid rgba(59,143,255,.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#3B8FFF">IA</span>
+    </div>
+    ${insights.map(ins=>`
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:15px;line-height:1.3;flex-shrink:0">${ins.ico}</div>
+        <div style="font-size:11.5px;color:var(--txt2);line-height:1.45">${ins.txt}</div>
+      </div>`).join('')}
+  </div>`;
+
+  const logrosCont=document.getElementById('mes-logros-container');
+  if(logrosCont) logrosCont.innerHTML=calcularLogros(d.gfAll,d.metaDia,d.totalMes,d.record,ms,esMesActual,{tiposMesAct:d.tiposMesAct,promDiarioHistorico:d.promDiario});
+}
+
+// datosMesRapidos (opcional): {gfMes, tiposMesAct, totalMes, metaDia, pctMeta,
+// metaMes} ya calculados por loadMes con SOLO los datos del mes (rápido de
+// obtener). Si el histórico completo (multi-año, consulta más pesada) aún no
+// está en caché, se usa esto para pintar los logros YA, en vez de mostrar un
+// spinner unos segundos y recién ahí "aparecer" destacados.
+async function cargarLogrosInsights(containerId, ms, datosMesRapidos){
   const cont=document.getElementById(containerId);
   if(!cont) return;
+  const hoy=today();
+  ms = ms || hoy.slice(0,7);
+  const esMesActual = ms===hoy.slice(0,7);
+  const cacheListo = _cache.uid===cUser && _cache.rows;
+
+  if(!cacheListo && datosMesRapidos){
+    const dm=datosMesRapidos;
+    const rachaRapida=calcularRachaActual(dm.gfMes, hoy);
+    const mejorDiaMesRapido=Object.values(dm.gfMes).reduce((max,dd)=>Math.max(max,dd.total),0);
+    renderLogrosInsightsHTML(cont, ms, esMesActual, {
+      gfAll:dm.gfMes, metaDia:dm.metaDia, totalMes:dm.totalMes, record:Infinity,
+      tiposMesAct:dm.tiposMesAct, promDiarioHistorico:0, promDiario:0, diasActivos:0,
+      rachaActual:rachaRapida, mejorDiaMes:mejorDiaMesRapido, pctMeta:dm.pctMeta, metaMes:dm.metaMes, varPct:null,
+    }, true);
+  }
+
   try{
-    const hoy=today();
-    ms = ms || hoy.slice(0,7);
-    const esMesActual = ms===hoy.slice(0,7);
     const cache=await getHistorialCache();
     const {rows:rowsAll,gfAll:gfAllRaw}=cache;
-    if(!rowsAll.length){ cont.innerHTML=''; return; }
+    if(!rowsAll.length){ if(!(!cacheListo&&datosMesRapidos)) cont.innerHTML=''; return; }
     const gfAll=gfAllEquivalente(gfAllRaw); // todo lo que sigue compara en equivalencia
 
     const rowsNoInsumo=rowsAll.filter(r=>r.tipo!=='insumo');
@@ -3634,50 +3692,18 @@ async function cargarLogrosInsights(containerId, ms){
     const varPct=promAnt>0?Math.round((promMesAct-promAnt)/promAnt*100):null;
 
     // Racha: siempre "hasta hoy" (constancia actual), independiente del mes que se navega
-    let rachaActual=0;
-    let dRacha=new Date(hoy+'T12:00:00');
-    for(let i=0;i<90;i++){
-      const f=dRacha.toISOString().slice(0,10);
-      if(gfAll[f]&&gfAll[f].total>0) rachaActual++;
-      else if(rachaActual>0) break;
-      dRacha.setDate(dRacha.getDate()-1);
-    }
+    const rachaActual=calcularRachaActual(gfAll, hoy);
 
     // Mejor día DENTRO del mes que se está viendo
     const mejorDiaMes=Object.entries(gfAll).filter(([f])=>f.startsWith(ms)).reduce((max,[,dd])=>Math.max(max,dd.total),0);
 
-    // Insights — referidos al mes que se está viendo
-    const insights=[];
-    if(varPct!==null&&varPct>0) insights.push({ico:'📈',col:'#2ECC8A',txt:`Mejoraste <strong>+${varPct}%</strong> vs el mes anterior. ¡Gran tendencia!`});
-    else if(varPct!==null&&varPct<0) insights.push({ico:'📉',col:'#FF6B6B',txt:`Bajaste <strong>${varPct}%</strong> vs el mes anterior. ¡Tú puedes recuperarlo!`});
-    if(esMesActual&&rachaActual>=5) insights.push({ico:'🔥',col:'#FF6B6B',txt:`¡Llevas <strong>${rachaActual} días seguidos</strong> activa! Racha increíble.`});
-    else if(esMesActual&&rachaActual>=2) insights.push({ico:'⚡',col:'#FFBA4D',txt:`Llevas <strong>${rachaActual} días consecutivos</strong> activa. ¡Sigue así!`});
-    if(pctMeta>=100) insights.push({ico:'🏆',col:'#FFBA4D',txt:`<strong>¡Meta de ${fmtMes(ms)} cumplida!</strong> Excelente mes.`});
-    else if(metaMes>0) insights.push({ico:'🎯',col:'#3B8FFF',txt:`Vas en <strong>${pctMeta}% de la meta de ${fmtMes(ms)}</strong> (${fmtN(totalMes)} de ${fmtN(metaMes)} uds).`});
-    if(mejorDiaMes>0&&mejorDiaMes>=record) insights.push({ico:'💎',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> (${fmtN(mejorDiaMes)} uds) es también tu <strong>récord histórico</strong>.`});
-    else if(mejorDiaMes>0) insights.push({ico:'📌',col:'#9A88FF',txt:`Tu mejor día de <strong>${fmtMes(ms)}</strong> fue <strong>${fmtN(mejorDiaMes)} uds</strong> (récord histórico: ${fmtN(record)}).`});
-    insights.push({ico:'📅',col:'#7090C0',txt:`Llevas <strong>${diasActivos} días activos</strong> en total, con un promedio de <strong>${fmtN(promDiario)} uds/día</strong>.`});
-
-    cont.innerHTML=`
-    <div id="mes-logros-container" style="margin-bottom:8px"></div>
-    <div class="card">
-      <div class="card-title" style="margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between">
-        <span>⚡ Insights</span>
-        <span style="width:20px;height:20px;background:rgba(59,143,255,.15);border:1px solid rgba(59,143,255,.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#3B8FFF">IA</span>
-      </div>
-      ${insights.map(ins=>`
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:15px;line-height:1.3;flex-shrink:0">${ins.ico}</div>
-          <div style="font-size:11.5px;color:var(--txt2);line-height:1.45">${ins.txt}</div>
-        </div>`).join('')}
-    </div>`;
-
-    // ── Inyectar logros (usa directamente el HTML que ya trae su propio .card/.card-title) ──
-    const logrosCont=document.getElementById('mes-logros-container');
-    if(logrosCont) logrosCont.innerHTML=calcularLogros(gfAll,metaDia,totalMes,record,ms,esMesActual,{tiposMesAct,promDiarioHistorico:promDiario});
+    renderLogrosInsightsHTML(cont, ms, esMesActual, {
+      gfAll, metaDia, totalMes, record, tiposMesAct, promDiarioHistorico:promDiario, promDiario,
+      diasActivos, rachaActual, mejorDiaMes, pctMeta, metaMes, varPct,
+    }, false);
   }catch(e){
     console.error(e);
-    cont.innerHTML='';
+    if(!(!cacheListo&&datosMesRapidos)) cont.innerHTML='';
   }
 }
 
@@ -4933,7 +4959,10 @@ async function loadMes(){
       const hmCont=document.getElementById('mes-heatmap-container');
       if(hmCont && cache && cache.gfAll) hmCont.innerHTML=renderHeatmap(gfAllEquivalente(cache.gfAll));
     });
-    cargarLogrosInsights('mes-logros-insights', ms);
+    cargarLogrosInsights('mes-logros-insights', ms, {
+      gfMes: gfAllEquivalente(gf), tiposMesAct: g, totalMes: totalShow,
+      metaDia: meta, pctMeta: pctMes, metaMes,
+    });
 
   }catch(e){el.innerHTML='<div class="empty">Error: '+e.message+'</div>'}
 }
@@ -8180,14 +8209,7 @@ async function loadDia(){
       const gAyer=gfAll[ayerStr]?{total:gfAll[ayerStr].total,...gfAll[ayerStr]}:{total:0};
 
       // Racha desde caché
-      let racha=0;
-      let dCheck=new Date(fecha+'T12:00:00');
-      for(let i=0;i<60;i++){
-        const f=dCheck.toISOString().slice(0,10);
-        if(gfAll[f]&&gfAll[f].total>0) racha++;
-        else if(racha>0) break;
-        dCheck.setDate(dCheck.getDate()-1);
-      }
+      const racha=calcularRachaActual(gfAll, fecha);
 
       // Récord desde caché
       const vals=Object.values(gfAll).map(d=>d.total);
@@ -8586,6 +8608,23 @@ function actualizarHeroLogin(cod){
 // es el mes en curso (para saber si tiene sentido hablar de "racha hasta hoy").
 // gfAll debe venir YA en equivalencia (ver gfAllEquivalente) para que "récord"
 // y "días sobre meta" comparen manzanas con manzanas contra la meta diaria.
+// Racha de días activos consecutivos, saltando fines de semana — la
+// operación es Lun-Vie, así que un sábado/domingo sin registro NO debe
+// cortar la racha si el lunes siguiente retoma la actividad.
+function calcularRachaActual(gfAll, fechaDesde){
+  let racha=0;
+  let d=new Date((fechaDesde||today())+'T12:00:00');
+  for(let i=0;i<90;i++){
+    const dow=d.getDay(); // 0=Dom, 6=Sáb
+    if(dow===0||dow===6){ d.setDate(d.getDate()-1); continue; } // fin de semana: no cuenta ni corta
+    const f=d.toISOString().slice(0,10);
+    if(gfAll[f]&&gfAll[f].total>0) racha++;
+    else if(racha>0) break;
+    d.setDate(d.getDate()-1);
+  }
+  return racha;
+}
+
 function diasHabilesHasta(anio, mes, diaMax){ // cuenta Lun-Vie desde el día 1 hasta diaMax inclusive
   let n=0;
   for(let d=1; d<=diaMax; d++){
@@ -8604,14 +8643,7 @@ function calcularLogros(gfAll, meta, totalMes, record, mesKey, esMesActual, extr
   const promDiarioHistorico = extra.promDiarioHistorico || 0;
 
   // Racha: siempre "hasta hoy" — es una medida de constancia actual, no del mes que se navega
-  let racha=0;
-  let d=new Date(hoy+'T12:00:00');
-  for(let i=0;i<60;i++){
-    const f=d.toISOString().slice(0,10);
-    if(gfAll[f]&&gfAll[f].total>0) racha++;
-    else if(racha>0) break;
-    d.setDate(d.getDate()-1);
-  }
+  const racha=calcularRachaActual(gfAll, hoy);
 
   // Todo lo demás, referido al MES que se está viendo
   const diasDelMes=Object.entries(gfAll).filter(([f])=>f.startsWith(mesKey)).sort((a,b)=>a[0]<b[0]?-1:1);
@@ -8976,14 +9008,7 @@ async function mostrarWelcome(){
 
   // Badge racha si tenemos caché
   if(_cache.gfAll){
-    let racha=0;
-    let dCheck=new Date(hoy+'T12:00:00');
-    for(let i=0;i<60;i++){
-      const f=dCheck.toISOString().slice(0,10);
-      if(_cache.gfAll[f]&&_cache.gfAll[f].total>0) racha++;
-      else if(racha>0) break;
-      dCheck.setDate(dCheck.getDate()-1);
-    }
+    const racha=calcularRachaActual(_cache.gfAll, hoy);
     if(racha>=3){
       const rb=document.getElementById('dash-racha-badge');
       if(rb){rb.style.display='inline-flex';rb.innerHTML=rachaBadgeTxt(racha);}
