@@ -3002,7 +3002,6 @@ const TIPO_COLORS = {maleta:'#378ADD', linea:'#639922', insumo:'#7F77DD', otro:'
 const TIPO_NAMES  = {maleta:'Maleta', linea:'No maleta', insumo:'Insumo', otro:'Otro'};
 
 let cUser = null, cIsSup = false, cIsGer = false;
-let _celebradoHoy = false; // evita repetir el confeti/sonido si se re-visita el tab Hoy el mismo día
 let eqCache = [];
 // clearCaches — resetea todos los caches antes de cada consulta nueva
 function clearCaches(){ eqCache=[]; supSemCache=[]; supMesCache=[]; mesMiCache=null; }
@@ -3290,7 +3289,7 @@ function doLogin(){
   loadDia();
   setTimeout(()=>mostrarResumenSemanalSiCorresponde(), 1400);
 }
-function doLogout(){cUser=null;cIsSup=false;cIsGer=false;_celebradoHoy=false;invalidarCache();setScreen('login')}
+function doLogout(){cUser=null;cIsSup=false;cIsGer=false;invalidarCache();setScreen('login')}
 function togglePass(){
   const inp=document.getElementById('l-pass');
   const icon=document.getElementById('eye-icon');
@@ -8198,6 +8197,17 @@ async function loadDia(){
     // Renderizar el día inmediatamente con los datos disponibles
     el.innerHTML=renderDiaHTML(g,meta,pct,fecha,rows,{},{});
 
+    // Celebración si el día cargado cumplió la meta — se dispara acá, en el
+    // primer render, porque ya tenemos todo lo que necesita (g.total y pct
+    // salen del fetch del día, sin depender del caché histórico). Antes
+    // esperaba el segundo render (el que trae racha/récord) y se sentía
+    // como que aparecía tarde, en una "segunda carga". Se dispara cada vez
+    // que se carga un día sobre meta (no solo la primera vez).
+    if(pct>=100 && g.total>0){
+      const primerNombre=(DB[cUser]||'').trim().split(/\s+/)[0];
+      lanzarCelebracion(g.total, primerNombre, pct);
+    }
+
     // Luego enriquecer con datos del caché cuando lleguen
     cachePromise.then(cache=>{
       if(!cache.gfAll) return;
@@ -8254,17 +8264,6 @@ async function loadDia(){
       // Badge racha en header
       const rachaBadgeEl=document.getElementById('dash-racha-badge');
       if(rachaBadgeEl&&racha>=3){ rachaBadgeEl.style.display='inline-flex'; rachaBadgeEl.innerHTML=rachaBadgeTxt(racha); }
-
-      // Celebración si cumplió meta hoy — se dispara aquí (no en mostrarWelcome)
-      // porque este es el render "definitivo", con datos ya completos; antes
-      // mostrarWelcome la disparaba con su propio timing, desincronizado del
-      // resto de la pantalla, y se sentía como que "aparecía en una segunda
-      // carga". Solo una vez por día (bandera _celebradoHoy) y solo viendo hoy.
-      if(fecha===today() && pct>=100 && g.total>0 && !_celebradoHoy){
-        _celebradoHoy=true;
-        const primerNombre=(DB[cUser]||'').trim().split(/\s+/)[0];
-        lanzarCelebracion(g.total, primerNombre, pct);
-      }
     });
 
   }catch(e){
