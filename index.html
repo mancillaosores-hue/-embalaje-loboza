@@ -3990,6 +3990,7 @@ async function handleEntregasFile(file){
       const tipo         = (r['TipoProducto']||r['tipo_producto']||'').toString().trim();
       const clientenombre  = (r['ClienteNombre']||r['clientenombre']||r['Cliente']||'').toString().trim();
       const ruta           = (r['Ruta']||r['ruta']||'').toString().trim();
+      const estado          = (r['Estado']||r['estado']||'').toString().trim();
 
       if(!idEntrega || !fechaCreada) return;
 
@@ -3997,7 +3998,7 @@ async function handleEntregasFile(file){
       // aunque el archivo se suba días después
       rows.push({id_entrega:idEntrega, fecha_creada:fechaCreada, hora_creada:horaCreada,
         material, material_desc:materialDesc, cantidad, canal, tipo_producto:tipo,
-        clientenombre, ruta, concatenado:concat, fecha_carga:fechaCreada});
+        clientenombre, ruta, estado, concatenado:concat, fecha_carga:fechaCreada});
       totalUds += cantidad;
     });
 
@@ -6640,6 +6641,7 @@ function _renderFromCache(){
     if(tp==='insumo') return;
     const c=(r.canal||'').toString().trim(), cLow=c.toLowerCase();
     if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return;
+    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const q=Number(r.cantidad)||0;
     entregasPorCanal[c]=(entregasPorCanal[c]||0)+q; totalEntregas+=q;
     if(tp==='maleta') entregasPorTipo.maleta+=q; else entregasPorTipo.linea+=q;
@@ -6649,6 +6651,7 @@ function _renderFromCache(){
     if(tp==='insumo') return;
     const cLow=(r.canal||'').toString().trim().toLowerCase();
     if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return;
+    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const fc=(r.fecha_carga||'').toString().trim().slice(0,10);
     if(fc) entregasPorFecha[fc]=(entregasPorFecha[fc]||0)+(Number(r.cantidad)||0);
   });
@@ -6753,6 +6756,7 @@ function _renderFromCache(){
     if(tp==='insumo') return;
     const c=(r.canal||'').toString().trim(), cLow=c.toLowerCase();
     if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return;
+    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const q=Number(r.cantidad)||0;
     if(tp==='maleta'){ cargMaletaPorCanal[c]=(cargMaletaPorCanal[c]||0)+q; }
     else { cargLineaPorCanal[c]=(cargLineaPorCanal[c]||0)+q; }
@@ -7376,7 +7380,7 @@ async function cargarPlanSemanal(){
   const [resPlan, resProd0, resEntregas0] = await Promise.all([
     fetch(`${SUPA_URL}/rest/v1/plan_carga?select=canal,tipo,unidades_plan&semana_iso=eq.${planSemActual}&anio=eq.${anio}`, hdr),
     fetch(`${SUPA_URL}/rest/v1/produccion?select=usuario,canal,tipo,cantidad,fecha,entrega&fecha=gte.${fLun}&fecha=lte.${fHasta}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc&limit=1000&offset=0`, hdr),
-    fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=0`, hdr)
+    fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=0`, hdr)
   ]);
   const planRaw = await resPlan.json();
   if(!resPlan.ok) throw new Error(`plan_carga HTTP ${resPlan.status}: ${JSON.stringify(planRaw)}`);
@@ -7387,7 +7391,7 @@ async function cargarPlanSemanal(){
   if(Array.isArray(entregasRaw) && entregasRaw.length === 1000){
     let offE = 1000;
     while(true){
-      const re = await fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=${offE}`, hdr);
+      const re = await fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=${offE}`, hdr);
       const pe = re.ok ? await re.json() : [];
       if(!Array.isArray(pe)||!pe.length) break;
       entregasRaw = entregasRaw.concat(pe);
@@ -7414,6 +7418,7 @@ async function cargarPlanSemanal(){
     const c = (r.canal||'').toString().trim();
     const cLow = c.toLowerCase();
     if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return; // excluir anuladas, regularizaciones y BTS
+    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const q = Number(r.cantidad)||0;
     entregasPorCanal[c] = (entregasPorCanal[c]||0) + q;
     totalEntregas += q;
@@ -7427,6 +7432,7 @@ async function cargarPlanSemanal(){
     if(tp === 'insumo') return;
     const cLow = (r.canal||'').toString().trim().toLowerCase();
     if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return;
+    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const fc = (r.fecha_carga||'').toString().trim().slice(0,10);
     if(fc) entregasPorFecha[fc] = (entregasPorFecha[fc]||0) + (Number(r.cantidad)||0);
   });
@@ -7458,7 +7464,7 @@ async function cargarPlanSemanal(){
 
       var _bkRes = await Promise.all([
         // Entregas S-1 — excluir insumos en el filtro de cantidad > 0
-        sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta&fecha_creada=gte.'+fLunAnt+'&fecha_creada=lte.'+fDomAnt+'&order=id_entrega.asc'),
+        sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAnt+'&fecha_creada=lte.'+fDomAnt+'&order=id_entrega.asc'),
         // Lo que se embaló EN S-1 (para descontar del arrastre inicial)
         sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAnt+'&fecha=lte.'+fDomAnt+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc'),
         // Producción de esta semana
@@ -7471,6 +7477,7 @@ async function cargarPlanSemanal(){
 
       // PASO 1: Agrupar entregas_carga por id_entrega — excluir insumos, anuladas, regula, bts
       var _excCanal = {anulada:1, regula:1, bts:1};
+      var _excEstado = {cerrada:1, 'enviado a sap':1};
       var mapEntregas = {};
       entregasAnt.forEach(function(r){
         var id  = (r.id_entrega||'').toString().trim();
@@ -7478,6 +7485,7 @@ async function cargarPlanSemanal(){
         if(!id || !qty) return;
         if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return;
         if(_excCanal[(r.canal||'').toLowerCase().trim()]) return;
+        if(_excEstado[(r.estado||'').toLowerCase().trim()]) return;
         // Excluir rutas SSTT y REGULA
         var _rutaUp = (r.ruta||'').toUpperCase().trim();
         if(_rutaUp.includes('SSTT') || _rutaUp.includes('REGULA')) return;
@@ -7955,13 +7963,14 @@ async function fetchRptDatos(fechaParam) {
         const fDomCarg = fechaLocalStr(domCarg);
         const fHastaCarg = hoy <= fDomCarg ? hoy : fDomCarg; // igual que supervisor: hasta hoy o dom
         const cargRows = await sbFetchAll(
-          'entregas_carga?select=canal,tipo_producto,cantidad&fecha_carga=gte.'+fIniW+'&fecha_carga=lte.'+fHastaCarg
+          'entregas_carga?select=canal,tipo_producto,cantidad,estado&fecha_carga=gte.'+fIniW+'&fecha_carga=lte.'+fHastaCarg
         );
         totalCargW = (cargRows||[])
           .filter(r=>{
             const tp=(r.tipo_producto||'').toString().trim().toLowerCase();
             const cn=(r.canal||'').toString().trim().toLowerCase();
-            return tp!=='insumo' && cn!=='anulada' && cn!=='regula' && cn!=='bts';
+            const es=(r.estado||'').toString().trim().toLowerCase();
+            return tp!=='insumo' && cn!=='anulada' && cn!=='regula' && cn!=='bts' && es!=='cerrada' && es!=='enviado a sap';
           })
           .reduce((s,r)=>s+Number(r.cantidad||0),0);
       }catch(e){ console.warn('cargado email error:',e.message); }
@@ -9493,7 +9502,7 @@ async function abrirDetalleCarga(fecha){
   document.getElementById('carga-det-foot').innerHTML = '';
 
   try{
-    var rows = await sbFetchAll('entregas_carga?select=canal,tipo_producto,cantidad,hora_creada,ruta,clientenombre&fecha_carga=eq.' + fecha + '&order=hora_creada.asc');
+    var rows = await sbFetchAll('entregas_carga?select=canal,tipo_producto,cantidad,hora_creada,ruta,clientenombre,estado&fecha_carga=eq.' + fecha + '&order=hora_creada.asc');
 
     // Mismas exclusiones que el resto de la app: insumos, anuladas/regula/bts, rutas SSTT/REGULA, clientes VEV especiales
     var _cliExcVEV = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
@@ -9501,6 +9510,8 @@ async function abrirDetalleCarga(fecha){
       if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return false;
       var cLow = (r.canal||'').toLowerCase().trim();
       if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return false;
+      var eLow = (r.estado||'').toLowerCase().trim();
+      if(eLow === 'cerrada' || eLow === 'enviado a sap') return false;
       var rutaUp = (r.ruta||'').toUpperCase().trim();
       if(rutaUp.includes('SSTT') || rutaUp.includes('REGULA')) return false;
       if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && cLow === 'venta en verde') return false;
