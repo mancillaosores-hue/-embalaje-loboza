@@ -6641,7 +6641,6 @@ function _renderFromCache(){
     if(tp==='insumo') return;
     const c=(r.canal||'').toString().trim(), cLow=c.toLowerCase();
     if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return;
-    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const q=Number(r.cantidad)||0;
     entregasPorCanal[c]=(entregasPorCanal[c]||0)+q; totalEntregas+=q;
     if(tp==='maleta') entregasPorTipo.maleta+=q; else entregasPorTipo.linea+=q;
@@ -6651,7 +6650,6 @@ function _renderFromCache(){
     if(tp==='insumo') return;
     const cLow=(r.canal||'').toString().trim().toLowerCase();
     if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return;
-    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const fc=(r.fecha_carga||'').toString().trim().slice(0,10);
     if(fc) entregasPorFecha[fc]=(entregasPorFecha[fc]||0)+(Number(r.cantidad)||0);
   });
@@ -6756,7 +6754,6 @@ function _renderFromCache(){
     if(tp==='insumo') return;
     const c=(r.canal||'').toString().trim(), cLow=c.toLowerCase();
     if(cLow==='anulada'||cLow==='regula'||cLow==='bts') return;
-    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const q=Number(r.cantidad)||0;
     if(tp==='maleta'){ cargMaletaPorCanal[c]=(cargMaletaPorCanal[c]||0)+q; }
     else { cargLineaPorCanal[c]=(cargLineaPorCanal[c]||0)+q; }
@@ -7418,7 +7415,6 @@ async function cargarPlanSemanal(){
     const c = (r.canal||'').toString().trim();
     const cLow = c.toLowerCase();
     if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return; // excluir anuladas, regularizaciones y BTS
-    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const q = Number(r.cantidad)||0;
     entregasPorCanal[c] = (entregasPorCanal[c]||0) + q;
     totalEntregas += q;
@@ -7432,7 +7428,6 @@ async function cargarPlanSemanal(){
     if(tp === 'insumo') return;
     const cLow = (r.canal||'').toString().trim().toLowerCase();
     if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return;
-    const eLow=(r.estado||'').toString().trim().toLowerCase(); if(eLow==='cerrada'||eLow==='enviado a sap') return;
     const fc = (r.fecha_carga||'').toString().trim().slice(0,10);
     if(fc) entregasPorFecha[fc] = (entregasPorFecha[fc]||0) + (Number(r.cantidad)||0);
   });
@@ -7969,8 +7964,7 @@ async function fetchRptDatos(fechaParam) {
           .filter(r=>{
             const tp=(r.tipo_producto||'').toString().trim().toLowerCase();
             const cn=(r.canal||'').toString().trim().toLowerCase();
-            const es=(r.estado||'').toString().trim().toLowerCase();
-            return tp!=='insumo' && cn!=='anulada' && cn!=='regula' && cn!=='bts' && es!=='cerrada' && es!=='enviado a sap';
+            return tp!=='insumo' && cn!=='anulada' && cn!=='regula' && cn!=='bts';
           })
           .reduce((s,r)=>s+Number(r.cantidad||0),0);
       }catch(e){ console.warn('cargado email error:',e.message); }
@@ -9510,8 +9504,6 @@ async function abrirDetalleCarga(fecha){
       if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return false;
       var cLow = (r.canal||'').toLowerCase().trim();
       if(cLow === 'anulada' || cLow === 'regula' || cLow === 'bts') return false;
-      var eLow = (r.estado||'').toLowerCase().trim();
-      if(eLow === 'cerrada' || eLow === 'enviado a sap') return false;
       var rutaUp = (r.ruta||'').toUpperCase().trim();
       if(rutaUp.includes('SSTT') || rutaUp.includes('REGULA')) return false;
       if(_cliExcVEV.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && cLow === 'venta en verde') return false;
