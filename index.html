@@ -1418,6 +1418,19 @@ input[type="month"], input[type="week"]{
 
   </div>
 
+  <div id="st-embalaje" style="display:none">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px">
+      <div style="font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Cómo se embala</div>
+      <div style="font-size:11.5px;color:var(--txt2);margin-bottom:12px">Selecciona el cliente para ver sus especificaciones de embalaje.</div>
+      <select id="embalaje-cliente-sel" onchange="embalajeSeleccionarCliente(this.value)"
+        style="width:100%;padding:12px 14px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;appearance:none">
+        <option value="">Elige un cliente…</option>
+      </select>
+      <div id="embalaje-variantes-wrap" style="display:none;margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div id="embalaje-resultado"></div>
+  </div>
+
   <nav class="bottom-nav" id="bottom-nav-sup">
     <button class="bnav-item on" onclick="bnavGo('carga',this)">
       <div class="bnav-icon">
@@ -1484,6 +1497,14 @@ input[type="month"], input[type="week"]{
         </svg>
       </div>
       <span class="bnav-lbl">Bonos</span>
+    </button>
+    <button class="bnav-item" onclick="bnavGo('embalaje',this)">
+      <div class="bnav-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>
+        </svg>
+      </div>
+      <span class="bnav-lbl">Embalaje</span>
     </button>
 
 </div>
@@ -4651,7 +4672,7 @@ let _tabActual = null; // tab actualmente visible
 
 function showSupTab(tab, btn){
   // Tabs fijos dentro de sc-sup
-  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos'].forEach(t=>{
+  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje'].forEach(t=>{
     const el=document.getElementById('st-'+t);
     if(el) el.style.display=t===tab?'block':'none';
   });
@@ -8510,6 +8531,7 @@ const BNAV_TITULOS={
   capacidad:'Capacidad dinámica',
   ritmo:'Ritmo operacional',
   bonos:'Bonos por meta individual',
+  embalaje:'Cómo se embala',
 };
 
 function bnavGo(tab, btn){
@@ -8525,7 +8547,7 @@ function bnavGo(tab, btn){
   showSupTab(tab, {classList:{add:()=>{},remove:()=>{}}});
   // Animar el contenido activo
   setTimeout(()=>{
-    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos'];
+    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje'];
     tabs.forEach(t=>{
       const el=document.getElementById('st-'+t);
       if(el && el.style.display!=='none') el.classList.add('anim-in');
@@ -9584,6 +9606,146 @@ function cerrarDetalleCarga(){
 function abrirPlanDesdeGerente(){
   showGerTab('plan', document.getElementById('gtab-plan'));
 }
+</script>
+
+<!-- ==================== MÓDULO: CÓMO SE EMBALA ==================== -->
+<script>
+// Datos de especificaciones de embalaje por cliente. Para agregar un cliente nuevo,
+// súmalo a este arreglo (mismo formato) y sube sus imágenes a img/embalaje/.
+const EMBALAJE_SPECS = [
+  {
+    cliente: 'Duty Free',
+    variantes: [
+      {
+        nombre: 'General',
+        especificaciones: [
+          'Etiqueta LPN: debe venir pegado en cada bulto. Corresponde a un código de 18 caracteres: los primeros 9 dígitos son el RUT del proveedor, luego la OC y por último la cantidad de bultos. Si son más de 1.000 bultos, eliminar el último dígito de la OC.',
+          'El LPN debe contener: N° OC – N° de factura – SKU – Cantidad',
+          'Cartón debe ser rígido y venir en perfectas condiciones',
+          'Las caras de las cajas deben estar en blanco, sin códigos de barra',
+          'Con cinta transparente o Samsonite',
+          'Se debe sacar el precio',
+          'Se debe tapar el EAN de la bolsa',
+          'Se embala por SKU',
+          'Se debe esperar el número de factura para confeccionar el LPN',
+          'Etiqueta de precio: el 100% de los productos deben ser despachados con etiqueta de precio en el Hangtag (tapando el EAN) y además en la caja master, en el lado superior derecho',
+          'Se ocupa la columna EAN en el archivo EDI'
+        ],
+        imagenes: ['img/embalaje/dutyfree-1.png','img/embalaje/dutyfree-2.png','img/embalaje/dutyfree-3.png','img/embalaje/dutyfree-4.png']
+      }
+    ]
+  },
+  {
+    cliente: 'Hites',
+    variantes: [
+      {
+        nombre: 'OC Predistribuido',
+        especificaciones: [
+          'Etiqueta LPN: debe venir pegado en cada bulto, en el centro',
+          'Cartón debe ser rígido y venir en perfectas condiciones',
+          'Las caras de las cajas deben estar en blanco, sin códigos de barra',
+          'Con cinta transparente',
+          'Tipo de sensor: Mini Pencil Oscuro — Mochilas: bolsillo organizador — Carteras: bolsillo del cierre trasero — Maletas: borde cierre',
+          'Etiqueta de precio: el 100% de los productos deben ser despachados con etiqueta de precio'
+        ],
+        imagenes: ['img/embalaje/hites-predistribuido-1.png','img/embalaje/hites-predistribuido-2.png','img/embalaje/hites-predistribuido-3.png','img/embalaje/hites-predistribuido-4.png','img/embalaje/hites-predistribuido-5.png']
+      },
+      {
+        nombre: 'OC CD o Internet',
+        especificaciones: [
+          'Etiqueta LPN: debe venir pegado en cada bulto, en el centro, y además con etiqueta de precio afuera al costado del LPN',
+          'Cartón debe ser rígido y venir en perfectas condiciones',
+          'Las caras de las cajas deben estar en blanco, sin códigos de barra',
+          'Con cinta transparente',
+          'Se embala Mono SKU',
+          'Sin sensor',
+          'Etiqueta de precio: el 100% de los productos deben ser despachados con etiqueta de precio (Hangtag y caja)'
+        ],
+        imagenes: ['img/embalaje/hites-cd-internet-1.png','img/embalaje/hites-cd-internet-2.png','img/embalaje/hites-cd-internet-3.png','img/embalaje/hites-cd-internet-4.png']
+      }
+    ]
+  }
+];
+
+let _embalajeClienteActual = null;
+
+function embalajeInitDropdown(){
+  const sel = document.getElementById('embalaje-cliente-sel');
+  if(!sel || sel.dataset.init) return;
+  sel.dataset.init = '1';
+  EMBALAJE_SPECS
+    .slice()
+    .sort((a,b)=>a.cliente.localeCompare(b.cliente,'es'))
+    .forEach(c=>{
+      const opt = document.createElement('option');
+      opt.value = c.cliente;
+      opt.textContent = c.cliente;
+      sel.appendChild(opt);
+    });
+}
+
+function embalajeSeleccionarCliente(nombreCliente){
+  _embalajeClienteActual = EMBALAJE_SPECS.find(c=>c.cliente===nombreCliente) || null;
+  const wrap = document.getElementById('embalaje-variantes-wrap');
+  const res = document.getElementById('embalaje-resultado');
+  wrap.innerHTML = '';
+  res.innerHTML = '';
+  if(!_embalajeClienteActual){ wrap.style.display='none'; return; }
+
+  if(_embalajeClienteActual.variantes.length > 1){
+    wrap.style.display = 'flex';
+    _embalajeClienteActual.variantes.forEach((v,i)=>{
+      const b = document.createElement('button');
+      b.textContent = v.nombre;
+      b.className = 'embalaje-pill' + (i===0?' on':'');
+      b.style.cssText = 'padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;';
+      b.onclick = ()=>{
+        document.querySelectorAll('.embalaje-pill').forEach(x=>{x.classList.remove('on');x.style.background='var(--card2)';x.style.color='var(--txt2)';x.style.borderColor='var(--border)';});
+        b.classList.add('on'); b.style.background='rgba(59,143,255,.14)'; b.style.color='#60B0FF'; b.style.borderColor='#3B8FFF';
+        embalajeRenderVariante(v);
+      };
+      if(i===0){ b.style.background='rgba(59,143,255,.14)'; b.style.color='#60B0FF'; b.style.borderColor='#3B8FFF'; }
+      wrap.appendChild(b);
+    });
+  } else {
+    wrap.style.display = 'none';
+  }
+  embalajeRenderVariante(_embalajeClienteActual.variantes[0]);
+}
+
+function embalajeRenderVariante(variante){
+  const res = document.getElementById('embalaje-resultado');
+  const specsHtml = variante.especificaciones.map(s=>
+    `<li style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--txt);line-height:1.5">
+      <span style="color:#60B0FF;flex-shrink:0">&#10003;</span><span>${s}</span>
+    </li>`
+  ).join('');
+  const imgsHtml = (variante.imagenes||[]).map(src=>
+    `<img src="${src}" loading="lazy" onclick="embalajeLightbox('${src}')"
+      style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:zoom-in;background:var(--card2)"
+      onerror="this.style.display='none'">`
+  ).join('');
+  res.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px">
+      <div style="font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Especificaciones</div>
+      <ul style="list-style:none">${specsHtml}</ul>
+    </div>
+    ${imgsHtml ? `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px">
+      <div style="font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Imágenes de referencia</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">${imgsHtml}</div>
+    </div>` : ''}
+  `;
+}
+
+function embalajeLightbox(src){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,14,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = ()=>overlay.remove();
+  overlay.innerHTML = `<img src="${src}" style="max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.6)">`;
+  document.body.appendChild(overlay);
+}
+
+embalajeInitDropdown();
 </script>
 
 
