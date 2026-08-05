@@ -1440,7 +1440,7 @@ input[type="month"], input[type="week"]{
       </div>
       <div id="cajas-campos-ruta">
         <label style="font-size:11px;color:var(--txt2)">Ruta</label>
-        <input type="text" id="cajas-ruta" placeholder="Código de ruta" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/>
+        <input type="text" id="cajas-ruta" placeholder="Ej: 737 (busca por número o texto parcial)" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/>
       </div>
       <div id="cajas-campos-entrega" style="display:none">
         <label style="font-size:11px;color:var(--txt2)">ID de entrega</label>
@@ -3152,7 +3152,9 @@ function cajasEsSantiago(clientenombre){
 // Retorna null si no se pudo determinar (queda marcado como "sin clasificar" en el resultado).
 function cajasClasificarMaleta(desc){
   const d = (desc||'').toUpperCase();
-  if(d.includes('UNDERSEATER')) return 'malChica';
+  if(d.includes('UNDERSEATER') || d.includes('CARRY-ON') || d.includes('DINO') || d.includes('TIGER') || d.includes('PONY') || /\bS\b/.test(d)) return 'malChica';
+  if(d.includes('LARGE') || /\bL\b/.test(d)) return 'malGrande';
+  if(/\bM\b/.test(d)) return 'malMediana';
   const m = d.match(/(\d{2,3})/);
   if(!m) return null;
   const n = parseInt(m[1],10);
@@ -3179,7 +3181,7 @@ async function calcularCajas(){
     const hasta = document.getElementById('cajas-hasta').value;
     if(!ruta){ toast('Ingresa una ruta'); return; }
     if(!desde || !hasta){ toast('Selecciona el rango de fechas'); return; }
-    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado&ruta=eq.${encodeURIComponent(ruta)}&fecha_creada=gte.${desde}&fecha_creada=lte.${hasta}`;
+    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado&ruta=ilike.*${encodeURIComponent(ruta)}*&fecha_creada=gte.${desde}&fecha_creada=lte.${hasta}`;
   } else {
     const idEnt = (document.getElementById('cajas-identrega').value||'').trim();
     if(!idEnt){ toast('Ingresa el ID de entrega'); return; }
@@ -3210,7 +3212,7 @@ async function calcularCajas(){
       const tam = cajasClasificarMaleta(r.material_desc);
       if(tam) counts[tam]+=cant; else sinClasificar+=cant;
     } else if(r.tipo_producto==='No Maleta'){
-      if(cajasEsSantiago(r.clientenombre)) counts.azul+=cant; else counts.mochila+=cant;
+      if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)) counts.azul+=cant; else counts.mochila+=cant;
     }
   });
 
