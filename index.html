@@ -3135,6 +3135,8 @@ async function sbFetchAll(path){
 // ══════════════════════════════════════════════════════════
 // CALCULADORA DE CAJAS
 // ══════════════════════════════════════════════════════════
+function cajasFmt(n){ return (n||0).toLocaleString('es-CL'); }
+
 const CAJAS_CONFIG = {
   malChica:  {label:'Caja Maleta Chica',   cap:1,  color:'#3B8FFF'},
   malMediana:{label:'Caja Maleta Mediana', cap:1,  color:'#2ECC8A'},
@@ -3305,7 +3307,7 @@ async function calcularCajas(){
 function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal){
   const cfg = CAJAS_CONFIG;
   let totalCajas = 0;
-  let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Total del período · ${nEntregas} entrega${nEntregas===1?'':'s'}</div>`;
+  let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Total del período · ${cajasFmt(nEntregas)} entrega${nEntregas===1?'':'s'}</div>`;
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   Object.keys(cfg).forEach(k=>{
     const uds = counts[k]||0;
@@ -3314,20 +3316,41 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
     totalCajas += cajas;
     html += `<div style="background:${cfg[k].color}18;border:1px solid ${cfg[k].color}44;border-radius:10px;padding:10px">
       <div style="font-size:9px;font-weight:700;color:${cfg[k].color};text-transform:uppercase;letter-spacing:.04em">${cfg[k].label}</div>
-      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajas} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
-      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${uds.toLocaleString('es-CL')} unid.</div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(uds)} unid.</div>
     </div>`;
   });
   html += '</div>';
-  html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-    <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
-    <span style="font-size:18px;font-weight:900;color:var(--txt)">${totalCajas} cajas</span>
+
+  let totalOffline = 0, totalOnline = 0, totalOtros = 0;
+  Object.keys(porCanal).forEach(c=>{
+    let t = 0;
+    Object.keys(cfg).forEach(k=>{ t += Math.ceil((porCanal[c].counts[k]||0)/cfg[k].cap); });
+    const grupo = cajasGrupoCanal(c);
+    if(grupo==='Offline') totalOffline += t;
+    else if(grupo==='Online') totalOnline += t;
+    else totalOtros += t;
+  });
+
+  html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
+      <span style="font-size:18px;font-weight:900;color:var(--txt)">${cajasFmt(totalCajas)} cajas</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <span style="font-size:10.5px;color:var(--txt3)">Offline</span>
+      <span style="font-size:12px;font-weight:700;color:var(--txt2)">${cajasFmt(totalOffline)} cajas</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
+      <span style="font-size:10.5px;color:var(--txt3)">Online</span>
+      <span style="font-size:12px;font-weight:700;color:var(--txt2)">${cajasFmt(totalOnline)} cajas</span>
+    </div>
   </div>`;
   html += '</div>';
 
   if(sinClasificar>0){
     html += `<div class="card" style="border-color:#7A4A1A;margin-top:8px">
-      <div style="font-size:11px;color:#FFBA4D;font-weight:700;margin-bottom:4px">⚠ ${sinClasificar} unidad(es) de maleta sin tamaño identificado</div>
+      <div style="font-size:11px;color:#FFBA4D;font-weight:700;margin-bottom:4px">⚠ ${cajasFmt(sinClasificar)} unidad(es) de maleta sin tamaño identificado</div>
       <div style="font-size:10.5px;color:var(--txt2)">No se pudo determinar el tamaño desde la descripción del material. Revísalas manualmente.</div>
     </div>`;
   }
@@ -3345,7 +3368,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
     html += `<div class="card" style="margin-top:8px">
       <div class="card-title" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
         <span>${grupo}</span>
-        <span style="font-size:14px;font-weight:900;color:var(--txt)">${totalGrupo} cajas</span>
+        <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(totalGrupo)} cajas</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">`;
     items.forEach(c=>{
@@ -3354,12 +3377,12 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
         const uds = c.data.counts[k]||0;
         if(uds===0) return;
         const cajas = Math.ceil(uds/cfg[k].cap);
-        partes.push(`<span style="color:${cfg[k].color}">${cajas} ${cfg[k].label}</span>`);
+        partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
       });
       html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
-          <span style="font-size:14px;font-weight:900;color:var(--txt)">${c.total} cajas</span>
+          <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(c.total)} cajas</span>
         </div>
         <div style="font-size:10.5px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
       </div>`;
@@ -3384,9 +3407,9 @@ function cajasRenderDetalleEntregas(porEntrega){
       const uds = pe.counts[k]||0;
       if(uds===0) return;
       const cajas = Math.ceil(uds/cfg[k].cap);
-      partes.push(`<span style="color:${cfg[k].color}">${cajas} ${cfg[k].label}</span>`);
+      partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
     });
-    if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${pe.sinClasificar} unid. sin clasificar</span>`);
+    if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${cajasFmt(pe.sinClasificar)} unid. sin clasificar</span>`);
     html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente} · ${pe.fecha}</span></div>
       <div style="font-size:11px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
@@ -3399,7 +3422,7 @@ function cajasRenderDetalleEntregas(porEntrega){
 function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega){
   const cfg = CAJAS_CONFIG;
   let totalCajas = 0;
-  let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Resumen · ${nEntregas} entrega${nEntregas===1?'':'s'}</div>`;
+  let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Resumen · ${cajasFmt(nEntregas)} entrega${nEntregas===1?'':'s'}</div>`;
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   Object.keys(cfg).forEach(k=>{
     const uds = counts[k]||0;
@@ -3408,20 +3431,20 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega){
     totalCajas += cajas;
     html += `<div style="background:${cfg[k].color}18;border:1px solid ${cfg[k].color}44;border-radius:10px;padding:10px">
       <div style="font-size:9px;font-weight:700;color:${cfg[k].color};text-transform:uppercase;letter-spacing:.04em">${cfg[k].label}</div>
-      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajas} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
-      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${uds.toLocaleString('es-CL')} unid.</div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(uds)} unid.</div>
     </div>`;
   });
   html += '</div>';
   html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
-    <span style="font-size:18px;font-weight:900;color:var(--txt)">${totalCajas} cajas</span>
+    <span style="font-size:18px;font-weight:900;color:var(--txt)">${cajasFmt(totalCajas)} cajas</span>
   </div>`;
   html += '</div>';
 
   if(sinClasificar>0){
     html += `<div class="card" style="border-color:#7A4A1A;margin-top:8px">
-      <div style="font-size:11px;color:#FFBA4D;font-weight:700;margin-bottom:4px">⚠ ${sinClasificar} unidad(es) de maleta sin tamaño identificado</div>
+      <div style="font-size:11px;color:#FFBA4D;font-weight:700;margin-bottom:4px">⚠ ${cajasFmt(sinClasificar)} unidad(es) de maleta sin tamaño identificado</div>
       <div style="font-size:10.5px;color:var(--txt2)">No se pudo determinar el tamaño desde la descripción del material (ej. líneas sin código numérico como colecciones infantiles). Revísalas manualmente y ajusta la caja a mano.</div>
     </div>`;
   }
