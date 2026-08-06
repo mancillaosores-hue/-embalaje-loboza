@@ -3270,6 +3270,7 @@ async function calcularCajas(){
   catch(e){ resEl.innerHTML = `<div style="color:#FF8080;padding:12px">Error: ${e.message}</div>`; return; }
 
   rows = rows.filter(r=>r.estado!=='Anulada' && r.tipo_producto!=='Insumo' && r.canal!=='Anulada' && r.canal!=='REGULA');
+  if(modo==='ruta') rows = rows.filter(r=>cajasGrupoCanal(r.canal)!=='Online');
   if(!rows.length){
     resEl.innerHTML = '<div style="color:var(--txt2);padding:12px;text-align:center">Sin entregas para ese filtro.</div>';
     return;
