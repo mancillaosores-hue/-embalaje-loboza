@@ -3173,6 +3173,12 @@ function cajasClasificarMaleta(desc){
   return 'malGrande';
 }
 
+const CAJAS_CANAL_GRUPO = {
+  'Locales':'Offline', 'Concesiones':'Offline', 'Grandes Tiendas':'Offline', 'Distribuidor':'Offline',
+  'Ecommerce':'Online', 'Marketplace':'Online', 'Venta en verde':'Online', 'Venta en Verde':'Online',
+};
+function cajasGrupoCanal(canal){ return CAJAS_CANAL_GRUPO[canal] || 'Otros'; }
+
 function cajasSetModo(modo){
   window._cajasModo = modo;
   document.getElementById('cajas-modo-ruta-btn').classList.toggle('on', modo==='ruta');
@@ -3259,7 +3265,7 @@ async function calcularCajas(){
   try{ rows = await sbFetchAll(path); }
   catch(e){ resEl.innerHTML = `<div style="color:#FF8080;padding:12px">Error: ${e.message}</div>`; return; }
 
-  rows = rows.filter(r=>r.estado!=='Anulada' && r.tipo_producto!=='Insumo');
+  rows = rows.filter(r=>r.estado!=='Anulada' && r.tipo_producto!=='Insumo' && r.canal!=='Anulada' && r.canal!=='REGULA');
   if(!rows.length){
     resEl.innerHTML = '<div style="color:var(--txt2);padding:12px;text-align:center">Sin entregas para ese filtro.</div>';
     return;
@@ -3329,30 +3335,37 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
   const canales = Object.keys(porCanal).map(c=>{
     let t=0;
     Object.keys(cfg).forEach(k=>{ t += Math.ceil((porCanal[c].counts[k]||0)/cfg[k].cap); });
-    return {canal:c, total:t, data:porCanal[c]};
-  }).sort((a,b)=>b.total-a.total);
+    return {canal:c, total:t, data:porCanal[c], grupo:cajasGrupoCanal(c)};
+  }).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
 
-  html += `<div class="card" style="margin-top:8px">
-    <div class="card-title" style="margin-bottom:10px">Desglose por canal</div>
-    <div style="display:flex;flex-direction:column;gap:8px">`;
-  canales.forEach(c=>{
-    if(c.total===0) return;
-    const partes = [];
-    Object.keys(cfg).forEach(k=>{
-      const uds = c.data.counts[k]||0;
-      if(uds===0) return;
-      const cajas = Math.ceil(uds/cfg[k].cap);
-      partes.push(`<span style="color:${cfg[k].color}">${cajas} ${cfg[k].label}</span>`);
-    });
-    html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
-        <span style="font-size:14px;font-weight:900;color:var(--txt)">${c.total} cajas</span>
+  ['Offline','Online','Otros'].forEach(grupo=>{
+    const items = canales.filter(c=>c.grupo===grupo);
+    if(!items.length) return;
+    const totalGrupo = items.reduce((s,c)=>s+c.total,0);
+    html += `<div class="card" style="margin-top:8px">
+      <div class="card-title" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+        <span>${grupo}</span>
+        <span style="font-size:14px;font-weight:900;color:var(--txt)">${totalGrupo} cajas</span>
       </div>
-      <div style="font-size:10.5px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
-    </div>`;
+      <div style="display:flex;flex-direction:column;gap:8px">`;
+    items.forEach(c=>{
+      const partes = [];
+      Object.keys(cfg).forEach(k=>{
+        const uds = c.data.counts[k]||0;
+        if(uds===0) return;
+        const cajas = Math.ceil(uds/cfg[k].cap);
+        partes.push(`<span style="color:${cfg[k].color}">${cajas} ${cfg[k].label}</span>`);
+      });
+      html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
+          <span style="font-size:14px;font-weight:900;color:var(--txt)">${c.total} cajas</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
+      </div>`;
+    });
+    html += '</div></div>';
   });
-  html += '</div></div>';
 
   document.getElementById('cajas-resultado').innerHTML = html;
 }
