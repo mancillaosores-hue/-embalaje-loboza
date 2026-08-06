@@ -1437,6 +1437,7 @@ input[type="month"], input[type="week"]{
       <div style="display:flex;gap:6px;margin-bottom:10px">
         <button class="dtab on" id="cajas-modo-ruta-btn" onclick="cajasSetModo('ruta')">Por ruta</button>
         <button class="dtab" id="cajas-modo-entrega-btn" onclick="cajasSetModo('entrega')">Por entrega</button>
+        <button class="dtab" id="cajas-modo-periodo-btn" onclick="cajasSetModo('periodo')">Por período</button>
       </div>
       <div id="cajas-campos-ruta">
         <label style="font-size:11px;color:var(--txt2)">Ruta</label>
@@ -1446,10 +1447,19 @@ input[type="month"], input[type="week"]{
         <label style="font-size:11px;color:var(--txt2)">ID de entrega</label>
         <input type="text" id="cajas-identrega" placeholder="ID entrega" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/>
       </div>
-      <div id="cajas-campos-fecha" style="display:flex;gap:8px">
-        <div style="flex:1"><label style="font-size:11px;color:var(--txt2)">Desde</label><input type="date" id="cajas-desde" style="width:100%;box-sizing:border-box;padding:9px 8px;margin-top:4px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
-        <div style="flex:1"><label style="font-size:11px;color:var(--txt2)">Hasta</label><input type="date" id="cajas-hasta" style="width:100%;box-sizing:border-box;padding:9px 8px;margin-top:4px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+      <div id="cajas-campos-periodo" style="display:none">
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="dtab on" id="cajas-per-dia-btn" onclick="cajasPeriodoSetTipo('dia')">Día</button>
+          <button class="dtab" id="cajas-per-semana-btn" onclick="cajasPeriodoSetTipo('semana')">Semana</button>
+          <button class="dtab" id="cajas-per-mes-btn" onclick="cajasPeriodoSetTipo('mes')">Mes</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <button onclick="cajasPeriodoNav(-1)" style="background:none;border:none;color:var(--txt2);font-size:16px;padding:2px 8px;cursor:pointer">‹</button>
+          <span id="cajas-periodo-label" style="font-size:12px;font-weight:700;color:var(--txt)">—</span>
+          <button onclick="cajasPeriodoNav(1)" style="background:none;border:none;color:var(--txt2);font-size:16px;padding:2px 8px;cursor:pointer">›</button>
+        </div>
       </div>
+
       <button class="btn-ghost" style="width:100%;box-sizing:border-box;margin-top:12px;padding:10px;background:#1E3A5F;color:#B5D4F4;border-color:#3B8FFF" onclick="calcularCajas()">Calcular cajas</button>
       <div style="font-size:10px;color:var(--txt3);margin-top:8px;line-height:1.5">
         Maleta: 1 caja por unidad, tamaño según código en la descripción del material · No Maleta: Caja Mochila (15 unid) salvo Local Santiago que usa Caja Azul (10 unid).
@@ -3167,9 +3177,63 @@ function cajasSetModo(modo){
   window._cajasModo = modo;
   document.getElementById('cajas-modo-ruta-btn').classList.toggle('on', modo==='ruta');
   document.getElementById('cajas-modo-entrega-btn').classList.toggle('on', modo==='entrega');
+  document.getElementById('cajas-modo-periodo-btn').classList.toggle('on', modo==='periodo');
   document.getElementById('cajas-campos-ruta').style.display = modo==='ruta'?'block':'none';
   document.getElementById('cajas-campos-entrega').style.display = modo==='entrega'?'block':'none';
-  document.getElementById('cajas-campos-fecha').style.display = modo==='ruta'?'flex':'none';
+  document.getElementById('cajas-campos-periodo').style.display = modo==='periodo'?'block':'none';
+  if(modo==='periodo' && !window._cajasPeriodoFecha){
+    window._cajasPeriodoTipo = 'dia';
+    window._cajasPeriodoFecha = new Date();
+    cajasPeriodoActualizarLabel();
+  }
+}
+
+function cajasPeriodoSetTipo(tipo){
+  window._cajasPeriodoTipo = tipo;
+  document.getElementById('cajas-per-dia-btn').classList.toggle('on', tipo==='dia');
+  document.getElementById('cajas-per-semana-btn').classList.toggle('on', tipo==='semana');
+  document.getElementById('cajas-per-mes-btn').classList.toggle('on', tipo==='mes');
+  cajasPeriodoActualizarLabel();
+}
+
+function cajasPeriodoNav(delta){
+  const f = window._cajasPeriodoFecha || new Date();
+  const tipo = window._cajasPeriodoTipo || 'dia';
+  if(tipo==='dia') f.setDate(f.getDate()+delta);
+  else if(tipo==='semana') f.setDate(f.getDate()+delta*7);
+  else f.setMonth(f.getMonth()+delta);
+  window._cajasPeriodoFecha = f;
+  cajasPeriodoActualizarLabel();
+}
+
+function cajasPeriodoRango(){
+  const tipo = window._cajasPeriodoTipo || 'dia';
+  const f = new Date(window._cajasPeriodoFecha || new Date());
+  const fmt = d => d.toISOString().slice(0,10);
+  if(tipo==='dia'){
+    return {desde: fmt(f), hasta: fmt(f)};
+  } else if(tipo==='semana'){
+    const dow = f.getDay();
+    const diffLunes = dow===0 ? -6 : 1-dow;
+    const lunes = new Date(f); lunes.setDate(f.getDate()+diffLunes);
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6);
+    return {desde: fmt(lunes), hasta: fmt(domingo)};
+  } else {
+    const primero = new Date(f.getFullYear(), f.getMonth(), 1);
+    const ultimo = new Date(f.getFullYear(), f.getMonth()+1, 0);
+    return {desde: fmt(primero), hasta: fmt(ultimo)};
+  }
+}
+
+function cajasPeriodoActualizarLabel(){
+  const {desde, hasta} = cajasPeriodoRango();
+  const tipo = window._cajasPeriodoTipo || 'dia';
+  const elp = document.getElementById('cajas-periodo-label');
+  if(!elp) return;
+  const opts = {day:'2-digit', month:'short'};
+  const dDesde = new Date(desde+'T00:00:00').toLocaleDateString('es-CL', opts);
+  const dHasta = new Date(hasta+'T00:00:00').toLocaleDateString('es-CL', opts);
+  elp.textContent = tipo==='dia' ? dDesde : `${dDesde} – ${dHasta}`;
 }
 
 async function calcularCajas(){
@@ -3177,15 +3241,15 @@ async function calcularCajas(){
   let path;
   if(modo==='ruta'){
     const ruta = (document.getElementById('cajas-ruta').value||'').trim();
-    const desde = document.getElementById('cajas-desde').value;
-    const hasta = document.getElementById('cajas-hasta').value;
     if(!ruta){ toast('Ingresa una ruta'); return; }
-    if(!desde || !hasta){ toast('Selecciona el rango de fechas'); return; }
-    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado&ruta=ilike.*${encodeURIComponent(ruta)}*&fecha_creada=gte.${desde}&fecha_creada=lte.${hasta}`;
-  } else {
+    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado,fecha_creada&ruta=ilike.*${encodeURIComponent(ruta)}*`;
+  } else if(modo==='entrega'){
     const idEnt = (document.getElementById('cajas-identrega').value||'').trim();
     if(!idEnt){ toast('Ingresa el ID de entrega'); return; }
-    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado&id_entrega=eq.${encodeURIComponent(idEnt)}`;
+    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado,fecha_creada&id_entrega=eq.${encodeURIComponent(idEnt)}`;
+  } else {
+    const {desde, hasta} = cajasPeriodoRango();
+    path = `entregas_carga?select=id_entrega,ruta,canal,clientenombre,tipo_producto,material_desc,cantidad,estado,fecha_creada&fecha_creada=gte.${desde}&fecha_creada=lte.${hasta}`;
   }
 
   const resEl = document.getElementById('cajas-resultado');
@@ -3205,23 +3269,92 @@ async function calcularCajas(){
   let sinClasificar = 0;
   const entregasSet = new Set();
   const porEntrega = {}; // id_entrega -> {cliente, canal, counts:{}, sinClasificar}
+  const porCanal = {}; // canal -> {counts:{}, sinClasificar}
 
   rows.forEach(r=>{
     entregasSet.add(r.id_entrega);
-    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,azul:0}, sinClasificar:0};
+    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,azul:0}, sinClasificar:0};
     const pe = porEntrega[r.id_entrega];
+    const canalKey = r.canal || 'Sin canal';
+    if(!porCanal[canalKey]) porCanal[canalKey] = {counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,azul:0}, sinClasificar:0};
+    const pc = porCanal[canalKey];
     const cant = Number(r.cantidad)||0;
     if(r.tipo_producto==='Maleta'){
       const tam = cajasClasificarMaleta(r.material_desc);
-      if(tam){ counts[tam]+=cant; pe.counts[tam]+=cant; }
-      else { sinClasificar+=cant; pe.sinClasificar+=cant; }
+      if(tam){ counts[tam]+=cant; pe.counts[tam]+=cant; pc.counts[tam]+=cant; }
+      else { sinClasificar+=cant; pe.sinClasificar+=cant; pc.sinClasificar+=cant; }
     } else if(r.tipo_producto==='No Maleta'){
-      if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; }
-      else { counts.mochila+=cant; pe.counts.mochila+=cant; }
+      if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; pc.counts.azul+=cant; }
+      else { counts.mochila+=cant; pe.counts.mochila+=cant; pc.counts.mochila+=cant; }
     }
   });
 
-  cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porEntrega:null);
+  if(modo==='periodo'){
+    cajasRenderResultadoPeriodo(counts, sinClasificar, entregasSet.size, porCanal);
+  } else {
+    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porEntrega:null);
+  }
+}
+
+function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal){
+  const cfg = CAJAS_CONFIG;
+  let totalCajas = 0;
+  let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Total del período · ${nEntregas} entrega${nEntregas===1?'':'s'}</div>`;
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  Object.keys(cfg).forEach(k=>{
+    const uds = counts[k]||0;
+    if(uds===0) return;
+    const cajas = Math.ceil(uds/cfg[k].cap);
+    totalCajas += cajas;
+    html += `<div style="background:${cfg[k].color}18;border:1px solid ${cfg[k].color}44;border-radius:10px;padding:10px">
+      <div style="font-size:9px;font-weight:700;color:${cfg[k].color};text-transform:uppercase;letter-spacing:.04em">${cfg[k].label}</div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajas} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${uds.toLocaleString('es-CL')} unid.</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
+    <span style="font-size:18px;font-weight:900;color:var(--txt)">${totalCajas} cajas</span>
+  </div>`;
+  html += '</div>';
+
+  if(sinClasificar>0){
+    html += `<div class="card" style="border-color:#7A4A1A;margin-top:8px">
+      <div style="font-size:11px;color:#FFBA4D;font-weight:700;margin-bottom:4px">⚠ ${sinClasificar} unidad(es) de maleta sin tamaño identificado</div>
+      <div style="font-size:10.5px;color:var(--txt2)">No se pudo determinar el tamaño desde la descripción del material. Revísalas manualmente.</div>
+    </div>`;
+  }
+
+  const canales = Object.keys(porCanal).map(c=>{
+    let t=0;
+    Object.keys(cfg).forEach(k=>{ t += Math.ceil((porCanal[c].counts[k]||0)/cfg[k].cap); });
+    return {canal:c, total:t, data:porCanal[c]};
+  }).sort((a,b)=>b.total-a.total);
+
+  html += `<div class="card" style="margin-top:8px">
+    <div class="card-title" style="margin-bottom:10px">Desglose por canal</div>
+    <div style="display:flex;flex-direction:column;gap:8px">`;
+  canales.forEach(c=>{
+    if(c.total===0) return;
+    const partes = [];
+    Object.keys(cfg).forEach(k=>{
+      const uds = c.data.counts[k]||0;
+      if(uds===0) return;
+      const cajas = Math.ceil(uds/cfg[k].cap);
+      partes.push(`<span style="color:${cfg[k].color}">${cajas} ${cfg[k].label}</span>`);
+    });
+    html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
+        <span style="font-size:14px;font-weight:900;color:var(--txt)">${c.total} cajas</span>
+      </div>
+      <div style="font-size:10.5px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
+    </div>`;
+  });
+  html += '</div></div>';
+
+  document.getElementById('cajas-resultado').innerHTML = html;
 }
 
 function cajasRenderDetalleEntregas(porEntrega){
@@ -3242,7 +3375,7 @@ function cajasRenderDetalleEntregas(porEntrega){
     });
     if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${pe.sinClasificar} unid. sin clasificar</span>`);
     html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente}</span></div>
+      <div style="font-size:11px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente} · ${pe.fecha}</span></div>
       <div style="font-size:11px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
     </div>`;
   });
