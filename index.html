@@ -3297,39 +3297,46 @@ async function calcularCajas(){
   const counts = {malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0};
   let sinClasificar = 0;
   const entregasSet = new Set();
-  const porEntrega = {}; // id_entrega -> {cliente, canal, counts:{}, sinClasificar, matSM:{}}
+  const porEntrega = {}; // id_entrega -> {cliente, canal, ruta, fecha, counts:{}, sinClasificar, matSM:{}}
   const porCanal = {}; // canal -> {counts:{}, sinClasificar, matSM:{}}
+  const porRuta = {}; // "ruta|fecha" -> {ruta, fecha, canales:Set, counts:{}, sinClasificar, matSM:{}, entregas:Set}
   const matSM = {}; // material_desc -> unidades, global (clientes sin mezcla)
 
   rows.forEach(r=>{
     entregasSet.add(r.id_entrega);
-    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
+    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', ruta:r.ruta||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
     const pe = porEntrega[r.id_entrega];
     const canalKey = r.canal || 'Sin canal';
     if(!porCanal[canalKey]) porCanal[canalKey] = {counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
     const pc = porCanal[canalKey];
+    const rutaKey = (r.ruta||'—') + '|' + (r.fecha_creada||'—');
+    if(!porRuta[rutaKey]) porRuta[rutaKey] = {ruta:r.ruta||'—', fecha:r.fecha_creada||'—', canales:new Set(), counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}, entregas:new Set()};
+    const pr = porRuta[rutaKey];
+    pr.canales.add(canalKey);
+    pr.entregas.add(r.id_entrega);
     const cant = Number(r.cantidad)||0;
     if(r.tipo_producto==='Maleta'){
       const tam = cajasClasificarMaleta(r.material_desc);
-      if(tam){ counts[tam]+=cant; pe.counts[tam]+=cant; pc.counts[tam]+=cant; }
-      else { sinClasificar+=cant; pe.sinClasificar+=cant; pc.sinClasificar+=cant; }
+      if(tam){ counts[tam]+=cant; pe.counts[tam]+=cant; pc.counts[tam]+=cant; pr.counts[tam]+=cant; }
+      else { sinClasificar+=cant; pe.sinClasificar+=cant; pc.sinClasificar+=cant; pr.sinClasificar+=cant; }
     } else if(r.tipo_producto==='No Maleta'){
       const mat = r.material_desc || 'Sin descripción';
       if(cajasEsSinMezcla(r.clientenombre)){
         matSM[mat] = (matSM[mat]||0) + cant;
         pe.matSM[mat] = (pe.matSM[mat]||0) + cant;
         pc.matSM[mat] = (pc.matSM[mat]||0) + cant;
+        pr.matSM[mat] = (pr.matSM[mat]||0) + cant;
       }
-      else if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; pc.counts.azul+=cant; }
-      else if((r.clientenombre||'').toUpperCase().includes('MERCADO LIBRE CHILE')){ counts.mochilaML+=cant; pe.counts.mochilaML+=cant; pc.counts.mochilaML+=cant; }
-      else { counts.mochila+=cant; pe.counts.mochila+=cant; pc.counts.mochila+=cant; }
+      else if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; pc.counts.azul+=cant; pr.counts.azul+=cant; }
+      else if((r.clientenombre||'').toUpperCase().includes('MERCADO LIBRE CHILE')){ counts.mochilaML+=cant; pe.counts.mochilaML+=cant; pc.counts.mochilaML+=cant; pr.counts.mochilaML+=cant; }
+      else { counts.mochila+=cant; pe.counts.mochila+=cant; pc.counts.mochila+=cant; pr.counts.mochila+=cant; }
     }
   });
 
   if(modo==='periodo'){
     cajasRenderResultadoPeriodo(counts, sinClasificar, entregasSet.size, porCanal, matSM);
   } else {
-    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porEntrega:null, matSM);
+    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porRuta:null, matSM);
   }
 }
 
@@ -3435,35 +3442,43 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
   document.getElementById('cajas-resultado').innerHTML = html;
 }
 
-function cajasRenderDetalleEntregas(porEntrega){
+function cajasRenderDetalleEntregas(porRuta){
   const cfg = CAJAS_CONFIG;
-  const ids = Object.keys(porEntrega);
-  if(ids.length<=1) return '';
+  const keys = Object.keys(porRuta);
+  if(keys.length===0) return '';
+  // Ordena por fecha desc, luego por ruta
+  keys.sort((a,b)=>{
+    const ra = porRuta[a], rb = porRuta[b];
+    if(ra.fecha !== rb.fecha) return ra.fecha < rb.fecha ? 1 : -1;
+    return ra.ruta.localeCompare(rb.ruta);
+  });
   let html = `<div class="card" style="margin-top:8px">
-    <div class="card-title" style="margin-bottom:10px">Detalle por entrega (${ids.length})</div>
-    <div style="display:flex;flex-direction:column;gap:8px">`;
-  ids.forEach(id=>{
-    const pe = porEntrega[id];
+    <div class="card-title" style="margin-bottom:10px">Detalle por ruta (${keys.length} grupo${keys.length===1?'':'s'})</div>
+    <div style="display:flex;flex-direction:column;gap:10px">`;
+  keys.forEach(key=>{
+    const pr = porRuta[key];
     const partes = [];
     Object.keys(cfg).forEach(k=>{
-      const uds = pe.counts[k]||0;
+      const uds = pr.counts[k]||0;
       if(uds===0) return;
       const cajas = Math.ceil(uds/cfg[k].cap);
       partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
     });
-    if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${cajasFmt(pe.sinClasificar)} unid. sin clasificar</span>`);
-    const smE = cajasCalcularCajasSinMezcla(pe.matSM||{});
-    if(smE.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smE.cajas)} Caja Mochila (sin mezclar)</span>`);
-    html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente} · ${pe.fecha}</span></div>
-      <div style="font-size:11px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
+    if(pr.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${cajasFmt(pr.sinClasificar)} unid. sin clasificar</span>`);
+    const smR = cajasCalcularCajasSinMezcla(pr.matSM||{});
+    if(smR.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smR.cajas)} Caja Mochila (sin mezclar)</span>`);
+    const canalesTxt = Array.from(pr.canales).join(', ');
+    html += `<div style="border-bottom:1px solid var(--border);padding-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--txt)">${pr.ruta}</div>
+      <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">${pr.fecha} · ${canalesTxt} · ${pr.entregas.size} entrega${pr.entregas.size===1?'':'s'}</div>
+      <div style="font-size:11px;color:var(--txt2);margin-top:4px">${partes.join(' · ')||'—'}</div>
     </div>`;
   });
   html += '</div></div>';
   return html;
 }
 
-function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega, matSM){
+function cajasRenderResultado(counts, sinClasificar, nEntregas, porRuta, matSM){
   const cfg = CAJAS_CONFIG;
   let totalCajas = 0;
   let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Resumen · ${cajasFmt(nEntregas)} entrega${nEntregas===1?'':'s'}</div>`;
@@ -3502,7 +3517,7 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega, matS
     </div>`;
   }
 
-  if(porEntrega) html += cajasRenderDetalleEntregas(porEntrega);
+  if(porRuta) html += cajasRenderDetalleEntregas(porRuta);
 
   document.getElementById('cajas-resultado').innerHTML = html;
 }
