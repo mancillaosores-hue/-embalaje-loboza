@@ -3358,7 +3358,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
     totalCajas += cajas;
     html += `<div style="background:${cfg[k].color}18;border:1px solid ${cfg[k].color}44;border-radius:10px;padding:10px">
       <div style="font-size:9px;font-weight:700;color:${cfg[k].color};text-transform:uppercase;letter-spacing:.04em">${cfg[k].label}</div>
-      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">bulto${cajas===1?'':'s'}</span></div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(uds)} unid.</div>
     </div>`;
   });
@@ -3367,7 +3367,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
     totalCajas += smGlobal.cajas;
     html += `<div style="background:#FF8FD118;border:1px solid #FF8FD144;border-radius:10px;padding:10px">
       <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Caja Mochila — sin mezclar material</div>
-      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(smGlobal.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${smGlobal.cajas===1?'':'s'}</span></div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(smGlobal.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">bulto${smGlobal.cajas===1?'':'s'}</span></div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(smGlobal.unidades)} unid. · ${Object.keys(matSM).length} material(es)</div>
     </div>`;
   }
@@ -3387,15 +3387,15 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
   html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
-      <span style="font-size:18px;font-weight:900;color:var(--txt)">${cajasFmt(totalCajas)} cajas</span>
+      <span style="font-size:18px;font-weight:900;color:var(--txt)">${cajasFmt(totalCajas)} bultos</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
       <span style="font-size:10.5px;color:var(--txt3)">Offline</span>
-      <span style="font-size:12px;font-weight:700;color:var(--txt2)">${cajasFmt(totalOffline)} cajas</span>
+      <span style="font-size:12px;font-weight:700;color:var(--txt2)">${cajasFmt(totalOffline)} bultos</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
       <span style="font-size:10.5px;color:var(--txt3)">Online</span>
-      <span style="font-size:12px;font-weight:700;color:var(--txt2)">${cajasFmt(totalOnline)} cajas</span>
+      <span style="font-size:12px;font-weight:700;color:var(--txt2)">${cajasFmt(totalOnline)} bultos</span>
     </div>
   </div>`;
   html += '</div>';
@@ -3421,7 +3421,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
     html += `<div class="card" style="margin-top:8px">
       <div class="card-title" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
         <span>${grupo}</span>
-        <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(totalGrupo)} cajas</span>
+        <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(totalGrupo)} bultos</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">`;
     items.forEach(c=>{
@@ -3437,7 +3437,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
       html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
-          <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(c.total)} cajas</span>
+          <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(c.total)} bultos</span>
         </div>
         <div style="font-size:10.5px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
       </div>`;
@@ -3541,7 +3541,7 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porRuta, matSM, 
     totalCajas += cajas;
     html += `<div style="background:${cfg[k].color}18;border:1px solid ${cfg[k].color}44;border-radius:10px;padding:10px">
       <div style="font-size:9px;font-weight:700;color:${cfg[k].color};text-transform:uppercase;letter-spacing:.04em">${cfg[k].label}</div>
-      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${cajas===1?'':'s'}</span></div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">bulto${cajas===1?'':'s'}</span></div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(uds)} unid.</div>
     </div>`;
   });
@@ -3550,14 +3550,14 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porRuta, matSM, 
     totalCajas += sm.cajas;
     html += `<div style="background:#FF8FD118;border:1px solid #FF8FD144;border-radius:10px;padding:10px">
       <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Caja Mochila — sin mezclar material</div>
-      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(sm.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${sm.cajas===1?'':'s'}</span></div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(sm.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">bulto${sm.cajas===1?'':'s'}</span></div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(sm.unidades)} unid. · ${Object.keys(matSM).length} material(es)</div>
     </div>`;
   }
   html += '</div>';
   html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
-    <span style="font-size:18px;font-weight:900;color:var(--txt)">${cajasFmt(totalCajas)} cajas</span>
+    <span style="font-size:18px;font-weight:900;color:var(--txt)">${cajasFmt(totalCajas)} bultos</span>
   </div>`;
   html += '</div>';
 
