@@ -3159,6 +3159,8 @@ const CAJAS_CONFIG = {
   malGrande: {label:'Caja Maleta Grande',  cap:1,  color:'#FFBA4D'},
   mochila:   {label:'Caja Mochila',        cap:15, color:'#9A88FF'},
   mochilaML: {label:'Caja Mochila (Mercado Libre)', cap:10, color:'#FF8FD1'},
+  bolsaCourier: {label:'Bolsa Courier',    cap:15, color:'#4DD9C0'},
+  bolsaCourierVV: {label:'Bolsa Courier (Venta en Verde)', cap:1, color:'#2FB89C'},
   azul:      {label:'Caja Azul (Local Santiago)', cap:10, color:'#60B0FF'},
 };
 
@@ -3294,7 +3296,7 @@ async function calcularCajas(){
     return;
   }
 
-  const counts = {malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0};
+  const counts = {malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,bolsaCourier:0,bolsaCourierVV:0,azul:0};
   let sinClasificar = 0;
   const entregasSet = new Set();
   const porEntrega = {}; // id_entrega -> {cliente, canal, ruta, fecha, counts:{}, sinClasificar, matSM:{}}
@@ -3304,13 +3306,13 @@ async function calcularCajas(){
 
   rows.forEach(r=>{
     entregasSet.add(r.id_entrega);
-    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', ruta:r.ruta||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
+    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', ruta:r.ruta||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,bolsaCourier:0,bolsaCourierVV:0,azul:0}, sinClasificar:0, matSM:{}};
     const pe = porEntrega[r.id_entrega];
     const canalKey = r.canal || 'Sin canal';
-    if(!porCanal[canalKey]) porCanal[canalKey] = {counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
+    if(!porCanal[canalKey]) porCanal[canalKey] = {counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,bolsaCourier:0,bolsaCourierVV:0,azul:0}, sinClasificar:0, matSM:{}};
     const pc = porCanal[canalKey];
     const rutaKey = (r.ruta||'—') + '|' + (r.fecha_creada||'—');
-    if(!porRuta[rutaKey]) porRuta[rutaKey] = {ruta:r.ruta||'—', fecha:r.fecha_creada||'—', canales:new Set(), counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}, entregas:new Set()};
+    if(!porRuta[rutaKey]) porRuta[rutaKey] = {ruta:r.ruta||'—', fecha:r.fecha_creada||'—', canales:new Set(), counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,bolsaCourier:0,bolsaCourierVV:0,azul:0}, sinClasificar:0, matSM:{}, entregas:new Set()};
     const pr = porRuta[rutaKey];
     pr.canales.add(canalKey);
     pr.entregas.add(r.id_entrega);
@@ -3321,7 +3323,7 @@ async function calcularCajas(){
       else { sinClasificar+=cant; pe.sinClasificar+=cant; pc.sinClasificar+=cant; pr.sinClasificar+=cant; }
     } else if(r.tipo_producto==='No Maleta'){
       const mat = r.material_desc || 'Sin descripción';
-      if(cajasEsSinMezcla(r.clientenombre)){
+      if(r.canal==='Grandes Tiendas' && cajasEsSinMezcla(r.clientenombre)){
         matSM[mat] = (matSM[mat]||0) + cant;
         pe.matSM[mat] = (pe.matSM[mat]||0) + cant;
         pc.matSM[mat] = (pc.matSM[mat]||0) + cant;
@@ -3329,6 +3331,10 @@ async function calcularCajas(){
       }
       else if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; pc.counts.azul+=cant; pr.counts.azul+=cant; }
       else if((r.clientenombre||'').toUpperCase().includes('MERCADO LIBRE CHILE')){ counts.mochilaML+=cant; pe.counts.mochilaML+=cant; pc.counts.mochilaML+=cant; pr.counts.mochilaML+=cant; }
+      else if(cajasGrupoCanal(r.canal)==='Online'){
+        if(r.canal==='Venta en verde'){ counts.bolsaCourierVV+=cant; pe.counts.bolsaCourierVV+=cant; pc.counts.bolsaCourierVV+=cant; pr.counts.bolsaCourierVV+=cant; }
+        else { counts.bolsaCourier+=cant; pe.counts.bolsaCourier+=cant; pc.counts.bolsaCourier+=cant; pr.counts.bolsaCourier+=cant; }
+      }
       else { counts.mochila+=cant; pe.counts.mochila+=cant; pc.counts.mochila+=cant; pr.counts.mochila+=cant; }
     }
   });
