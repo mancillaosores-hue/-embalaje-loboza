@@ -1434,10 +1434,11 @@ input[type="month"], input[type="week"]{
   <div id="st-cajas" style="display:none">
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">Calculadora de cajas</div>
-      <div style="display:flex;gap:6px;margin-bottom:10px">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
         <button class="dtab on" id="cajas-modo-ruta-btn" onclick="cajasSetModo('ruta')">Por ruta</button>
         <button class="dtab" id="cajas-modo-entrega-btn" onclick="cajasSetModo('entrega')">Por entrega</button>
         <button class="dtab" id="cajas-modo-periodo-btn" onclick="cajasSetModo('periodo')">Por período</button>
+        <button class="dtab" id="cajas-modo-manual-btn" onclick="cajasSetModo('manual')">Manual</button>
       </div>
       <div id="cajas-campos-ruta">
         <label style="font-size:11px;color:var(--txt2)">Ruta</label>
@@ -1460,7 +1461,54 @@ input[type="month"], input[type="week"]{
         </div>
       </div>
 
-      <button class="btn-ghost" style="width:100%;box-sizing:border-box;margin-top:12px;padding:10px;background:#1E3A5F;color:#B5D4F4;border-color:#3B8FFF" onclick="calcularCajas()">Calcular cajas</button>
+      <div id="cajas-campos-manual" style="display:none">
+        <label style="font-size:11px;color:var(--txt2)">Canal</label>
+        <select id="cajas-manual-canal" onchange="cajasManualCanalChange()" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px">
+          <option value="Locales">Locales</option>
+          <option value="Concesiones">Concesiones</option>
+          <option value="Grandes Tiendas">Grandes Tiendas</option>
+          <option value="Distribuidor">Distribuidor</option>
+          <option value="Marketplace">Marketplace</option>
+          <option value="Ecommerce">Ecommerce</option>
+          <option value="Venta en verde">Venta en Verde</option>
+        </select>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div><label style="font-size:10px;color:var(--txt2)">Maleta Chica</label><input type="number" min="0" id="cajas-manual-malchica" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+          <div><label style="font-size:10px;color:var(--txt2)">Maleta Mediana</label><input type="number" min="0" id="cajas-manual-malmediana" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+          <div><label style="font-size:10px;color:var(--txt2)">Maleta Grande</label><input type="number" min="0" id="cajas-manual-malgrande" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+        </div>
+
+        <div id="cajas-manual-nomaleta-wrap">
+          <label style="font-size:11px;color:var(--txt2)">Unidades No Maleta</label>
+          <input type="number" min="0" id="cajas-manual-nomaleta" placeholder="0" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/>
+        </div>
+
+        <div id="cajas-manual-santiago-wrap" style="display:none;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="cajas-manual-santiago" style="width:18px;height:18px"/>
+          <label for="cajas-manual-santiago" style="font-size:12px;color:var(--txt2)">Es local de Santiago (usa Caja Azul, salvo Tumi Aeropuerto)</label>
+        </div>
+
+        <div id="cajas-manual-ml-wrap" style="display:none;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="cajas-manual-ml" style="width:18px;height:18px"/>
+          <label for="cajas-manual-ml" style="font-size:12px;color:var(--txt2)">Es Mercado Libre Chile Ltda (capacidad 10)</label>
+        </div>
+
+        <div id="cajas-manual-sm-wrap" style="display:none;flex-direction:column;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="cajas-manual-sm" onchange="cajasManualToggleSM()" style="width:18px;height:18px"/>
+            <label for="cajas-manual-sm" style="font-size:12px;color:var(--txt2)">Sin mezclar material (Falabella Internet/CD, Paris CD, Redex, Comercializadora CD)</label>
+          </div>
+          <div id="cajas-manual-sm-materiales" style="display:none;margin-top:8px">
+            <div id="cajas-manual-sm-filas" style="display:flex;flex-direction:column;gap:6px"></div>
+            <button class="btn-ghost" style="margin-top:8px;padding:7px 12px;font-size:12px" onclick="cajasManualAgregarMaterial()">+ Agregar material</button>
+          </div>
+        </div>
+
+        <button class="btn-ghost" style="width:100%;box-sizing:border-box;padding:10px;background:#1E3A5F;color:#B5D4F4;border-color:#3B8FFF" onclick="cajasManualCalcular()">Calcular cajas</button>
+      </div>
+
+      <button class="btn-ghost" id="cajas-btn-calcular" style="width:100%;box-sizing:border-box;margin-top:12px;padding:10px;background:#1E3A5F;color:#B5D4F4;border-color:#3B8FFF" onclick="calcularCajas()">Calcular cajas</button>
       <div style="font-size:10px;color:var(--txt3);margin-top:8px;line-height:1.5">
         Maleta: 1 caja por unidad, tamaño según código en la descripción del material · No Maleta: Caja Mochila (15 unid) salvo Local Santiago que usa Caja Azul (10 unid).
       </div>
@@ -3208,13 +3256,20 @@ function cajasSetModo(modo){
   document.getElementById('cajas-modo-ruta-btn').classList.toggle('on', modo==='ruta');
   document.getElementById('cajas-modo-entrega-btn').classList.toggle('on', modo==='entrega');
   document.getElementById('cajas-modo-periodo-btn').classList.toggle('on', modo==='periodo');
+  document.getElementById('cajas-modo-manual-btn').classList.toggle('on', modo==='manual');
   document.getElementById('cajas-campos-ruta').style.display = modo==='ruta'?'block':'none';
   document.getElementById('cajas-campos-entrega').style.display = modo==='entrega'?'block':'none';
   document.getElementById('cajas-campos-periodo').style.display = modo==='periodo'?'block':'none';
+  document.getElementById('cajas-campos-manual').style.display = modo==='manual'?'block':'none';
+  document.getElementById('cajas-btn-calcular').style.display = modo==='manual'?'none':'block';
   if(modo==='periodo' && !window._cajasPeriodoFecha){
     window._cajasPeriodoTipo = 'dia';
     window._cajasPeriodoFecha = new Date();
     cajasPeriodoActualizarLabel();
+  }
+  if(modo==='manual'){
+    if(!document.getElementById('cajas-manual-sm-filas').children.length) cajasManualAgregarMaterial();
+    cajasManualCanalChange();
   }
 }
 
@@ -3264,6 +3319,68 @@ function cajasPeriodoActualizarLabel(){
   const dDesde = new Date(desde+'T00:00:00').toLocaleDateString('es-CL', opts);
   const dHasta = new Date(hasta+'T00:00:00').toLocaleDateString('es-CL', opts);
   elp.textContent = tipo==='dia' ? dDesde : `${dDesde} – ${dHasta}`;
+}
+
+// ── MODO MANUAL ──────────────────────────────────────────────
+function cajasManualCanalChange(){
+  const canal = document.getElementById('cajas-manual-canal').value;
+  document.getElementById('cajas-manual-santiago-wrap').style.display = canal==='Locales' ? 'flex' : 'none';
+  document.getElementById('cajas-manual-ml-wrap').style.display = canal==='Distribuidor' ? 'flex' : 'none';
+  document.getElementById('cajas-manual-sm-wrap').style.display = canal==='Grandes Tiendas' ? 'flex' : 'none';
+  if(canal!=='Grandes Tiendas'){
+    document.getElementById('cajas-manual-sm').checked = false;
+    cajasManualToggleSM();
+  }
+}
+
+function cajasManualToggleSM(){
+  const activo = document.getElementById('cajas-manual-sm').checked;
+  document.getElementById('cajas-manual-sm-materiales').style.display = activo ? 'block' : 'none';
+  document.getElementById('cajas-manual-nomaleta-wrap').style.display = activo ? 'none' : 'block';
+}
+
+function cajasManualAgregarMaterial(){
+  const cont = document.getElementById('cajas-manual-sm-filas');
+  const fila = document.createElement('div');
+  fila.style.cssText = 'display:flex;gap:6px;align-items:center';
+  fila.innerHTML = `
+    <input type="text" placeholder="Nombre del material" class="cajas-manual-mat-nombre" style="flex:2;box-sizing:border-box;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px"/>
+    <input type="number" min="0" placeholder="Cant." class="cajas-manual-mat-cant" style="flex:1;box-sizing:border-box;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:12px"/>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--txt3);font-size:16px;padding:4px 8px;cursor:pointer">✕</button>
+  `;
+  cont.appendChild(fila);
+}
+
+function cajasManualCalcular(){
+  const canal = document.getElementById('cajas-manual-canal').value;
+  const malChica = Number(document.getElementById('cajas-manual-malchica').value)||0;
+  const malMediana = Number(document.getElementById('cajas-manual-malmediana').value)||0;
+  const malGrande = Number(document.getElementById('cajas-manual-malgrande').value)||0;
+  const esSantiago = canal==='Locales' && document.getElementById('cajas-manual-santiago').checked;
+  const esML = canal==='Distribuidor' && document.getElementById('cajas-manual-ml').checked;
+  const esSM = canal==='Grandes Tiendas' && document.getElementById('cajas-manual-sm').checked;
+
+  const counts = {malChica, malMediana, malGrande, mochila:0, mochilaML:0, bolsaCourier:0, bolsaCourierVV:0, azul:0};
+  const matSM = {};
+
+  if(esSM){
+    document.querySelectorAll('#cajas-manual-sm-filas > div').forEach(fila=>{
+      const nombre = fila.querySelector('.cajas-manual-mat-nombre').value.trim() || 'Sin nombre';
+      const cant = Number(fila.querySelector('.cajas-manual-mat-cant').value)||0;
+      if(cant>0) matSM[nombre] = (matSM[nombre]||0) + cant;
+    });
+  } else {
+    const noMaleta = Number(document.getElementById('cajas-manual-nomaleta').value)||0;
+    if(esSantiago) counts.azul += noMaleta;
+    else if(esML) counts.mochilaML += noMaleta;
+    else if(cajasGrupoCanal(canal)==='Online'){
+      if(canal==='Venta en verde') counts.bolsaCourierVV += noMaleta;
+      else counts.bolsaCourier += noMaleta;
+    }
+    else counts.mochila += noMaleta;
+  }
+
+  cajasRenderResultado(counts, 0, 1, null, matSM);
 }
 
 async function calcularCajas(){
