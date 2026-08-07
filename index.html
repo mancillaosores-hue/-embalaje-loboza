@@ -3336,7 +3336,7 @@ async function calcularCajas(){
   if(modo==='periodo'){
     cajasRenderResultadoPeriodo(counts, sinClasificar, entregasSet.size, porCanal, matSM);
   } else {
-    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porRuta:null, matSM);
+    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porRuta:null, matSM, porEntrega);
   }
 }
 
@@ -3442,10 +3442,12 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
   document.getElementById('cajas-resultado').innerHTML = html;
 }
 
-function cajasRenderDetalleEntregas(porRuta){
+function cajasRenderDetalleEntregas(porRuta, porEntrega){
   const cfg = CAJAS_CONFIG;
   const keys = Object.keys(porRuta);
   if(keys.length===0) return '';
+  window._cajasPorEntrega = porEntrega;
+  window._cajasPorRutaGrupos = {};
   // Ordena por fecha desc, luego por ruta
   keys.sort((a,b)=>{
     const ra = porRuta[a], rb = porRuta[b];
@@ -3453,10 +3455,11 @@ function cajasRenderDetalleEntregas(porRuta){
     return ra.ruta.localeCompare(rb.ruta);
   });
   let html = `<div class="card" style="margin-top:8px">
-    <div class="card-title" style="margin-bottom:10px">Detalle por ruta (${keys.length} grupo${keys.length===1?'':'s'})</div>
+    <div class="card-title" style="margin-bottom:10px">Detalle por ruta (${keys.length} grupo${keys.length===1?'':'s'}) <span style="font-weight:400;color:var(--txt3);font-size:10px">· toca un grupo para ver sus entregas</span></div>
     <div style="display:flex;flex-direction:column;gap:10px">`;
-  keys.forEach(key=>{
+  keys.forEach((key,idx)=>{
     const pr = porRuta[key];
+    window._cajasPorRutaGrupos[idx] = Array.from(pr.entregas);
     const partes = [];
     Object.keys(cfg).forEach(k=>{
       const uds = pr.counts[k]||0;
@@ -3469,16 +3472,58 @@ function cajasRenderDetalleEntregas(porRuta){
     if(smR.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smR.cajas)} Caja Mochila (sin mezclar)</span>`);
     const canalesTxt = Array.from(pr.canales).join(', ');
     html += `<div style="border-bottom:1px solid var(--border);padding-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--txt)">${pr.ruta}</div>
-      <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">${pr.fecha} · ${canalesTxt} · ${pr.entregas.size} entrega${pr.entregas.size===1?'':'s'}</div>
-      <div style="font-size:11px;color:var(--txt2);margin-top:4px">${partes.join(' · ')||'—'}</div>
+      <div onclick="cajasToggleGrupo(${idx})" style="cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:700;color:var(--txt)">${pr.ruta}</span>
+          <span id="cajas-grupo-caret-${idx}" style="font-size:10px;color:var(--txt3)">▾</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--txt3);margin-top:2px">${pr.fecha} · ${canalesTxt} · ${pr.entregas.size} entrega${pr.entregas.size===1?'':'s'}</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:4px">${partes.join(' · ')||'—'}</div>
+      </div>
+      <div id="cajas-grupo-detalle-${idx}" style="display:none;margin-top:8px;padding-left:10px;border-left:2px solid var(--border)"></div>
     </div>`;
   });
   html += '</div></div>';
   return html;
 }
 
-function cajasRenderResultado(counts, sinClasificar, nEntregas, porRuta, matSM){
+function cajasToggleGrupo(idx){
+  const el = document.getElementById(`cajas-grupo-detalle-${idx}`);
+  const caret = document.getElementById(`cajas-grupo-caret-${idx}`);
+  if(!el) return;
+  const abierto = el.style.display !== 'none';
+  if(abierto){ el.style.display = 'none'; caret.textContent = '▾'; return; }
+  caret.textContent = '▴';
+  if(!el.dataset.rendered){
+    const cfg = CAJAS_CONFIG;
+    const ids = window._cajasPorRutaGrupos[idx] || [];
+    const porEntrega = window._cajasPorEntrega || {};
+    let html = '';
+    ids.forEach(id=>{
+      const pe = porEntrega[id];
+      if(!pe) return;
+      const partes = [];
+      Object.keys(cfg).forEach(k=>{
+        const uds = pe.counts[k]||0;
+        if(uds===0) return;
+        const cajas = Math.ceil(uds/cfg[k].cap);
+        partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
+      });
+      if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${cajasFmt(pe.sinClasificar)} unid. sin clasificar</span>`);
+      const smE = cajasCalcularCajasSinMezcla(pe.matSM||{});
+      if(smE.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smE.cajas)} Caja Mochila (sin mezclar)</span>`);
+      html += `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:10.5px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente}</span></div>
+        <div style="font-size:10.5px;color:var(--txt2);margin-top:2px">${partes.join(' · ')||'—'}</div>
+      </div>`;
+    });
+    el.innerHTML = html || '<div style="font-size:10.5px;color:var(--txt3);padding:6px 0">Sin datos.</div>';
+    el.dataset.rendered = '1';
+  }
+  el.style.display = 'block';
+}
+
+function cajasRenderResultado(counts, sinClasificar, nEntregas, porRuta, matSM, porEntrega){
   const cfg = CAJAS_CONFIG;
   let totalCajas = 0;
   let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Resumen · ${cajasFmt(nEntregas)} entrega${nEntregas===1?'':'s'}</div>`;
@@ -3517,7 +3562,7 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porRuta, matSM){
     </div>`;
   }
 
-  if(porRuta) html += cajasRenderDetalleEntregas(porRuta);
+  if(porRuta) html += cajasRenderDetalleEntregas(porRuta, porEntrega);
 
   document.getElementById('cajas-resultado').innerHTML = html;
 }
