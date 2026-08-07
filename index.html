@@ -1473,17 +1473,6 @@ input[type="month"], input[type="week"]{
           <option value="Venta en verde">Venta en Verde</option>
         </select>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-          <div><label style="font-size:10px;color:var(--txt2)">Maleta Chica</label><input type="number" min="0" id="cajas-manual-malchica" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
-          <div><label style="font-size:10px;color:var(--txt2)">Maleta Mediana</label><input type="number" min="0" id="cajas-manual-malmediana" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
-          <div><label style="font-size:10px;color:var(--txt2)">Maleta Grande</label><input type="number" min="0" id="cajas-manual-malgrande" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
-        </div>
-
-        <div id="cajas-manual-nomaleta-wrap">
-          <label style="font-size:11px;color:var(--txt2)">Unidades No Maleta</label>
-          <input type="number" min="0" id="cajas-manual-nomaleta" placeholder="0" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/>
-        </div>
-
         <div id="cajas-manual-santiago-wrap" style="display:none;align-items:center;gap:8px;margin-bottom:10px">
           <input type="checkbox" id="cajas-manual-santiago" style="width:18px;height:18px"/>
           <label for="cajas-manual-santiago" style="font-size:12px;color:var(--txt2)">Es local de Santiago (usa Caja Azul, salvo Tumi Aeropuerto)</label>
@@ -1503,6 +1492,17 @@ input[type="month"], input[type="week"]{
             <div id="cajas-manual-sm-filas" style="display:flex;flex-direction:column;gap:6px"></div>
             <button class="btn-ghost" style="margin-top:8px;padding:7px 12px;font-size:12px" onclick="cajasManualAgregarMaterial()">+ Agregar material</button>
           </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div><label style="font-size:10px;color:var(--txt2)">Maleta Chica</label><input type="number" min="0" id="cajas-manual-malchica" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+          <div><label style="font-size:10px;color:var(--txt2)">Maleta Mediana</label><input type="number" min="0" id="cajas-manual-malmediana" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+          <div><label style="font-size:10px;color:var(--txt2)">Maleta Grande</label><input type="number" min="0" id="cajas-manual-malgrande" placeholder="0" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/></div>
+        </div>
+
+        <div id="cajas-manual-nomaleta-wrap">
+          <label style="font-size:11px;color:var(--txt2)">Unidades No Maleta</label>
+          <input type="number" min="0" id="cajas-manual-nomaleta" placeholder="0" style="width:100%;box-sizing:border-box;padding:9px 12px;margin:4px 0 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:13px"/>
         </div>
 
         <button class="btn-ghost" style="width:100%;box-sizing:border-box;padding:10px;background:#1E3A5F;color:#B5D4F4;border-color:#3B8FFF" onclick="cajasManualCalcular()">Calcular cajas</button>
