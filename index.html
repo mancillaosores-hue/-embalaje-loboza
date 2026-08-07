@@ -3353,7 +3353,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
   if(smGlobal.cajas>0){
     totalCajas += smGlobal.cajas;
     html += `<div style="background:#FF8FD118;border:1px solid #FF8FD144;border-radius:10px;padding:10px">
-      <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Mochila (sin mezclar material)</div>
+      <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Caja Mochila — sin mezclar material</div>
       <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(smGlobal.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${smGlobal.cajas===1?'':'s'}</span></div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(smGlobal.unidades)} unid. · ${Object.keys(matSM).length} material(es)</div>
     </div>`;
@@ -3420,7 +3420,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
         partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
       });
       const smC = cajasCalcularCajasSinMezcla(c.data.matSM||{});
-      if(smC.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smC.cajas)} Mochila (sin mezclar)</span>`);
+      if(smC.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smC.cajas)} Caja Mochila (sin mezclar)</span>`);
       html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
@@ -3453,7 +3453,7 @@ function cajasRenderDetalleEntregas(porEntrega){
     });
     if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${cajasFmt(pe.sinClasificar)} unid. sin clasificar</span>`);
     const smE = cajasCalcularCajasSinMezcla(pe.matSM||{});
-    if(smE.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smE.cajas)} Mochila (sin mezclar)</span>`);
+    if(smE.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smE.cajas)} Caja Mochila (sin mezclar)</span>`);
     html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente} · ${pe.fecha}</span></div>
       <div style="font-size:11px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
@@ -3483,7 +3483,7 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega, matS
   if(sm.cajas>0){
     totalCajas += sm.cajas;
     html += `<div style="background:#FF8FD118;border:1px solid #FF8FD144;border-radius:10px;padding:10px">
-      <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Mochila (sin mezclar material)</div>
+      <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Caja Mochila — sin mezclar material</div>
       <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(sm.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${sm.cajas===1?'':'s'}</span></div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(sm.unidades)} unid. · ${Object.keys(matSM).length} material(es)</div>
     </div>`;
