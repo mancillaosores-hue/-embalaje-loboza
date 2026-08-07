@@ -3135,6 +3135,22 @@ async function sbFetchAll(path){
 // ══════════════════════════════════════════════════════════
 // CALCULADORA DE CAJAS
 // ══════════════════════════════════════════════════════════
+// Clientes GGTT donde no se puede mezclar material en el conteo de cajas:
+// cada material_desc distinto se redondea a caja (cap 15) por separado, no como pool único.
+const CAJAS_CLIENTES_SIN_MEZCLA = [
+  'FALABELLA INTERNET', 'FALABELLA CD DVD', 'CD OMNICANAL',
+  'PARIS CENTRO DISTRIBUCION', 'REDEX', 'COMERCIALIZADORA S.A. CD',
+];
+function cajasEsSinMezcla(clientenombre){
+  const s = (clientenombre||'').toUpperCase();
+  return CAJAS_CLIENTES_SIN_MEZCLA.some(k=>s.includes(k));
+}
+function cajasCalcularCajasSinMezcla(matMap){
+  let cajas = 0, unidades = 0;
+  Object.values(matMap).forEach(u=>{ cajas += Math.ceil(u/15); unidades += u; });
+  return {cajas, unidades};
+}
+
 function cajasFmt(n){ return (n||0).toLocaleString('es-CL'); }
 
 const CAJAS_CONFIG = {
@@ -3142,6 +3158,7 @@ const CAJAS_CONFIG = {
   malMediana:{label:'Caja Maleta Mediana', cap:1,  color:'#2ECC8A'},
   malGrande: {label:'Caja Maleta Grande',  cap:1,  color:'#FFBA4D'},
   mochila:   {label:'Caja Mochila',        cap:15, color:'#9A88FF'},
+  mochilaML: {label:'Caja Mochila (Mercado Libre)', cap:10, color:'#FF8FD1'},
   azul:      {label:'Caja Azul (Local Santiago)', cap:10, color:'#60B0FF'},
 };
 
@@ -3151,7 +3168,8 @@ const CAJAS_SANTIAGO_KEYWORDS = [
   'egaña','egana','mall oeste','alto las condes','vespucio','tobalaba',
   'arauco maipu','parque arauco','sax estado','mall norte','paseo estacion',
   'mall sur','vivo maipu','costanera center','paseo quilin','irarrazabal',
-  'la fabrica','vivo la florida','los dominicos','aeropuerto','la dehesa',
+  'la fabrica','vivo la florida','los dominicos','la dehesa',
+  // Nota: 'aeropuerto' (Tumi Aeropuerto) se excluye a propósito — es Santiago pero no acepta Caja Azul, va con Mochila.
   'outlet buenaventura','outlet mall easton','vivo los toros',
   'christian gaete parra','ursula del carmen','samsonite chile s.a',
 ];
@@ -3276,18 +3294,19 @@ async function calcularCajas(){
     return;
   }
 
-  const counts = {malChica:0,malMediana:0,malGrande:0,mochila:0,azul:0};
+  const counts = {malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0};
   let sinClasificar = 0;
   const entregasSet = new Set();
-  const porEntrega = {}; // id_entrega -> {cliente, canal, counts:{}, sinClasificar}
-  const porCanal = {}; // canal -> {counts:{}, sinClasificar}
+  const porEntrega = {}; // id_entrega -> {cliente, canal, counts:{}, sinClasificar, matSM:{}}
+  const porCanal = {}; // canal -> {counts:{}, sinClasificar, matSM:{}}
+  const matSM = {}; // material_desc -> unidades, global (clientes sin mezcla)
 
   rows.forEach(r=>{
     entregasSet.add(r.id_entrega);
-    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,azul:0}, sinClasificar:0};
+    if(!porEntrega[r.id_entrega]) porEntrega[r.id_entrega] = {cliente:r.clientenombre||'—', canal:r.canal||'—', fecha:r.fecha_creada||'—', counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
     const pe = porEntrega[r.id_entrega];
     const canalKey = r.canal || 'Sin canal';
-    if(!porCanal[canalKey]) porCanal[canalKey] = {counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,azul:0}, sinClasificar:0};
+    if(!porCanal[canalKey]) porCanal[canalKey] = {counts:{malChica:0,malMediana:0,malGrande:0,mochila:0,mochilaML:0,azul:0}, sinClasificar:0, matSM:{}};
     const pc = porCanal[canalKey];
     const cant = Number(r.cantidad)||0;
     if(r.tipo_producto==='Maleta'){
@@ -3295,19 +3314,26 @@ async function calcularCajas(){
       if(tam){ counts[tam]+=cant; pe.counts[tam]+=cant; pc.counts[tam]+=cant; }
       else { sinClasificar+=cant; pe.sinClasificar+=cant; pc.sinClasificar+=cant; }
     } else if(r.tipo_producto==='No Maleta'){
-      if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; pc.counts.azul+=cant; }
+      const mat = r.material_desc || 'Sin descripción';
+      if(cajasEsSinMezcla(r.clientenombre)){
+        matSM[mat] = (matSM[mat]||0) + cant;
+        pe.matSM[mat] = (pe.matSM[mat]||0) + cant;
+        pc.matSM[mat] = (pc.matSM[mat]||0) + cant;
+      }
+      else if(r.canal==='Locales' && cajasEsSantiago(r.clientenombre)){ counts.azul+=cant; pe.counts.azul+=cant; pc.counts.azul+=cant; }
+      else if((r.clientenombre||'').toUpperCase().includes('MERCADO LIBRE CHILE')){ counts.mochilaML+=cant; pe.counts.mochilaML+=cant; pc.counts.mochilaML+=cant; }
       else { counts.mochila+=cant; pe.counts.mochila+=cant; pc.counts.mochila+=cant; }
     }
   });
 
   if(modo==='periodo'){
-    cajasRenderResultadoPeriodo(counts, sinClasificar, entregasSet.size, porCanal);
+    cajasRenderResultadoPeriodo(counts, sinClasificar, entregasSet.size, porCanal, matSM);
   } else {
-    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porEntrega:null);
+    cajasRenderResultado(counts, sinClasificar, entregasSet.size, modo==='ruta'?porEntrega:null, matSM);
   }
 }
 
-function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal){
+function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal, matSM){
   const cfg = CAJAS_CONFIG;
   let totalCajas = 0;
   let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Total del período · ${cajasFmt(nEntregas)} entrega${nEntregas===1?'':'s'}</div>`;
@@ -3323,12 +3349,22 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(uds)} unid.</div>
     </div>`;
   });
+  const smGlobal = matSM ? cajasCalcularCajasSinMezcla(matSM) : {cajas:0,unidades:0};
+  if(smGlobal.cajas>0){
+    totalCajas += smGlobal.cajas;
+    html += `<div style="background:#FF8FD118;border:1px solid #FF8FD144;border-radius:10px;padding:10px">
+      <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Mochila (sin mezclar material)</div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(smGlobal.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${smGlobal.cajas===1?'':'s'}</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(smGlobal.unidades)} unid. · ${Object.keys(matSM).length} material(es)</div>
+    </div>`;
+  }
   html += '</div>';
 
   let totalOffline = 0, totalOnline = 0, totalOtros = 0;
   Object.keys(porCanal).forEach(c=>{
     let t = 0;
     Object.keys(cfg).forEach(k=>{ t += Math.ceil((porCanal[c].counts[k]||0)/cfg[k].cap); });
+    t += cajasCalcularCajasSinMezcla(porCanal[c].matSM||{}).cajas;
     const grupo = cajasGrupoCanal(c);
     if(grupo==='Offline') totalOffline += t;
     else if(grupo==='Online') totalOnline += t;
@@ -3361,6 +3397,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
   const canales = Object.keys(porCanal).map(c=>{
     let t=0;
     Object.keys(cfg).forEach(k=>{ t += Math.ceil((porCanal[c].counts[k]||0)/cfg[k].cap); });
+    t += cajasCalcularCajasSinMezcla(porCanal[c].matSM||{}).cajas;
     return {canal:c, total:t, data:porCanal[c], grupo:cajasGrupoCanal(c)};
   }).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
 
@@ -3382,6 +3419,8 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal)
         const cajas = Math.ceil(uds/cfg[k].cap);
         partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
       });
+      const smC = cajasCalcularCajasSinMezcla(c.data.matSM||{});
+      if(smC.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smC.cajas)} Mochila (sin mezclar)</span>`);
       html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
@@ -3413,6 +3452,8 @@ function cajasRenderDetalleEntregas(porEntrega){
       partes.push(`<span style="color:${cfg[k].color}">${cajasFmt(cajas)} ${cfg[k].label}</span>`);
     });
     if(pe.sinClasificar>0) partes.push(`<span style="color:#FFBA4D">${cajasFmt(pe.sinClasificar)} unid. sin clasificar</span>`);
+    const smE = cajasCalcularCajasSinMezcla(pe.matSM||{});
+    if(smE.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smE.cajas)} Mochila (sin mezclar)</span>`);
     html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente} · ${pe.fecha}</span></div>
       <div style="font-size:11px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
@@ -3422,7 +3463,7 @@ function cajasRenderDetalleEntregas(porEntrega){
   return html;
 }
 
-function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega){
+function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega, matSM){
   const cfg = CAJAS_CONFIG;
   let totalCajas = 0;
   let html = `<div class="card"><div class="card-title" style="margin-bottom:10px">Resumen · ${cajasFmt(nEntregas)} entrega${nEntregas===1?'':'s'}</div>`;
@@ -3438,6 +3479,15 @@ function cajasRenderResultado(counts, sinClasificar, nEntregas, porEntrega){
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(uds)} unid.</div>
     </div>`;
   });
+  const sm = matSM ? cajasCalcularCajasSinMezcla(matSM) : {cajas:0,unidades:0};
+  if(sm.cajas>0){
+    totalCajas += sm.cajas;
+    html += `<div style="background:#FF8FD118;border:1px solid #FF8FD144;border-radius:10px;padding:10px">
+      <div style="font-size:9px;font-weight:700;color:#FF8FD1;text-transform:uppercase;letter-spacing:.04em">Mochila (sin mezclar material)</div>
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-top:4px">${cajasFmt(sm.cajas)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">caja${sm.cajas===1?'':'s'}</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${cajasFmt(sm.unidades)} unid. · ${Object.keys(matSM).length} material(es)</div>
+    </div>`;
+  }
   html += '</div>';
   html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:11px;color:var(--txt2)">Total estimado</span>
