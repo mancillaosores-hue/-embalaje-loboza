@@ -6312,8 +6312,8 @@ async function buildEmailHTML(d, compact){
   });
 
   // Mini gráfico HTML compacto — barras grises, solo HOY en color, ancho completo
+  // (se sigue usando para la Tendencia equipo, que sí mantiene el gráfico completo)
   function miniChart(vals, color, labels){
-    // 3 filas: fechas | valores | barras. bgcolor en td = compatible Gmail/Outlook.
     if(!vals||!vals.length) return '';
     const max=Math.max(...vals,1), n=vals.length;
     const BH=22, CW=Math.floor(100/n);
@@ -6337,6 +6337,40 @@ async function buildEmailHTML(d, compact){
     return '<table cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;border-top:1px solid #E2E8F0"><tr>'+rF+'</tr><tr>'+rV+'</tr><tr>'+rB+'</tr></table>';
   }
 
+  // Tabla compacta uniforme (canal y material) — ícono+nombre | 5 días con hoy destacado | flecha vs día anterior
+  function tablaCompacta(items){
+    if(!items.length) return '<div style="font-size:11px;color:#94A3B8;padding:8px 0">Sin datos activos.</div>';
+    const nDias = compact ? 1 : lblFechas.length;
+    const fechasVisibles = compact ? lblFechas.slice(-1) : lblFechas;
+    let head = '<tr bgcolor="#F1F5F9"><td style="padding:6px 8px;font-size:8.5px;font-weight:700;color:#64748B">Canal</td>';
+    fechasVisibles.forEach((f,i)=>{
+      const isLast = i===fechasVisibles.length-1;
+      head += '<td align="right" style="padding:6px 6px;font-size:8px;font-weight:700;color:#64748B'+(isLast?';background:#EAF2FF':'')+'">'+f+'</td>';
+    });
+    head += '<td style="padding:6px 6px;background:#EAF2FF"></td></tr>';
+
+    let rows = '';
+    items.forEach(({icon,name,color,serie})=>{
+      const visSerie = compact ? serie.slice(-1) : serie;
+      let cells = '';
+      visSerie.forEach((v,i)=>{
+        const isToday = i===visSerie.length-1;
+        let st = 'padding:6px 6px;font-size:10.5px;border-top:1px solid #F1F5F9;';
+        st += isToday ? ('font-weight:700;color:'+color+';background:#F7FAFF;') : 'color:#334155;';
+        cells += '<td align="right" style="'+st+'">'+(v>0?v.toLocaleString('es-CL'):'-')+'</td>';
+      });
+      const prev = serie.length>=2 ? serie[serie.length-2] : 0;
+      const today = serie[serie.length-1]||0;
+      const up = today>=prev;
+      const arrow = up?'&#9650;':'&#9660;';
+      const acolor = up?'#16A34A':'#DC2626';
+      rows += '<tr><td style="padding:6px 8px;border-top:1px solid #F1F5F9;font-size:10.5px;font-weight:700;color:#1E293B;white-space:nowrap">'+icon+' '+name+'</td>'
+        +cells
+        +'<td align="center" style="padding:6px 6px;border-top:1px solid #F1F5F9;background:#F7FAFF;font-size:9px;font-weight:700;color:'+acolor+'">'+arrow+'</td></tr>';
+    });
+    return '<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E4E9F1;table-layout:fixed">'+head+rows+'</table>';
+  }
+
   const totalSerie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.canal!=='Anulada'&&r.tipo!=='insumo').reduce((s,r)=>s+getRaw(r),0));
   const delta5=totalSerie5.length>=2?totalSerie5[totalSerie5.length-1]-totalSerie5[totalSerie5.length-2]:0;
   const deltaColor=delta5>=0?'#16A34A':'#DC2626';
@@ -6355,9 +6389,8 @@ async function buildEmailHTML(d, compact){
   // Semáforo dinámico
   const semCol = cumplPct>=95?'#16A34A':cumplPct>=85?'#D97706':'#DC2626';
   const semBg  = cumplPct>=95?'#F0FDF4':cumplPct>=85?'#FFFBEB':'#FEF2F2';
-  const semLbl = cumplPct>=95?'&#128994; Verde &mdash; En rango':cumplPct>=85?'&#128993; Amarillo &mdash; Atenci&oacute;n':'&#128308; Rojo &mdash; Bajo umbral';
+  const semLbl = cumplPct>=95?'&#128994; En rango':cumplPct>=85?'&#128993; Atenci&oacute;n':'&#128308; Bajo umbral';
 
-  // Barra cumplimiento (cap al 100% visual)
   const barW = Math.min(cumplPct,100);
 
   const CANALES_DEF=[
@@ -6370,86 +6403,83 @@ async function buildEmailHTML(d, compact){
     {key:'Venta en verde', color:'#65A30D',icon:'🌿'},
   ];
   const canalActivos=CANALES_DEF.filter(({key})=>(porCanal[key]||0)>0);
-  const maxUds=Math.max(...canalActivos.map(({key})=>porCanal[key]||0),1);
 
-  const TRB='border-top:1px solid #F1F5F9';
-  const canalFilasHTML=canalActivos.map(c=>{
-    const uds=porCanal[c.key]||0;
-    const pct=((uds/totalDia)*100).toFixed(1);
-    const filaHead='<tr style="'+TRB+'">'
-      +'<td style="padding:8px 4px 0 0;font-size:10px;font-weight:700;color:#334155">'+c.icon+' '+c.key+'&nbsp;&nbsp;<span style="font-size:14px;font-weight:900;color:#0F172A">'+uds.toLocaleString('es-CL')+'</span></td>'
-      +'<td align="right" style="padding:8px 0 0 12px;white-space:nowrap"><span style="font-size:10px;font-weight:700;color:#64748B;background:#F1F5F9;padding:2px 7px;border-radius:20px">'+pct+'%</span></td>'
-      +'</tr>';
-    if(compact) return filaHead;
-    const serie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.canal===c.key&&r.tipo!=='insumo').reduce((s,r)=>s+getRaw(r),0));
-    return filaHead
-      +'<tr><td colspan="2" height="6" style="height:6px;font-size:0"></td></tr>'
-      +'<tr><td colspan="2" style="padding:0 0 8px">'+miniChart(serie5,c.color,lblFechas)+'</td></tr>';
-  }).join('');
+  const canalItems = canalActivos.map(c=>({
+    icon:c.icon, name:c.key.toUpperCase(), color:c.color,
+    serie: ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.canal===c.key&&r.tipo!=='insumo').reduce((s,r)=>s+getRaw(r),0))
+  }));
+  const canalTablaHTML = tablaCompacta(canalItems);
 
   const tiposDef=[
     {k:'maleta',lbl:'Maletas',   c:'#2563EB',icn:'🧳'},
     {k:'linea', lbl:'No maletas',c:'#0891B2',icn:'🎒'},
     {k:'insumo',lbl:'Insumos',   c:'#7C3AED',icn:'📌'},
   ];
-  const maxTipo=Math.max(...tiposDef.map(({k})=>porTipo[k]||0),1);
-  const tipoFilasHTML=tiposDef.map(({k,lbl,c,icn})=>{
-    const uds=porTipo[k]||0;
-    if(!uds) return '';
-    const pct=((uds/totalDia)*100).toFixed(1);
-    const filaHead='<tr style="'+TRB+'">'
-      +'<td style="padding:8px 4px 0 0;font-size:10px;font-weight:700;color:#334155">'+icn+' '+lbl+'&nbsp;&nbsp;<span style="font-size:14px;font-weight:900;color:#0F172A">'+uds.toLocaleString('es-CL')+'</span></td>'
-      +'<td align="right" style="padding:8px 0 0 12px;white-space:nowrap"><span style="font-size:10px;font-weight:700;color:#64748B;background:#F1F5F9;padding:2px 7px;border-radius:20px">'+pct+'%</span></td>'
-      +'</tr>';
-    if(compact) return filaHead;
-    const serie5=ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.tipo===k&&r.canal!=='Anulada').reduce((s,r)=>s+getRaw(r),0));
-    return filaHead
-      +'<tr><td colspan="2" height="6" style="height:6px;font-size:0"></td></tr>'
-      +'<tr><td colspan="2" style="padding:0 0 8px">'+miniChart(serie5,c,lblFechas)+'</td></tr>';
-  }).join('');
+  const tipoActivos = tiposDef.filter(({k})=>(porTipo[k]||0)>0);
+  const tipoItems = tipoActivos.map(({k,lbl,c,icn})=>({
+    icon:icn, name:lbl.toUpperCase(), color:c,
+    serie: ultimas5.map(f=>(rawData||[]).filter(r=>r.fecha===f&&r.tipo===k&&r.canal!=='Anulada').reduce((s,r)=>s+getRaw(r),0))
+  }));
+  const tipoTablaHTML = tablaCompacta(tipoItems);
 
   const trendChart=compact?'':miniChart(totalSerie5,'#3B8FFF',lblFechas);
 
   const planEmailSem = planEmail ? buildBloqueSemanalemail(planEmail) : '';
   const _raw = `
-<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#EEF2F7" style="background:#EEF2F7">
+<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#E9EEF5" style="background:#E9EEF5">
 <tr><td align="center" style="padding:20px 10px">
-<table cellpadding="0" cellspacing="0" width="600">
+<table cellpadding="0" cellspacing="0" width="640" style="width:640px;max-width:640px;background:#FFFFFF">
 
   <!-- HEADER -->
-  <tr><td bgcolor="#0D1B2E" style="background:#0D1B2E;border-radius:10px 10px 0 0">
+  <tr><td bgcolor="#0D1B2E" style="background:#0D1B2E;border-top:3px solid #3B8FFF">
     <table cellpadding="0" cellspacing="0" width="100%"><tr>
-      <td valign="middle" style="padding:18px 22px">
-        <div style="font-size:22px;font-weight:900;color:#FFF;letter-spacing:3px">SAMSONITE</div>
-        <div style="font-size:9px;color:#4D7AAA;margin-top:3px;text-transform:uppercase">CD Lo Boza &middot; Embalaje</div>
+      <td valign="top" style="padding:24px 26px 20px">
+        <div style="font-size:19px;font-weight:900;color:#FFF;letter-spacing:3px">SAMSONITE</div>
+        <div style="font-size:10px;color:#7C9FCB;margin-top:3px;text-transform:uppercase;letter-spacing:1px">CD Lo Boza &middot; Embalaje</div>
       </td>
-      <td valign="middle" align="right" style="padding:18px 22px">
-        <table cellpadding="8" cellspacing="0" bgcolor="#0A2040" style="background:#0A2040;border:1px solid #1E3A5F"><tr><td>
-          <div style="font-size:9px;font-weight:700;color:#4D7AAA;text-transform:uppercase">Reporte diario</div>
-          <div style="font-size:12px;color:#E8F1FF;font-weight:600;margin-top:3px">${fdCap}</div>
-        </td></tr></table>
+      <td valign="top" align="right" style="padding:24px 26px 20px">
+        <div style="font-size:9px;color:#5D82AD;text-transform:uppercase;letter-spacing:1px">Reporte diario</div>
+        <div style="font-size:13px;color:#EAF2FF;font-weight:700;margin-top:2px">${fdCap}</div>
       </td>
     </tr></table>
   </td></tr>
 
+  <!-- HERO -->
+  <tr><td bgcolor="#0A1628" style="background:#0A1628;padding:22px 26px 24px">
+    <div style="font-size:10px;color:#5D82AD;text-transform:uppercase;letter-spacing:1px">Producci&oacute;n de hoy</div>
+    <table cellpadding="0" cellspacing="0" style="margin-top:6px"><tr>
+      <td valign="bottom"><span style="font-size:40px;font-weight:700;color:#FFF">${prodReal.toLocaleString('es-CL')}</span></td>
+      <td valign="bottom" style="padding-left:10px;padding-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:${semCol==='#16A34A'?'#4FE3A6':semCol==='#D97706'?'#FFCB7A':'#FF9B9B'};background:#0F2138;padding:5px 10px">${semLbl} &middot; ${cumplPct}%</span>
+      </td>
+    </tr></table>
+    <div style="font-size:11px;color:#8AAED4;margin-top:8px">Offline ${offline.toLocaleString('es-CL')} &middot; Online ${online.toLocaleString('es-CL')} &middot; ${dotacionKpi} operarias activas</div>
+    <table cellpadding="0" cellspacing="0" width="100%" style="margin-top:14px"><tr>
+      <td width="${barW}%" bgcolor="#3B8FFF" height="5" style="line-height:5px;font-size:1px">&nbsp;</td>
+      <td width="${100-barW}%" bgcolor="#16283F" height="5" style="line-height:5px;font-size:1px">&nbsp;</td>
+    </tr></table>
+    <div style="font-size:9px;color:#5D82AD;margin-top:5px">Capacidad: ${capTotal.toLocaleString('es-CL')} uds</div>
+  </td></tr>
+
   <!-- INTRO -->
-  <tr><td bgcolor="#FFF" style="background:#FFF;padding:16px 22px;border-bottom:1px solid #E2E8F0">
-    <div style="font-size:14px;font-weight:700;color:#0F172A;margin-bottom:8px">Hola equipo,</div>
-    <div style="font-size:12px;color:#475569;line-height:1.6;margin-bottom:8px">
-      Adjunto el resumen de producci&oacute;n del d&iacute;a y la evoluci&oacute;n de los &uacute;ltimos ${ultimas5.length} d&iacute;as.<br>
-      M&aacute;s all&aacute; de los n&uacute;meros, lo importante es la tendencia: &#128200; c&oacute;mo estamos avanzando y d&oacute;nde podemos mejorar.
+  <tr><td style="padding:22px 26px;border-bottom:1px solid #E4E9F1">
+    <div style="font-size:15px;font-weight:700;color:#0F172A;margin-bottom:8px">Hola equipo,</div>
+    <div style="font-size:12.5px;color:#475569;line-height:1.65;margin-bottom:14px">
+      Adjunto el resumen de producci&oacute;n del d&iacute;a y la evoluci&oacute;n de los &uacute;ltimos ${ultimas5.length} d&iacute;as.
+      M&aacute;s all&aacute; de los n&uacute;meros, lo importante es la tendencia: c&oacute;mo estamos avanzando y d&oacute;nde podemos mejorar.
     </div>
-    <div style="font-size:12px;color:#475569;margin-bottom:4px">Sigamos enfocados en:</div>
-    <table cellpadding="0" cellspacing="0" style="margin-left:8px">
-      <tr><td style="padding:2px 0;font-size:12px;color:#0F172A">&#9679;&nbsp; <strong>Precisi&oacute;n</strong></td></tr>
-      <tr><td style="padding:2px 0;font-size:12px;color:#0F172A">&#9679;&nbsp; <strong>Performance</strong></td></tr>
-      <tr><td style="padding:2px 0;font-size:12px;color:#0F172A">&#9679;&nbsp; <strong>Trabajo en equipo</strong></td></tr>
-    </table>
+    <span style="font-size:11px;font-weight:700;color:#1E6FD9;background:#EAF2FF;padding:6px 12px">&#9679; Precisi&oacute;n</span>&nbsp;
+    <span style="font-size:11px;font-weight:700;color:#1E6FD9;background:#EAF2FF;padding:6px 12px">&#9679; Performance</span>&nbsp;
+    <span style="font-size:11px;font-weight:700;color:#1E6FD9;background:#EAF2FF;padding:6px 12px">&#9679; Trabajo en equipo</span>
   </td></tr>
 
   <!-- TOP 3 OPERARIAS -->
-  <tr><td bgcolor="#0D1B2E" style="background:#0D1B2E;padding:16px 22px">
-    <div style="font-size:10px;font-weight:700;color:#4D7AAA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">&#127942; Top 3 operarias del d&iacute;a</div>
+  <tr><td bgcolor="#F7F9FC" style="background:#F7F9FC;padding:22px 26px;border-bottom:1px solid #E4E9F1">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Top 3 operarias del d&iacute;a</span></td>
+    </tr></table>
+    <div style="margin-top:14px">
     ${(function(){
       var rankMap={};
       (rawData||[]).forEach(function(r){
@@ -6458,122 +6488,111 @@ async function buildEmailHTML(d, compact){
       });
       var ranking=Object.keys(rankMap).map(function(u){return[u,rankMap[u]];}).sort(function(a,b){return b[1]-a[1];});
       var top3=ranking.slice(0,3);
-      if(!top3.length) return '<div style="color:#4D7AAA;font-size:11px;text-align:center">Sin datos de ranking</div>';
+      if(!top3.length) return '<div style="color:#94A3B8;font-size:11px;text-align:center">Sin datos de ranking</div>';
       var cfgs=[
-        {pos:'1&deg;',emoji:'&#129351;',border:'#C0C0C0',bg:'linear-gradient(180deg,#1a1a1a,#111)',col:'#E8E8E8',fEmoji:'30',fPos:'11',fNom:'13',fNum:'28'},
-        {pos:'2&deg;',emoji:'&#129352;',border:'#C8A800',bg:'linear-gradient(180deg,#2a1f00,#1a1400)',col:'#C8A800',fEmoji:'24',fPos:'10',fNom:'12',fNum:'22'},
-        {pos:'3&deg;',emoji:'&#129353;',border:'#CD7F32',bg:'linear-gradient(180deg,#1a0d00,#110900)',col:'#CD7F32',fEmoji:'20',fPos:'9',fNom:'11',fNum:'18'}
+        {pos:'1&deg;',emoji:'&#129351;',border:'#F0DFA0',bg:'#FFFBEF',col:'#B4880E',fEmoji:'26',fPos:'9',fNom:'11.5',fNum:'22'},
+        {pos:'2&deg;',emoji:'&#129352;',border:'#E4E9F1',bg:'#F8FAFC',col:'#64748B',fEmoji:'20',fPos:'9',fNom:'11.5',fNum:'17'},
+        {pos:'3&deg;',emoji:'&#129353;',border:'#F3DCC4',bg:'#FFF7F1',col:'#B45309',fEmoji:'20',fPos:'9',fNom:'11.5',fNum:'17'}
       ];
-      var order=[1,0,2]; // visual: izq=2°, centro=1°, der=3°
+      var order=[1,0,2];
       var html='<table cellpadding="0" cellspacing="0" width="100%"><tr>';
       order.forEach(function(vi){
-        if(vi>=top3.length){html+='<td width="33%" style="padding:0 4px"></td>';return;}
+        if(vi>=top3.length){html+='<td width="32%" style="padding:0 4px"></td>';return;}
         var uid=top3[vi][0],val=top3[vi][1],nom=DB[uid]||uid;
-        var cfg=cfgs[vi]; // cfgs[0]=gold(1°), cfgs[1]=silver(2°), cfgs[2]=bronze(3°)
-        var padTd=vi===0?'8':'12'; // 1° con menos padding de tabla para compensar tamaño mayor
-        html+='<td width="33%" align="center" valign="bottom" style="padding:0 4px">'
-          +'<table cellpadding="'+padTd+'" cellspacing="0" width="100%" style="background:'+cfg.bg+';border:2px solid '+cfg.border+';border-radius:10px"><tr><td align="center">'
-          +'<div style="font-size:'+cfg.fEmoji+'px;margin-bottom:3px">'+cfg.emoji+'</div>'
-          +'<div style="font-size:'+cfg.fPos+'px;font-weight:700;color:'+cfg.col+';margin-bottom:5px">'+cfg.pos+' LUGAR</div>'
-          +'<div style="font-size:'+cfg.fNom+'px;font-weight:700;color:#FFF;margin-bottom:8px">'+nom+'</div>'
-          +'<div style="font-size:'+cfg.fNum+'px;font-weight:900;color:'+cfg.col+';line-height:1">'+val.toLocaleString('es-CL')+'</div>'
-          +'<div style="font-size:10px;color:#8AAED4;margin-top:3px">unidades</div>'
+        var cfg=cfgs[vi];
+        var padTop=vi===0?'18':'14';
+        html+='<td width="32%" align="center" valign="bottom" style="padding:0 3px">'
+          +'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="'+cfg.bg+'" style="background:'+cfg.bg+';border:1px solid '+cfg.border+'"><tr><td align="center" style="padding:'+padTop+'px 6px 14px">'
+          +'<div style="font-size:'+cfg.fEmoji+'px;margin-bottom:4px">'+cfg.emoji+'</div>'
+          +'<div style="font-size:'+cfg.fPos+'px;font-weight:700;color:'+cfg.col+';text-transform:uppercase;margin-bottom:6px">'+cfg.pos+' LUGAR</div>'
+          +'<div style="font-size:'+cfg.fNom+'px;font-weight:700;color:#1E293B;margin-bottom:6px">'+nom+'</div>'
+          +'<div style="font-size:'+cfg.fNum+'px;font-weight:700;color:'+(vi===0?cfg.col:'#0F172A')+';line-height:1">'+val.toLocaleString('es-CL')+'</div>'
+          +'<div style="font-size:8.5px;color:#94A3B8;margin-top:3px;text-transform:uppercase">unidades</div>'
           +'</td></tr></table></td>';
       });
       return html+'</tr></table>';
     })()}
+    </div>
   </td></tr>
 
   <!-- CAPACIDAD VS PRODUCCIÓN -->
-  <tr><td bgcolor="#F1F5F9" style="background:#F1F5F9;padding:14px 22px 4px">
-    <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em">&#128200; Capacidad vs Producci&oacute;n</div>
-  </td></tr>
-  <tr><td bgcolor="#F1F5F9" style="background:#F1F5F9;padding:0 14px 4px">
-    <table cellpadding="0" cellspacing="0" width="100%"><tr>
-      <td width="20%" align="center" style="padding:3px">
-        <table cellpadding="10" cellspacing="0" width="100%" bgcolor="#0D1B2E" style="background:#0D1B2E;border:1px solid #1E3A5F;border-radius:10px"><tr><td align="center">
-          <div style="font-size:9px;font-weight:700;color:#8AAED4;text-transform:uppercase;margin-bottom:4px">Operarias</div>
-          <div style="font-size:22px">&#128101;</div>
-          <div style="font-size:22px;font-weight:900;color:#FFF;line-height:1">${dotacionKpi}</div>
-          <div style="font-size:9px;color:#4D7AAA;margin-top:2px">personas</div>
-        </td></tr></table>
-      </td>
-      <td width="20%" align="center" style="padding:3px">
-        <table cellpadding="10" cellspacing="0" width="100%" bgcolor="#0D1B2E" style="background:#0D1B2E;border:1px solid #1E3A5F;border-radius:10px"><tr><td align="center">
-          <div style="font-size:9px;font-weight:700;color:#8AAED4;text-transform:uppercase;margin-bottom:4px">Capacidad</div>
-          <div style="font-size:22px">&#127919;</div>
-          <div style="font-size:18px;font-weight:900;color:#3B8FFF;line-height:1">${capTotal.toLocaleString('es-CL')}</div>
-          <div style="font-size:9px;color:#4D7AAA;margin-top:2px">unidades</div>
-        </td></tr></table>
-      </td>
-      <td width="20%" align="center" style="padding:3px">
-        <table cellpadding="10" cellspacing="0" width="100%" bgcolor="#0D1B2E" style="background:#0D1B2E;border:1px solid #1E3A5F;border-radius:10px"><tr><td align="center">
-          <div style="font-size:9px;font-weight:700;color:#8AAED4;text-transform:uppercase;margin-bottom:4px">Producci&oacute;n</div>
-          <div style="font-size:22px">&#128230;</div>
-          <div style="font-size:18px;font-weight:900;color:${semCol};line-height:1">${prodReal.toLocaleString('es-CL')}</div>
-          <div style="font-size:9px;color:#4D7AAA;margin-top:2px">offline: ${offline.toLocaleString('es-CL')} &middot; online: ${online.toLocaleString('es-CL')}</div>
-        </td></tr></table>
-      </td>
-      <td width="20%" align="center" style="padding:3px">
-        <table cellpadding="10" cellspacing="0" width="100%" bgcolor="#0D1B2E" style="background:#0D1B2E;border:1px solid #1E3A5F;border-radius:10px"><tr><td align="center">
-          <div style="font-size:9px;font-weight:700;color:#8AAED4;text-transform:uppercase;margin-bottom:4px">Prom./persona</div>
-          <div style="font-size:22px">&#129489;</div>
-          <div style="font-size:18px;font-weight:900;color:#FFB84D;line-height:1">${dotacionKpi>0?Math.round(prodReal/dotacionKpi).toLocaleString('es-CL'):0}</div>
-          <div style="font-size:9px;color:#4D7AAA;margin-top:2px">uds / persona</div>
-        </td></tr></table>
-      </td>
-      <td width="20%" align="center" style="padding:3px">
-        <table cellpadding="10" cellspacing="0" width="100%" bgcolor="${semBg}" style="background:${semBg};border:2px solid ${semCol};border-radius:10px"><tr><td align="center">
-          <div style="font-size:9px;font-weight:700;color:${semCol};text-transform:uppercase;margin-bottom:4px">Uso cap.</div>
-          <div style="font-size:22px">&#9201;</div>
-          <div style="font-size:22px;font-weight:900;color:${semCol};line-height:1">${cumplPct}%</div>
-          <div style="font-size:9px;color:${semCol};margin-top:2px">de capacidad</div>
-        </td></tr></table>
+  <tr><td bgcolor="#F7F9FC" style="background:#F7F9FC;padding:22px 26px;border-bottom:1px solid #E4E9F1">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Capacidad vs producci&oacute;n</span></td>
+    </tr></table>
+    <table cellpadding="0" cellspacing="0" width="100%" style="margin-top:14px"><tr>
+      <td width="19%" align="center" bgcolor="#F1F5F9" style="border:1px solid #E2E8F0;padding:10px 3px">
+        <div style="font-size:14px">&#128101;</div>
+        <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">Operarias</div>
+        <div style="font-size:15px;font-weight:700;color:#0F172A">${dotacionKpi}</div>
+      </td><td width="1%">&nbsp;</td>
+      <td width="19%" align="center" bgcolor="#F1F5F9" style="border:1px solid #E2E8F0;padding:10px 3px">
+        <div style="font-size:14px">&#127919;</div>
+        <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">Capacidad</div>
+        <div style="font-size:15px;font-weight:700;color:#0F172A">${capTotal.toLocaleString('es-CL')}</div>
+      </td><td width="1%">&nbsp;</td>
+      <td width="19%" align="center" bgcolor="#F1F5F9" style="border:1px solid #E2E8F0;padding:10px 3px">
+        <div style="font-size:14px">&#128230;</div>
+        <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">Producci&oacute;n</div>
+        <div style="font-size:15px;font-weight:700;color:#0F172A">${prodReal.toLocaleString('es-CL')}</div>
+      </td><td width="1%">&nbsp;</td>
+      <td width="19%" align="center" bgcolor="#F1F5F9" style="border:1px solid #E2E8F0;padding:10px 3px">
+        <div style="font-size:14px">&#129489;</div>
+        <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">Prom/persona</div>
+        <div style="font-size:15px;font-weight:700;color:#0F172A">${dotacionKpi>0?Math.round(prodReal/dotacionKpi).toLocaleString('es-CL'):0}</div>
+      </td><td width="1%">&nbsp;</td>
+      <td width="19%" align="center" bgcolor="${semBg}" style="border:1px solid ${semCol};padding:10px 3px">
+        <div style="font-size:14px">&#9201;</div>
+        <div style="font-size:7.5px;font-weight:700;color:${semCol};text-transform:uppercase;margin:4px 0 3px">Uso cap.</div>
+        <div style="font-size:15px;font-weight:700;color:${semCol}">${cumplPct}%</div>
       </td>
     </tr></table>
   </td></tr>
-  <tr><td bgcolor="#F1F5F9" style="padding:0 22px 10px"><div style="border-top:2px solid #CBD5E1"></div></td></tr>
 
-  <!-- 5. TENDENCIA EQUIPO 5 DIAS -->
-  <tr><td bgcolor="#FFF" style="background:#FFF;padding:14px 22px;border-top:2px solid #E2E8F0">
-    <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">
-      &#128200; Tendencia equipo &middot; &uacute;ltimos 5 d&iacute;as
-      <span style="color:${deltaColor};font-weight:800">&nbsp;${deltaSign}${Math.abs(delta5).toLocaleString('es-CL')} vs ayer</span>
-    </div>
-    ${trendChart}
+  <!-- TENDENCIA EQUIPO -->
+  <tr><td style="padding:22px 26px;border-bottom:1px solid #E4E9F1">
+    <table cellpadding="0" cellspacing="0" width="100%"><tr>
+      <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Tendencia equipo &middot; &uacute;ltimos ${ultimas5.length} d&iacute;as</span></td>
+      <td align="right"><span style="font-size:11px;font-weight:700;color:${deltaColor}">${deltaSign}${Math.abs(delta5).toLocaleString('es-CL')} vs ayer</span></td>
+    </tr></table>
+    <div style="margin-top:10px">${trendChart}</div>
   </td></tr>
 
-  <!-- 6. TENDENCIA POR CANAL -->
-  <tr><td bgcolor="#FFF" style="background:#FFF;padding:0 22px 14px;border-bottom:1px solid #E2E8F0">
-    <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">&#128230; Producci&oacute;n por canal &middot; tendencia 5 d&iacute;as</div>
-    <table cellpadding="0" cellspacing="0" width="100%">${canalFilasHTML}</table>
+  <!-- POR CANAL -->
+  <tr><td style="padding:22px 26px;border-bottom:1px solid #E4E9F1">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Producci&oacute;n por canal &middot; &uacute;ltimos ${compact?1:ultimas5.length} d&iacute;a${compact?'':'s'}</span></td>
+    </tr></table>
+    <div style="margin-top:12px">${canalTablaHTML}</div>
   </td></tr>
 
-  <!-- 7. TENDENCIA POR MATERIAL -->
-  <tr><td bgcolor="#FFF" style="background:#FFF;padding:14px 22px;border-bottom:1px solid #E2E8F0">
-    <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">&#129518; Mix de materiales &middot; tendencia 5 d&iacute;as</div>
-    <table cellpadding="0" cellspacing="0" width="100%">${tipoFilasHTML}</table>
+  <!-- MIX MATERIAL -->
+  <tr><td style="padding:22px 26px;border-bottom:1px solid #E4E9F1">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Mix de materiales &middot; &uacute;ltimos ${compact?1:ultimas5.length} d&iacute;a${compact?'':'s'}</span></td>
+    </tr></table>
+    <div style="margin-top:12px">${tipoTablaHTML}</div>
   </td></tr>
 
-  <!-- 8. PLAN SEMANAL -->
+  <!-- PLAN SEMANAL -->
   ${planEmailSem}
 
   <!-- FIRMA -->
-  <tr><td bgcolor="#F8FAFC" style="background:#F8FAFC;padding:16px 22px;border-top:2px solid #E2E8F0;border-bottom:1px solid #E2E8F0">
+  <tr><td bgcolor="#F8FAFC" style="background:#F8FAFC;padding:20px 26px">
     <div style="font-size:13px;font-weight:700;color:#0F172A">Diego Mancilla</div>
     <div style="font-size:11px;color:#64748B;margin-top:2px">Supervisor de Operaciones Log&iacute;sticas</div>
     <div style="font-size:10px;color:#94A3B8;margin-top:1px">Samsonite Chile &middot; CD Lo Boza</div>
   </td></tr>
 
   <!-- FOOTER -->
-  <tr><td bgcolor="#0D1B2E" style="background:#0D1B2E;border-radius:0 0 10px 10px;padding:12px 22px">
+  <tr><td bgcolor="#0D1B2E" style="background:#0D1B2E;padding:14px 26px">
     <table cellpadding="0" cellspacing="0" width="100%"><tr>
-      <td valign="middle">
-        <div style="font-size:11px;color:#4D7AAA">Reporte generado autom&aacute;ticamente · CD Lo Boza</div>
-      </td>
-      <td valign="middle" align="right">
-        <div style="font-size:10px;color:#4D7AAA">&#127937; &iexcl;Buen trabajo equipo!</div>
-      </td>
+      <td valign="middle"><span style="font-size:10.5px;color:#5D82AD">Reporte generado autom&aacute;ticamente &middot; CD Lo Boza</span></td>
+      <td valign="middle" align="right"><span style="font-size:10.5px;color:#5D82AD">&#127942; &iexcl;Buen trabajo equipo!</span></td>
     </tr></table>
   </td></tr>
 
