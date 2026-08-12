@@ -6220,10 +6220,9 @@ function buildBloqueSemanalemail(p){
   const bw = Math.min(Math.round(pctAv),100);
   const bwE = Math.min(Math.round(pctEsp),100);
 
-  // Arrastre S-1 / consumido esta semana — mismos datos que la tarjeta "Estado Operacional"
-  const arrastreInicial = (typeof _planCache!=='undefined' && _planCache.arrastreInicial) || 0;
-  const backlogPC = (typeof _planCache!=='undefined' && _planCache.backlogPorCanal) || {};
-  const arrastreConsumido = Object.keys(backlogPC).reduce((s,c)=>s+(backlogPC[c].consumido||0),0);
+  // Arrastre S-1 / consumido esta semana — calculado por fetchRptDatos, propio y autosuficiente
+  const arrastreInicial = p.arrastreInicial || 0;
+  const arrastreConsumido = p.arrastreConsumido || 0;
   const embDeCargaActual = Math.max(totalProd - arrastreConsumido, 0);
   const pctAbsorcion = arrastreInicial>0 ? Math.round(arrastreConsumido/arrastreInicial*100) : 0;
   const pctEmbCarg = carg>0 ? Math.round(embDeCargaActual/carg*100) : 0;
@@ -6372,21 +6371,18 @@ async function buildEmailHTML(d, compact){
   // Tabla compacta uniforme (canal y material) — ícono+nombre | 5 días con hoy destacado | flecha vs día anterior
   function tablaCompacta(items){
     if(!items.length) return '<div style="font-size:11px;color:#94A3B8;padding:8px 0">Sin datos activos.</div>';
-    const nDias = compact ? 1 : lblFechas.length;
-    const fechasVisibles = compact ? lblFechas.slice(-1) : lblFechas;
     let head = '<tr bgcolor="#F1F5F9"><td style="padding:6px 8px;font-size:8.5px;font-weight:700;color:#64748B">Canal</td>';
-    fechasVisibles.forEach((f,i)=>{
-      const isLast = i===fechasVisibles.length-1;
+    lblFechas.forEach((f,i)=>{
+      const isLast = i===lblFechas.length-1;
       head += '<td align="right" style="padding:6px 6px;font-size:8px;font-weight:700;color:#64748B'+(isLast?';background:#EAF2FF':'')+'">'+f+'</td>';
     });
     head += '<td style="padding:6px 6px;background:#EAF2FF"></td></tr>';
 
     let rows = '';
     items.forEach(({icon,name,color,serie})=>{
-      const visSerie = compact ? serie.slice(-1) : serie;
       let cells = '';
-      visSerie.forEach((v,i)=>{
-        const isToday = i===visSerie.length-1;
+      serie.forEach((v,i)=>{
+        const isToday = i===serie.length-1;
         let st = 'padding:6px 6px;font-size:10.5px;border-top:1px solid #F1F5F9;';
         st += isToday ? ('font-weight:700;color:'+color+';background:#F7FAFF;') : 'color:#334155;';
         cells += '<td align="right" style="'+st+'">'+(v>0?v.toLocaleString('es-CL'):'-')+'</td>';
@@ -6485,7 +6481,7 @@ async function buildEmailHTML(d, compact){
   }));
   const tipoTablaHTML = compact ? tablaCompacta(tipoItems) : gridConGraficos(tipoItems);
 
-  const trendChart=compact?'':miniChart(totalSerie5,'#3B8FFF',lblFechas);
+  const trendChart=miniChart(totalSerie5,'#3B8FFF',lblFechas);
 
   const planEmailSem = planEmail ? buildBloqueSemanalemail(planEmail) : '';
   const _raw = `
@@ -6627,7 +6623,7 @@ async function buildEmailHTML(d, compact){
   <tr><td style="padding:22px 26px;border-bottom:1px solid #E4E9F1">
     <table cellpadding="0" cellspacing="0"><tr>
       <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
-      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Producci&oacute;n por canal &middot; &uacute;ltimos ${compact?1:ultimas5.length} d&iacute;a${compact?'':'s'}</span></td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Producci&oacute;n por canal &middot; &uacute;ltimos ${ultimas5.length} d&iacute;as</span></td>
     </tr></table>
     <div style="margin-top:12px">${canalTablaHTML}</div>
   </td></tr>
@@ -6636,7 +6632,7 @@ async function buildEmailHTML(d, compact){
   <tr><td style="padding:22px 26px;border-bottom:1px solid #E4E9F1">
     <table cellpadding="0" cellspacing="0"><tr>
       <td width="3" bgcolor="#3B8FFF" style="line-height:13px;font-size:1px">&nbsp;</td>
-      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Mix de materiales &middot; &uacute;ltimos ${compact?1:ultimas5.length} d&iacute;a${compact?'':'s'}</span></td>
+      <td style="padding-left:8px"><span style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px">Mix de materiales &middot; &uacute;ltimos ${ultimas5.length} d&iacute;as</span></td>
     </tr></table>
     <div style="margin-top:12px">${tipoTablaHTML}</div>
   </td></tr>
@@ -8675,11 +8671,79 @@ async function fetchRptDatos(fechaParam) {
           .reduce((s,r)=>s+Number(r.cantidad||0),0);
       }catch(e){ console.warn('cargado email error:',e.message); }
 
+      // ── Arrastre S-1: cálculo propio y autosuficiente (no depende de _planCache/otra pantalla) ──
+      let arrastreInicialW = 0, arrastreConsumidoW = 0;
+      try{
+        const FECHA_INICIO_CARGA_EMAIL = '2026-06-01';
+        if(fIniW > FECHA_INICIO_CARGA_EMAIL){
+          const _lunAntW = new Date(lunRpt); _lunAntW.setDate(_lunAntW.getDate()-7);
+          const _domAntW = new Date(lunRpt); _domAntW.setDate(_domAntW.getDate()-1);
+          const fLunAntW = fechaLocalStr(_lunAntW);
+          const fDomAntW = fechaLocalStr(_domAntW);
+
+          const _bkResW = await Promise.all([
+            sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAntW+'&fecha_creada=lte.'+fDomAntW+'&order=id_entrega.asc'),
+            sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAntW+'&fecha=lte.'+fDomAntW+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc'),
+            sbFetchAll('produccion?select=entrega,cantidad,usuario,fecha,canal&fecha=gte.'+fIniW+'&fecha=lte.'+fFinW+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')
+          ]);
+          const entregasAntW = _bkResW[0]||[];
+          const prodSemAntW  = _bkResW[1]||[];
+          const prodEstaSemW = _bkResW[2]||[];
+
+          const _excCanalW = {anulada:1, regula:1, bts:1};
+          const _excEstadoW = {cerrada:1, 'enviado a sap':1};
+          const mapEntregasW = {};
+          entregasAntW.forEach(r=>{
+            const id  = (r.id_entrega||'').toString().trim();
+            const qty = Number(r.cantidad)||0;
+            if(!id || !qty) return;
+            if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return;
+            if(_excCanalW[(r.canal||'').toLowerCase().trim()]) return;
+            if(_excEstadoW[(r.estado||'').toLowerCase().trim()]) return;
+            const _rutaUpW = (r.ruta||'').toUpperCase().trim();
+            if(_rutaUpW.includes('SSTT') || _rutaUpW.includes('REGULA')) return;
+            const _cliExcVEVW = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
+            if(_cliExcVEVW.indexOf((r.clientenombre||'').trim().toUpperCase()) !== -1 && (r.canal||'').toLowerCase().trim() === 'venta en verde') return;
+            if(!mapEntregasW[id]) mapEntregasW[id] = { total_cargado:0 };
+            mapEntregasW[id].total_cargado += qty;
+          });
+
+          const embalEnSAntW = {};
+          prodSemAntW.forEach(r=>{
+            if(DB[r.usuario]===undefined) return;
+            const id = (r.entrega||'').toString().trim();
+            if(!id) return;
+            embalEnSAntW[id] = (embalEnSAntW[id]||0) + (Number(r.cantidad)||0);
+          });
+
+          const embalEstaSemXEntW = {};
+          prodEstaSemW.forEach(r=>{
+            if(DB[r.usuario]===undefined) return;
+            const id  = (r.entrega||'').toString().trim();
+            const qty = Number(r.cantidad)||0;
+            if(!id || !qty) return;
+            embalEstaSemXEntW[id] = (embalEstaSemXEntW[id]||0) + qty;
+          });
+
+          Object.keys(mapEntregasW).forEach(id=>{
+            const carg       = mapEntregasW[id].total_cargado;
+            const embalSAnt  = Math.min(embalEnSAntW[id]||0, carg);
+            const pendInicio = Math.max(carg - embalSAnt, 0);
+            if(pendInicio <= 0) return;
+            const embalEsta  = Math.min(embalEstaSemXEntW[id]||0, pendInicio);
+            arrastreInicialW   += pendInicio;
+            arrastreConsumidoW += embalEsta;
+          });
+        }
+      }catch(e){ console.warn('arrastre email error:',e.message); }
+
       planEmail={
                  pctAv:pctAvW, pctEsp:pctEspW,
                  totalMeta:Math.round(totalMetaW),
                  totalProd:Math.round(totalProdW),
                  totalCarg:totalCargW,
+                 arrastreInicial:Math.round(arrastreInicialW),
+                 arrastreConsumido:Math.round(arrastreConsumidoW),
                  ritmo:ritmoW, metaDia:metaDiaW,
                  dT:dTW, dR:dRW, dTot:dTotW,
                  semMin:semRpt, semMax:semRpt,
