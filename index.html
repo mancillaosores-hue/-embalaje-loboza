@@ -3874,7 +3874,7 @@ function doLogin(){
     setTimeout(()=>{
       const semPre = isoWeekActual();
       const anioPre = new Date().getFullYear();
-      if(!(_planCache.sem===semPre && _planCache.data)){
+      if(!(_planCache.sem===semPre && _planCache.anio===anioPre && _planCache.data)){
         planSemActual = semPre;
         cargarPlanSemanal();
       }
@@ -8892,8 +8892,15 @@ async function handlePlanFile(file){
       });
     });
     const registros=Object.entries(agg).map(([k,u])=>{
-      const[sem,canal,tipo]=k.split('|');
-      return{semana_iso:parseInt(sem),anio:anioUp,canal,tipo,unidades_plan:Math.round(u*100)/100};
+      const[semStr,canal,tipo]=k.split('|');
+      const sem=parseInt(semStr);
+      // Ajuste de año: si la semana de la planilla es mucho menor a la semana actual
+      // (ej. estamos en S51 y la planilla dice S1), es la semana de el año SIGUIENTE.
+      // Si es mucho mayor (ej. estamos en S2 y la planilla dice S50), es del año ANTERIOR.
+      let anioReg = anioUp;
+      if(sem < semActualUp - 26) anioReg = anioUp + 1;
+      else if(sem > semActualUp + 26) anioReg = anioUp - 1;
+      return{semana_iso:sem,anio:anioReg,canal,tipo,unidades_plan:Math.round(u*100)/100};
     });
     if(!registros.length){resEl.innerHTML='<div class="empty">Sin datos en el archivo.</div>';progEl.style.display='none';return;}
     lblEl.textContent=`Subiendo ${registros.length} registros...`;fillEl.style.width='65%';
