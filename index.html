@@ -3102,10 +3102,13 @@ function calcularCapacidadEquipo(usuariosActivos){
 // Retorna el color del semáforo según % cumplimiento
 
 // Calcula KPIs gerenciales a partir de rawData de un día
-function calcularKpisGerenciales(rowsDia){
+function calcularKpisGerenciales(rowsDia, fechaISO){
   const usuariosActivos=[...new Set(rowsDia.map(r=>r.usuario).filter(u=>DB[u]))];
   const produccionTotal=rowsDia.filter(r=>r.canal!=='Anulada'&&r.tipo!=='insumo').reduce((s,r)=>s+r.cantidad,0);
-  const capacidadTotal=calcularCapacidadEquipo(usuariosActivos);
+  // Capacidad = capacidad esperada según la Matriz del Mix (método tiempo / media armónica),
+  // igual que usa el módulo "Capacidad Dinámica" — no la suma estática de META por operaria.
+  const capDin = calcularCapacidadDinamica(rowsDia, fechaISO);
+  const capacidadTotal = Math.round(capDin.capacidadEsperada);
   const dotacion=usuariosActivos.length;
   const cumplimiento=capacidadTotal>0?Math.round((produccionTotal/capacidadTotal)*100):0;
   const brecha=produccionTotal-capacidadTotal;
@@ -8174,7 +8177,8 @@ async function cargarPlanSemanal(){
 
       // PASO 1: Agrupar entregas_carga por id_entrega — excluir insumos, anuladas, regula, bts
       var _excCanal = {anulada:1, regula:1, bts:1};
-      var _excEstado = {cerrada:1, 'enviado a sap':1};
+      // Nota: 'Cerrada' y 'Enviado a SAP' son estados normales de una entrega ya completada
+      // (equivalentes a 'Finalizada OK'), por eso NO se excluyen del cálculo de arrastre.
       var mapEntregas = {};
       entregasAnt.forEach(function(r){
         var id  = (r.id_entrega||'').toString().trim();
@@ -8182,7 +8186,6 @@ async function cargarPlanSemanal(){
         if(!id || !qty) return;
         if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return;
         if(_excCanal[(r.canal||'').toLowerCase().trim()]) return;
-        if(_excEstado[(r.estado||'').toLowerCase().trim()]) return;
         // Excluir rutas SSTT y REGULA
         var _rutaUp = (r.ruta||'').toUpperCase().trim();
         if(_rutaUp.includes('SSTT') || _rutaUp.includes('REGULA')) return;
@@ -8585,8 +8588,8 @@ async function fetchRptDatos(fechaParam) {
   const fechas=Object.keys(porFecha).sort();
   const valTend=fechas.map(f=>porFecha[f]);
   const prom=fechas.length?Math.round(valTend.reduce((a,b)=>a+b,0)/fechas.length):0;
-  // KPIs gerenciales: capacidad dinámica según META de activas ese día
-  const kpisGer=calcularKpisGerenciales(aC);
+  // KPIs gerenciales: capacidad según Matriz del Mix (método tiempo), no META estático
+  const kpisGer=calcularKpisGerenciales(aC, hoy);
 
   // ── Plan de carga: datos para el email ──
   let planEmail = null;
@@ -8691,7 +8694,7 @@ async function fetchRptDatos(fechaParam) {
           const prodEstaSemW = _bkResW[2]||[];
 
           const _excCanalW = {anulada:1, regula:1, bts:1};
-          const _excEstadoW = {cerrada:1, 'enviado a sap':1};
+          // 'Cerrada' y 'Enviado a SAP' son estados normales de entrega completada, no se excluyen.
           const mapEntregasW = {};
           entregasAntW.forEach(r=>{
             const id  = (r.id_entrega||'').toString().trim();
@@ -8699,7 +8702,6 @@ async function fetchRptDatos(fechaParam) {
             if(!id || !qty) return;
             if((r.tipo_producto||'').toLowerCase().trim() === 'insumo') return;
             if(_excCanalW[(r.canal||'').toLowerCase().trim()]) return;
-            if(_excEstadoW[(r.estado||'').toLowerCase().trim()]) return;
             const _rutaUpW = (r.ruta||'').toUpperCase().trim();
             if(_rutaUpW.includes('SSTT') || _rutaUpW.includes('REGULA')) return;
             const _cliExcVEVW = ['COMERCIALIZADORA S.A. CD','LA POLAR NUEVO CD'];
