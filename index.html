@@ -14,6 +14,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{
   --red:#3B8FFF;--red-d:#1E6FD9;--navy:#0D1B2E;
@@ -734,6 +735,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" id="ger-plan-btn-next" onclick="navegarSemana(1)">&#8594;</button>
         <button class="btn-ghost" onclick="invalidarPlanCache();cargarPlanSemanal()">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['ger-view-plan'],'Plan_Semanal',this)">📤</button>
       </div>
     </div>
 
@@ -774,6 +776,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaCapacidad(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarCapacidadDinamicaUI(true)">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['ger-view-capacidad'],'Capacidad_Dinamica',this)">📤</button>
       </div>
     </div>
 
@@ -801,6 +804,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaRitmo(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarRitmoUI()">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['ger-view-ritmo'],'Ritmo_Operacional',this)">📤</button>
       </div>
     </div>
 
@@ -1225,6 +1229,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" id="plan-btn-next" onclick="navegarSemana(1)">&#8594;</button>
         <button class="btn-ghost" onclick="invalidarPlanCache();cargarPlanSemanal()">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['st-plan'],'Plan_Semanal',this)">📤</button>
 
       </div>
     </div>
@@ -1299,6 +1304,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaCapacidad(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarCapacidadDinamicaUI(true)">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['st-capacidad'],'Capacidad_Dinamica',this)">📤</button>
       </div>
     </div>
 
@@ -1331,6 +1337,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaRitmo(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarRitmoUI()">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['st-ritmo'],'Ritmo_Operacional',this)">📤</button>
       </div>
     </div>
 
@@ -5273,6 +5280,39 @@ function exportEquipo(){
 const _planCache = { sem:null, anio:null, planRaw:null, prodRawSemana:null, entregasRawSemana:null, backlogPorCanal:null, semAntLabel:'', diasSem:null, lunObj:null, vieObj:null, domObj:null, idEntregasSAnt:new Set(), embalBackPorFecha:{}, arrastreInicial:null };
 let planDiaActual = null; // null = semana completa; 'YYYY-MM-DD' = día específico filtrado
 function invalidarPlanCache(){ _planCache.sem=null; _planCache.planRaw=null; _planCache.idEntregasSAnt=new Set(); _planCache.embalBackPorFecha={}; _planCache.arrastreInicial=null; }
+
+// ── Compartir pantalla como imagen (Plan, Capacidad, Ritmo) — para enviar por WhatsApp ──
+async function compartirComoImagen(ids, nombreArchivo, btnEl){
+  const contenedor = ids.map(id=>document.getElementById(id)).find(el=>el && el.offsetParent!==null);
+  if(!contenedor){ toast('No hay nada visible para compartir'); return; }
+  const txtOriginal = btnEl ? btnEl.innerHTML : null;
+  if(btnEl){ btnEl.innerHTML='⏳'; btnEl.disabled=true; }
+  try{
+    if(typeof html2canvas === 'undefined'){ toast('No se pudo cargar el generador de imágenes'); return; }
+    const canvas = await html2canvas(contenedor, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor || '#0B1220',
+      scale: Math.min(window.devicePixelRatio || 2, 3),
+      useCORS: true
+    });
+    const blob = await new Promise(res=>canvas.toBlob(res,'image/png',0.95));
+    if(!blob){ toast('No se pudo generar la imagen'); return; }
+    const file = new File([blob], nombreArchivo+'.png', {type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:nombreArchivo});
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = nombreArchivo+'.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+      toast('Imagen descargada — compártela desde tu galería');
+    }
+  }catch(e){
+    if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen'); }
+  }finally{
+    if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
+  }
+}
 
 let _tabActual = null; // tab actualmente visible
 
