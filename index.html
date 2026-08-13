@@ -5292,7 +5292,14 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
     const canvas = await html2canvas(contenedor, {
       backgroundColor: getComputedStyle(document.body).backgroundColor || '#0B1220',
       scale: Math.min(window.devicePixelRatio || 2, 3),
-      useCORS: true
+      useCORS: true,
+      onclone: (clonedDoc)=>{
+        // Los pseudo-elementos decorativos de fondo (body::before/::after) son position:fixed
+        // y html2canvas los filtra en cualquier captura, tapando todo con un velo translúcido.
+        const s = clonedDoc.createElement('style');
+        s.textContent = 'body::before,body::after{display:none!important;content:none!important}';
+        clonedDoc.head.appendChild(s);
+      }
     });
     const blob = await new Promise(res=>canvas.toBlob(res,'image/png',0.95));
     if(!blob){ toast('No se pudo generar la imagen'); return; }
