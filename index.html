@@ -1268,7 +1268,7 @@ input[type="month"], input[type="week"]{
     </details>
 
     <!-- Upload plan -->
-    <div class="card">
+    <div class="card no-share">
       <div class="card-title" style="margin-bottom:.6rem">&#128229; Cargar nuevo plan</div>
       <div style="font-size:11px;color:var(--txt2);margin-bottom:8px">Sube el Excel con el plan de las próximas semanas. Las nuevas se agregan sin borrar las anteriores.</div>
       <div class="upload-zone" id="plan-drop-zone"
@@ -5287,11 +5287,15 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
   if(!contenedor){ toast('No hay nada visible para compartir'); return; }
   const txtOriginal = btnEl ? btnEl.innerHTML : null;
   if(btnEl){ btnEl.innerHTML='⏳'; btnEl.disabled=true; }
+  // Ocultar temporalmente elementos que no deben salir en la imagen (ej. tarjeta de subir archivo)
+  const ocultos = Array.from(contenedor.querySelectorAll('.no-share'));
+  const prevDisplay = ocultos.map(el=>el.style.display);
+  ocultos.forEach(el=>el.style.display='none');
   try{
     if(typeof html2canvas === 'undefined'){ toast('No se pudo cargar el generador de imágenes'); return; }
     const canvas = await html2canvas(contenedor, {
       backgroundColor: getComputedStyle(document.body).backgroundColor || '#0B1220',
-      scale: Math.min(window.devicePixelRatio || 2, 3),
+      scale: Math.max(window.devicePixelRatio || 2, 3),
       useCORS: true,
       onclone: (clonedDoc)=>{
         // Los pseudo-elementos decorativos de fondo (body::before/::after) son position:fixed
@@ -5301,7 +5305,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
         clonedDoc.head.appendChild(s);
       }
     });
-    const blob = await new Promise(res=>canvas.toBlob(res,'image/png',0.95));
+    const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
     if(!blob){ toast('No se pudo generar la imagen'); return; }
     const file = new File([blob], nombreArchivo+'.png', {type:'image/png'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -5317,6 +5321,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
   }catch(e){
     if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen'); }
   }finally{
+    ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
     if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
   }
 }
