@@ -735,20 +735,20 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" id="ger-plan-btn-next" onclick="navegarSemana(1)">&#8594;</button>
         <button class="btn-ghost" onclick="invalidarPlanCache();cargarPlanSemanal()">↺</button>
-        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['ger-view-plan'],'Plan_Semanal',this)">📤</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['ger-view-plan'],'Plan_Semanal',this)">📤</button>
       </div>
     </div>
 
     <div id="ger-plan-selector-dia" style="display:flex;gap:4px;margin-top:8px;overflow-x:auto;padding-bottom:2px"></div>
     <div id="ger-plan-estado-operacional" style="margin-top:8px"></div>
-    <div id="ger-plan-avance-diario" style="margin-top:8px;margin-bottom:6px"></div>
+    <div id="ger-plan-avance-diario" class="share-block" style="margin-top:8px;margin-bottom:6px"></div>
 
-    <div class="card">
+    <div class="card share-block">
       <div class="card-title" style="margin-bottom:.75rem">Tendencia diaria · Cargado vs Embalado</div>
       <div id="ger-plan-grafico-diario"></div>
     </div>
 
-    <details class="plan-acc card" open>
+    <details class="plan-acc card share-block" open>
       <summary>
         <span class="card-title" id="ger-titulo-cumplimiento-canal">Cumplimiento por canal</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -756,7 +756,7 @@ input[type="month"], input[type="week"]{
       <div id="ger-plan-tabla-canal"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title" id="ger-titulo-tipo-material">Tipo de material</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -776,15 +776,17 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaCapacidad(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarCapacidadDinamicaUI(true)">↺</button>
-        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['ger-view-capacidad'],'Capacidad_Dinamica',this)">📤</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['ger-view-capacidad'],'Capacidad_Dinamica',this)">📤</button>
       </div>
     </div>
 
-    <div id="ger-cap-complejidad" style="margin-top:8px"></div>
-    <div id="ger-cap-kpis" style="margin-top:8px"></div>
-    <div id="ger-cap-matriz" style="margin-top:8px"></div>
+    <div class="share-block">
+      <div id="ger-cap-complejidad" style="margin-top:8px"></div>
+      <div id="ger-cap-kpis" style="margin-top:8px"></div>
+    </div>
+    <div id="ger-cap-matriz" class="share-block" style="margin-top:8px"></div>
 
-    <details class="plan-acc card" open>
+    <details class="plan-acc card share-block" open>
       <summary>
         <span class="card-title">Capacidad esperada vs real · histórico</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1229,7 +1231,7 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" id="plan-btn-next" onclick="navegarSemana(1)">&#8594;</button>
         <button class="btn-ghost" onclick="invalidarPlanCache();cargarPlanSemanal()">↺</button>
-        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['st-plan'],'Plan_Semanal',this)">📤</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['st-plan'],'Plan_Semanal',this)">📤</button>
 
       </div>
     </div>
@@ -1241,16 +1243,16 @@ input[type="month"], input[type="week"]{
     <div id="plan-estado-operacional" style="margin-top:8px"></div>
 
     <!-- AVANCE DIARIO -->
-    <div id="plan-avance-diario" style="margin-top:8px;margin-bottom:6px"></div>
+    <div id="plan-avance-diario" class="share-block" style="margin-top:8px;margin-bottom:6px"></div>
 
     <!-- Gráfico de tendencia diaria -->
-    <div class="card">
+    <div class="card share-block">
       <div class="card-title" style="margin-bottom:.75rem">Tendencia diaria · Cargado vs Embalado</div>
       <div id="plan-grafico-diario"></div>
     </div>
 
     <!-- Cumplimiento por canal -->
-    <details class="plan-acc card" open>
+    <details class="plan-acc card share-block" open>
       <summary>
         <span class="card-title" id="titulo-cumplimiento-canal">Cumplimiento por canal</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1259,7 +1261,7 @@ input[type="month"], input[type="week"]{
     </details>
 
     <!-- Tipo de material -->
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title" id="titulo-tipo-material">Tipo de material</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1304,15 +1306,17 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaCapacidad(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarCapacidadDinamicaUI(true)">↺</button>
-        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['st-capacidad'],'Capacidad_Dinamica',this)">📤</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['st-capacidad'],'Capacidad_Dinamica',this)">📤</button>
       </div>
     </div>
 
-    <div id="cap-complejidad" style="margin-top:8px"></div>
-    <div id="cap-kpis" style="margin-top:8px"></div>
-    <div id="cap-matriz" style="margin-top:8px"></div>
+    <div class="share-block">
+      <div id="cap-complejidad" style="margin-top:8px"></div>
+      <div id="cap-kpis" style="margin-top:8px"></div>
+    </div>
+    <div id="cap-matriz" class="share-block" style="margin-top:8px"></div>
 
-    <details class="plan-acc card" open>
+    <details class="plan-acc card share-block" open>
       <summary>
         <span class="card-title">Capacidad esperada vs real · histórico</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -5281,7 +5285,65 @@ const _planCache = { sem:null, anio:null, planRaw:null, prodRawSemana:null, entr
 let planDiaActual = null; // null = semana completa; 'YYYY-MM-DD' = día específico filtrado
 function invalidarPlanCache(){ _planCache.sem=null; _planCache.planRaw=null; _planCache.idEntregasSAnt=new Set(); _planCache.embalBackPorFecha={}; _planCache.arrastreInicial=null; }
 
-// ── Compartir pantalla como imagen (Plan, Capacidad, Ritmo) — para enviar por WhatsApp ──
+// ── Compartir por bloques (Plan, Capacidad) — varias imágenes en un solo envío ──
+async function compartirBloques(ids, nombreArchivo, btnEl){
+  const contenedor = ids.map(id=>document.getElementById(id)).find(el=>el && el.offsetParent!==null);
+  if(!contenedor){ toast('No hay nada visible para compartir'); return; }
+  const bloques = Array.from(contenedor.querySelectorAll('.share-block'));
+  if(!bloques.length){ return compartirComoImagen(ids, nombreArchivo, btnEl); }
+
+  const txtOriginal = btnEl ? btnEl.innerHTML : null;
+  if(btnEl){ btnEl.innerHTML='⏳'; btnEl.disabled=true; }
+
+  // Abrir temporalmente los <details> cerrados que sean bloques (para que su contenido exista al capturar)
+  const detallesForzados = bloques.filter(b=>b.tagName==='DETAILS' && !b.open);
+  detallesForzados.forEach(d=>d.open=true);
+  // Ocultar lo marcado como no-share dentro del contenedor completo
+  const ocultos = Array.from(contenedor.querySelectorAll('.no-share'));
+  const prevDisplay = ocultos.map(el=>el.style.display);
+  ocultos.forEach(el=>el.style.display='none');
+
+  const onclone = (clonedDoc)=>{
+    const s = clonedDoc.createElement('style');
+    s.textContent = 'body::before,body::after{display:none!important;content:none!important}';
+    clonedDoc.head.appendChild(s);
+  };
+  const scale = Math.max(window.devicePixelRatio || 2, 3);
+  const bg = getComputedStyle(document.body).backgroundColor || '#0B1220';
+
+  try{
+    if(typeof html2canvas === 'undefined'){ toast('No se pudo cargar el generador de imágenes'); return; }
+    const files = [];
+    for(let i=0;i<bloques.length;i++){
+      const b = bloques[i];
+      if(b.offsetParent===null) continue; // por si algo sigue oculto
+      const canvas = await html2canvas(b, {backgroundColor:bg, scale, useCORS:true, onclone});
+      const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
+      if(blob) files.push(new File([blob], nombreArchivo+'_'+(i+1)+'.png', {type:'image/png'}));
+    }
+    if(!files.length){ toast('No se pudo generar ninguna imagen'); return; }
+    if(navigator.canShare && navigator.canShare({files})){
+      await navigator.share({files, title:nombreArchivo});
+    } else {
+      files.forEach((file,i)=>{
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url; a.download = file.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url), 4000);
+      });
+      toast(files.length+' imágenes descargadas — compártelas desde tu galería');
+    }
+  }catch(e){
+    if(e && e.name !== 'AbortError'){ console.error('compartirBloques:', e); toast('Error al generar las imágenes'); }
+  }finally{
+    detallesForzados.forEach(d=>d.open=false);
+    ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
+    if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
+  }
+}
+
+
 async function compartirComoImagen(ids, nombreArchivo, btnEl){
   const contenedor = ids.map(id=>document.getElementById(id)).find(el=>el && el.offsetParent!==null);
   if(!contenedor){ toast('No hay nada visible para compartir'); return; }
@@ -7075,7 +7137,7 @@ function renderEstadoOperacional(opts){
   if(elEO) elEO.innerHTML = ''
 
   // ── CARD 1: Estado Operacional ──
-  + '<div style="background:linear-gradient(135deg,rgba(15,30,53,1) 0%,rgba(10,22,40,1) 100%);border:1px solid rgba(59,143,255,.3);border-radius:16px;padding:14px;position:relative;overflow:hidden;margin-bottom:8px">'
+  + '<div class="share-block" style="background:linear-gradient(135deg,rgba(15,30,53,1) 0%,rgba(10,22,40,1) 100%);border:1px solid rgba(59,143,255,.3);border-radius:16px;padding:14px;position:relative;overflow:hidden;margin-bottom:8px">'
     + '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3B8FFF,#2ECC8A,transparent)"></div>'
     + '<div style="font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Estado Operacional</div>'
 
@@ -7192,7 +7254,7 @@ function renderEstadoOperacional(opts){
 
   // ── CARD 2: Producción Acumulada con donut (NUEVO) ──
   + (totalEmbalado > 0
-    ? '<div style="background:linear-gradient(135deg,rgba(10,25,50,1),rgba(8,18,38,1));border:1px solid rgba(46,204,138,.25);border-radius:14px;padding:14px;margin-bottom:8px;position:relative;overflow:hidden">'
+    ? '<div class="share-block" style="background:linear-gradient(135deg,rgba(10,25,50,1),rgba(8,18,38,1));border:1px solid rgba(46,204,138,.25);border-radius:14px;padding:14px;margin-bottom:8px;position:relative;overflow:hidden">'
         + '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#2ECC8A,#9A88FF,transparent)"></div>'
         + '<div style="font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Producción Acumulada</div>'
         // 3 tiles superiores
