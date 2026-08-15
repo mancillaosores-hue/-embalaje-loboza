@@ -806,15 +806,17 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaRitmo(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarRitmoUI()">↺</button>
-        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['ger-view-ritmo'],'Ritmo_Operacional',this)">📤</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['ger-view-ritmo'],'Ritmo_Operacional',this)">📤</button>
       </div>
     </div>
 
-    <div id="ger-rit-estado" style="margin-top:8px"></div>
-    <div id="ger-rit-kpis" style="margin-top:8px"></div>
-    <div id="ger-rit-resumen" style="margin-top:8px"></div>
+    <div class="share-block">
+      <div id="ger-rit-estado" style="margin-top:8px"></div>
+      <div id="ger-rit-kpis" style="margin-top:8px"></div>
+      <div id="ger-rit-resumen" style="margin-top:8px"></div>
+    </div>
 
-    <details class="plan-acc card" open>
+    <details class="plan-acc card share-block" open>
       <summary>
         <span class="card-title">Producción por hora</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -822,7 +824,7 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:200px;margin-top:8px"><canvas id="ger-rit-chart-hora"></canvas></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Curva acumulada</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -830,7 +832,7 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:200px;margin-top:8px"><canvas id="ger-rit-chart-acumulado"></canvas></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Distribución horaria del mix</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -838,7 +840,7 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:200px;margin-top:8px"><canvas id="ger-rit-chart-mix"></canvas></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Participación horaria</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -846,7 +848,7 @@ input[type="month"], input[type="week"]{
       <div id="ger-rit-participacion" style="margin-top:8px"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Horas peak</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -854,7 +856,7 @@ input[type="month"], input[type="week"]{
       <div id="ger-rit-horas-peak" style="margin-top:8px"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Heatmap operador × hora</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -862,14 +864,14 @@ input[type="month"], input[type="week"]{
       <div id="ger-rit-heatmap" style="margin-top:8px;overflow-x:auto"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Ranking de eficiencia por operaria</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div style="display:flex;gap:8px;margin:8px 0">
         <input id="ger-rit-buscar-operador" placeholder="Buscar operador..." oninput="_ritRenderTablaOperador()" style="flex:1;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:var(--txt,#EAF1FF);font-size:12px">
-        <button class="btn-ghost" onclick="_ritExportarCSV()">⬇ CSV</button>
+        <button class="btn-ghost no-share" onclick="_ritExportarCSV()">⬇ CSV</button>
       </div>
       <div id="ger-rit-tabla-operador"></div>
     </details>
@@ -1341,15 +1343,17 @@ input[type="month"], input[type="week"]{
         </div>
         <button class="btn-ghost" onclick="navegarDiaRitmo(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarRitmoUI()">↺</button>
-        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirComoImagen(['st-ritmo'],'Ritmo_Operacional',this)">📤</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['st-ritmo'],'Ritmo_Operacional',this)">📤</button>
       </div>
     </div>
 
-    <div id="rit-estado" style="margin-top:8px"></div>
-    <div id="rit-kpis" style="margin-top:8px"></div>
-    <div id="rit-resumen" style="margin-top:8px"></div>
+    <div class="share-block">
+      <div id="rit-estado" style="margin-top:8px"></div>
+      <div id="rit-kpis" style="margin-top:8px"></div>
+      <div id="rit-resumen" style="margin-top:8px"></div>
+    </div>
 
-    <details class="plan-acc card" open>
+    <details class="plan-acc card share-block" open>
       <summary>
         <span class="card-title">Producción por hora</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1357,7 +1361,7 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:200px;margin-top:8px"><canvas id="rit-chart-hora"></canvas></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Curva acumulada</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1365,7 +1369,7 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:200px;margin-top:8px"><canvas id="rit-chart-acumulado"></canvas></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Distribución horaria del mix</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1373,7 +1377,7 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:200px;margin-top:8px"><canvas id="rit-chart-mix"></canvas></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Participación horaria</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1381,7 +1385,7 @@ input[type="month"], input[type="week"]{
       <div id="rit-participacion" style="margin-top:8px"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Horas peak</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1389,7 +1393,7 @@ input[type="month"], input[type="week"]{
       <div id="rit-horas-peak" style="margin-top:8px"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Heatmap operador × hora</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1397,14 +1401,14 @@ input[type="month"], input[type="week"]{
       <div id="rit-heatmap" style="margin-top:8px;overflow-x:auto"></div>
     </details>
 
-    <details class="plan-acc card">
+    <details class="plan-acc card share-block">
       <summary>
         <span class="card-title">Ranking de eficiencia por operaria</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div style="display:flex;gap:8px;margin:8px 0">
         <input id="rit-buscar-operador" placeholder="Buscar operador..." oninput="_ritRenderTablaOperador()" style="flex:1;background:var(--card2,#0F2038);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:var(--txt,#EAF1FF);font-size:12px">
-        <button class="btn-ghost" onclick="_ritExportarCSV()">⬇ CSV</button>
+        <button class="btn-ghost no-share" onclick="_ritExportarCSV()">⬇ CSV</button>
       </div>
       <div id="rit-tabla-operador"></div>
     </details>
