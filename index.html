@@ -6308,10 +6308,17 @@ async function compartirReportePorBloques(btnEl){
       const tmp = document.createElement('table');
       tmp.setAttribute('cellpadding','0'); tmp.setAttribute('cellspacing','0'); tmp.setAttribute('width','640');
       tmp.style.width='640px'; tmp.style.maxWidth='640px'; tmp.style.background='#FFFFFF';
-      tmp.style.position='fixed'; tmp.style.left='-9999px'; tmp.style.top='0';
+      // Posicionado MUY abajo de la página (no a la izquierda con valor negativo) — colocarlo fuera
+      // de pantalla con left negativo confunde a html2canvas, que calcula la ventana de captura
+      // en base al viewport y termina recortando el contenido.
+      tmp.style.position='absolute'; tmp.style.left='0px';
+      tmp.style.top=(document.documentElement.scrollHeight + 2000)+'px';
       g.filas.forEach(tr=>tmp.appendChild(tr.cloneNode(true)));
       document.body.appendChild(tmp);
-      const canvas = await html2canvas(tmp, {backgroundColor:'#FFFFFF', scale:3, useCORS:true});
+      const canvas = await html2canvas(tmp, {
+        backgroundColor:'#FFFFFF', scale:3, useCORS:true,
+        width:640, windowWidth:Math.max(document.documentElement.scrollWidth, 700)
+      });
       document.body.removeChild(tmp);
       const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
       if(blob) files.push(new File([blob], 'Reporte_Diario_'+(i+1)+'_'+g.nombre+'.png', {type:'image/png'}));
