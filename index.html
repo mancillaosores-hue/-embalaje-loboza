@@ -5346,8 +5346,28 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
     }
     if(!files.length){ toast('No se pudo generar ninguna imagen'); return; }
     if(fallidos.length){ toast('Se omitió ' + fallidos.length + ' bloque(s) que no se pudo generar'); }
+
+    // El navegador exige un gesto del usuario "fresco" para compartir — como generar varias
+    // imágenes (sobre todo con gráficos) puede tardar unos segundos, el permiso del toque
+    // original ya expiró. En vez de fallar, se deja todo listo y se pide un segundo toque.
     if(navigator.canShare && navigator.canShare({files})){
-      await navigator.share({files, title:nombreArchivo});
+      if(btnEl){
+        detallesForzados.forEach(d=>d.open=false);
+        ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
+        btnEl.innerHTML = '✅ Toca para compartir ('+files.length+')';
+        btnEl.disabled = false;
+        btnEl.onclick = async ()=>{
+          try{ await navigator.share({files, title:nombreArchivo}); }
+          catch(eShare){ if(eShare && eShare.name!=='AbortError'){ toast('Error al compartir: '+(eShare.message||eShare)); } }
+          finally{
+            btnEl.innerHTML = txtOriginal;
+            btnEl.onclick = ()=>compartirBloques(ids, nombreArchivo, btnEl);
+          }
+        };
+        return; // no restaurar el botón en el finally — queda a la espera del segundo toque
+      } else {
+        await navigator.share({files, title:nombreArchivo});
+      }
     } else {
       files.forEach((file,i)=>{
         const url = URL.createObjectURL(file);
@@ -5363,7 +5383,8 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
   }finally{
     detallesForzados.forEach(d=>d.open=false);
     ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
-    if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
+    if(btnEl && btnEl.innerHTML!=='⏳'){ /* ya se dejó en estado "toca para compartir" o se restauró abajo */ }
+    if(btnEl && btnEl.innerHTML==='⏳'){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
   }
 }
 
@@ -6584,7 +6605,7 @@ async function buildEmailHTML(d, compact){
   // Tabla compacta uniforme (canal y material) — ícono+nombre | 5 días con hoy destacado | flecha vs día anterior
   function tablaCompacta(items){
     if(!items.length) return '<div style="font-size:11px;color:#94A3B8;padding:8px 0">Sin datos activos.</div>';
-    let head = '<tr bgcolor="#F1F5F9"><td width="26%" style="padding:6px 8px;font-size:8.5px;font-weight:700;color:#64748B">Canal</td>';
+    let head = '<tr bgcolor="#F1F5F9"><td width="26%" style="box-sizing:border-box;padding:6px 8px;font-size:8.5px;font-weight:700;color:#64748B">Canal</td>';
     lblFechas.forEach((f,i)=>{
       const isLast = i===lblFechas.length-1;
       head += '<td align="right" style="padding:6px 6px;font-size:8px;font-weight:700;color:#64748B'+(isLast?';background:#EAF2FF':'')+'">'+f+'</td>';
@@ -6621,7 +6642,7 @@ async function buildEmailHTML(d, compact){
       +'<td style="font-size:10px;font-weight:700;color:#1E293B;line-height:1.3;word-break:break-word">'+icon+' '+name+'</td>'
       +'<td width="55" align="right" style="font-family:Consolas,monospace;font-size:14px;font-weight:700;color:'+color+';white-space:nowrap">'+valorHoy.toLocaleString('es-CL')+'</td>'
       +'</tr></table>';
-    return '<td width="'+COL_W+'" valign="top" style="border:1px solid #E4E9F1;padding:10px 11px 9px;overflow:hidden">'+header+miniChart(serie,color,lblFechas)+'</td>';
+    return '<td width="'+COL_W+'" valign="top" style="box-sizing:border-box;border:1px solid #E4E9F1;padding:10px 11px 9px;overflow:hidden">'+header+miniChart(serie,color,lblFechas)+'</td>';
   }
   function gridConGraficos(items){
     if(!items.length) return '<div style="font-size:11px;color:#94A3B8;padding:8px 0">Sin datos activos.</div>';
