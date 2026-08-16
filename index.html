@@ -5317,15 +5317,35 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
 
   try{
     if(typeof html2canvas === 'undefined'){ toast('No se pudo cargar el generador de imágenes'); return; }
+    // Pequeña pausa para que los <details> recién abiertos terminen su reflow
+    // (gráficos Chart.js dentro de ellos a veces necesitan un tick para redibujarse a su tamaño real).
+    if(detallesForzados.length) await new Promise(res=>setTimeout(res, 150));
+
     const files = [];
+    const fallidos = [];
     for(let i=0;i<bloques.length;i++){
       const b = bloques[i];
       if(b.offsetParent===null) continue; // por si algo sigue oculto
-      const canvas = await html2canvas(b, {backgroundColor:bg, scale, useCORS:true, onclone});
-      const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
-      if(blob) files.push(new File([blob], nombreArchivo+'_'+(i+1)+'.png', {type:'image/png'}));
+      try{
+        // Si el bloque es muy ancho/alto (ej. tablas con scroll horizontal como un heatmap),
+        // bajar la escala para no generar un canvas más grande de lo que el navegador permite.
+        const anchoReal = Math.max(b.scrollWidth, b.clientWidth);
+        const altoReal = Math.max(b.scrollHeight, b.clientHeight);
+        const AREA_MAX = 16000000; // ~límite típico de canvas en navegadores móviles
+        let scaleBloque = scale;
+        while(scaleBloque > 1 && (anchoReal*scaleBloque) * (altoReal*scaleBloque) > AREA_MAX){
+          scaleBloque -= 0.5;
+        }
+        const canvas = await html2canvas(b, {backgroundColor:bg, scale:scaleBloque, useCORS:true, onclone});
+        const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
+        if(blob) files.push(new File([blob], nombreArchivo+'_'+(i+1)+'.png', {type:'image/png'}));
+      }catch(eBloque){
+        console.warn('compartirBloques: falló un bloque, se omite:', eBloque);
+        fallidos.push(i+1);
+      }
     }
     if(!files.length){ toast('No se pudo generar ninguna imagen'); return; }
+    if(fallidos.length){ toast('Se omitió ' + fallidos.length + ' bloque(s) que no se pudo generar'); }
     if(navigator.canShare && navigator.canShare({files})){
       await navigator.share({files, title:nombreArchivo});
     } else {
@@ -5339,7 +5359,7 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
       toast(files.length+' imágenes descargadas — compártelas desde tu galería');
     }
   }catch(e){
-    if(e && e.name !== 'AbortError'){ console.error('compartirBloques:', e); toast('Error al generar las imágenes'); }
+    if(e && e.name !== 'AbortError'){ console.error('compartirBloques:', e); toast('Error al generar las imágenes: '+(e.message||e)); }
   }finally{
     detallesForzados.forEach(d=>d.open=false);
     ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
@@ -5359,9 +5379,14 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
   ocultos.forEach(el=>el.style.display='none');
   try{
     if(typeof html2canvas === 'undefined'){ toast('No se pudo cargar el generador de imágenes'); return; }
+    const anchoReal = Math.max(contenedor.scrollWidth, contenedor.clientWidth);
+    const altoReal = Math.max(contenedor.scrollHeight, contenedor.clientHeight);
+    const AREA_MAX = 16000000; // ~límite típico de canvas en navegadores móviles
+    let scale = Math.max(window.devicePixelRatio || 2, 3);
+    while(scale > 1 && (anchoReal*scale) * (altoReal*scale) > AREA_MAX){ scale -= 0.5; }
     const canvas = await html2canvas(contenedor, {
       backgroundColor: getComputedStyle(document.body).backgroundColor || '#0B1220',
-      scale: Math.max(window.devicePixelRatio || 2, 3),
+      scale,
       useCORS: true,
       onclone: (clonedDoc)=>{
         // Los pseudo-elementos decorativos de fondo (body::before/::after) son position:fixed
@@ -5385,7 +5410,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
       toast('Imagen descargada — compártela desde tu galería');
     }
   }catch(e){
-    if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen'); }
+    if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen: '+(e.message||e)); }
   }finally{
     ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
     if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
