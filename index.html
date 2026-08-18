@@ -899,7 +899,7 @@ input[type="month"], input[type="week"]{
 
     <details class="plan-acc card share-block" open>
       <summary>
-        <span class="card-title">Serie de Tiempo · Producción últimos 14 días</span>
+        <span class="card-title">Serie de Tiempo · Producción últimos 14 días hábiles</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
       <div style="position:relative;height:210px;margin-top:8px"><canvas id="ger-an-chart-serie"></canvas></div>
@@ -8443,7 +8443,12 @@ async function cargarAnalisisGerUI(){
   if(elRacional) elRacional.innerHTML='';
   try{
     const hoyISO   = _anFechaLocalISO(dSel); // "hoy" = día seleccionado en el selector
-    const hace13   = _anFechaLocalISO(new Date(new Date(hoyISO+'T12:00:00').getTime()-13*86400000));
+    // Serie de 14 DÍAS HÁBILES (lun-vie), no calendario — la bodega no opera
+    // sábado/domingo, así que contarlos como "0 uds" distorsionaría el
+    // promedio y la lectura del gráfico (parecerían caídas que en realidad
+    // son solo fines de semana sin operación).
+    const fechasSerie = _anUltimosNDiasHabiles(14, hoyISO);
+    const hace13   = fechasSerie[0]; // primer día hábil del rango, para el filtro de la consulta
     const {semana:semActual, anio} = _anIsoSemanaAnio(dSel);
     const {lun}    = isoSemanaAFechas(anio, semActual);
     const vieObjSemana = new Date(lun.getFullYear(), lun.getMonth(), lun.getDate()+4); // viernes real
@@ -8458,14 +8463,9 @@ async function cargarAnalisisGerUI(){
     ]);
     const rowsSemDB = (rowsSem||[]).filter(r=>DB[r.usuario]!==undefined);
 
-    // ── Serie de tiempo (14 días calendario) ──
+    // ── Serie de tiempo (14 días hábiles lun-vie, ya calculados arriba) ──
     const porFecha={};
     (rows14||[]).forEach(r=>{ porFecha[r.fecha]=(porFecha[r.fecha]||0)+(Number(r.cantidad)||0); });
-    const fechasSerie=[];
-    for(let i=0;i<14;i++){
-      const d=new Date(hace13+'T12:00:00'); d.setDate(d.getDate()+i);
-      fechasSerie.push(_anFechaLocalISO(d));
-    }
     const valoresSerie = fechasSerie.map(f=>porFecha[f]||0);
 
     // ── Tabla de frecuencias: canal del último día con datos ──
@@ -8580,7 +8580,7 @@ function _anRenderFrecuencia(){
   const elTit = document.getElementById('ger-an-frecuencia-titulo');
   if(!d || !el) return;
   if(!d.fechaFreq || !d.totalFreq){
-    el.innerHTML = '<div class="empty">Sin producción registrada en los últimos 14 días.</div>';
+    el.innerHTML = '<div class="empty">Sin producción registrada en los últimos 14 días hábiles.</div>';
     return;
   }
   if(elTit) elTit.textContent = `Tabla de Frecuencias · Concentración por canal · ${fmtFecha(d.fechaFreq)}`;
