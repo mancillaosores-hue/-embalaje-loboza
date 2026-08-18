@@ -8722,9 +8722,14 @@ function _anRenderMatriz(){
     return;
   }
   const dias = d.diasMatriz;
+  const NOMBRES_DIA = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; // índice = getDay()
   let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px">`;
   html += '<tr><th style="text-align:left;padding:4px 6px;color:var(--txt3);font-size:9px;text-transform:uppercase"></th>' +
-    dias.map(f=>`<th style="text-align:center;padding:4px 6px;color:var(--txt3);font-size:9px;text-transform:uppercase">${f.slice(5).split('-').reverse().join('/')}</th>`).join('') + '</tr>';
+    dias.map(f=>{
+      const nombreDia = NOMBRES_DIA[new Date(f+'T12:00:00').getDay()];
+      const fechaCorta = f.slice(5).split('-').reverse().join('/');
+      return `<th style="text-align:center;padding:4px 6px;color:var(--txt3);font-size:9px;text-transform:uppercase">${nombreDia}<br><span style="font-size:8.5px;opacity:.75">${fechaCorta}</span></th>`;
+    }).join('') + '</tr>';
   canales.forEach(canal=>{
     const fila = d.matrizDatos[canal];
     const max = Math.max(...dias.map(f=>fila[f]||0), 1);
