@@ -886,10 +886,12 @@ input[type="month"], input[type="week"]{
   <div id="ger-view-analisis" style="display:none;padding:8px 0 24px">
     <div class="card" style="margin-bottom:0">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <button class="btn-ghost" onclick="navegarDiaAnalisis(-1)">&#8592;</button>
         <div style="text-align:center;flex:1">
-          <div style="font-size:16px;font-weight:800;color:var(--txt)">📊 Análisis</div>
-          <div style="font-size:11px;color:var(--txt2)">Tendencias · Frecuencias · Avance de meta</div>
+          <div style="font-size:16px;font-weight:800;color:var(--txt)" id="ger-an-fecha-titulo">—</div>
+          <div style="font-size:11px;color:var(--txt2)" id="ger-an-fecha-sub">Cargando...</div>
         </div>
+        <button class="btn-ghost" onclick="navegarDiaAnalisis(1)">&#8594;</button>
         <button class="btn-ghost" onclick="cargarAnalisisGerUI()">↺</button>
         <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['ger-view-analisis'],'Analisis_Gerencial',this)">📤</button>
       </div>
@@ -8389,9 +8391,28 @@ function gerShowView(view, btn){
 // ════════════════════════════════════════════════════════════
 let _anDataCache = null;
 let _anChartSerie = null;
+let anFechaActual = null; // null = hoy · selector de día para la vista Análisis
 function _anFechaLocalISO(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
+}
+function _anFechaObjActual(){
+  return anFechaActual ? new Date(anFechaActual+'T12:00:00') : new Date();
+}
+function navegarDiaAnalisis(delta){
+  const d = _anFechaObjActual();
+  d.setDate(d.getDate()+delta);
+  anFechaActual = _anFechaLocalISO(d);
+  cargarAnalisisGerUI();
+}
+// Semana ISO (mismo criterio que isoWeekActual, pero para una fecha cualquiera,
+// necesario para que "Avance de Meta Semanal" siga la semana del día seleccionado).
+function _anIsoSemanaAnio(d){
+  const hoy = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+  const jan4 = new Date(hoy.getFullYear(),0,4);
+  const s = new Date(jan4);
+  s.setDate(jan4.getDate()-(jan4.getDay()||7)+1);
+  return { semana: Math.ceil(((hoy-s)/86400000+1)/7), anio: hoy.getFullYear() };
 }
 // Últimos N días HÁBILES (lun-vie) terminando en hastaISO (inclusive).
 function _anUltimosNDiasHabiles(n, hastaISO){
@@ -8407,6 +8428,13 @@ function _anUltimosNDiasHabiles(n, hastaISO){
   return out;
 }
 async function cargarAnalisisGerUI(){
+  const dSel  = _anFechaObjActual();
+  const esHoy = _anFechaLocalISO(dSel) === _anFechaLocalISO(new Date());
+  const elTit = document.getElementById('ger-an-fecha-titulo');
+  const elSub = document.getElementById('ger-an-fecha-sub');
+  if(elTit) elTit.textContent = esHoy ? 'Hoy' : dSel.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  if(elSub) elSub.textContent = dSel.toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
+
   ['ger-an-chart-serie','ger-an-frecuencia','ger-an-avance','ger-an-matriz'].forEach(id=>{
     const el=document.getElementById(id);
     if(el && id!=='ger-an-chart-serie') el.innerHTML='<div class="loading"><span class="spinner"></span>Cargando...</div>';
@@ -8414,10 +8442,9 @@ async function cargarAnalisisGerUI(){
   const elRacional = document.getElementById('ger-an-serie-racional');
   if(elRacional) elRacional.innerHTML='';
   try{
-    const hoyISO   = fechaLocalStr(new Date());
+    const hoyISO   = _anFechaLocalISO(dSel); // "hoy" = día seleccionado en el selector
     const hace13   = _anFechaLocalISO(new Date(new Date(hoyISO+'T12:00:00').getTime()-13*86400000));
-    const anio     = new Date().getFullYear();
-    const semActual= isoWeekActual();
+    const {semana:semActual, anio} = _anIsoSemanaAnio(dSel);
     const {lun}    = isoSemanaAFechas(anio, semActual);
     const vieObjSemana = new Date(lun.getFullYear(), lun.getMonth(), lun.getDate()+4); // viernes real
     const fLunSem  = fechaLocalStr(lun);
