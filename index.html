@@ -722,6 +722,7 @@ input[type="month"], input[type="week"]{
     <button id="ger-pill-plan" class="dtab on" onclick="gerShowView('plan',this)">Plan</button>
     <button id="ger-pill-cap" class="dtab" onclick="gerShowView('capacidad',this)">Capacidad</button>
     <button id="ger-pill-rit" class="dtab" onclick="gerShowView('ritmo',this)">Ritmo</button>
+    <button id="ger-pill-analisis" class="dtab" onclick="gerShowView('analisis',this)">📊 Análisis</button>
   </div>
 
   <div id="ger-view-plan" style="padding-bottom:24px">
@@ -874,6 +875,57 @@ input[type="month"], input[type="week"]{
         <button class="btn-ghost no-share" onclick="_ritExportarCSV()">⬇ CSV</button>
       </div>
       <div id="ger-rit-tabla-operador"></div>
+    </details>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       VISTA ANÁLISIS — Tendencias, Frecuencias, Avance y Doble Entrada
+       (basado en el mockup revisado con Cristian) · datos reales de
+       producción y plan_carga, sin dependencias externas nuevas.
+  ═══════════════════════════════════════ -->
+  <div id="ger-view-analisis" style="display:none;padding:8px 0 24px">
+    <div class="card" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div style="text-align:center;flex:1">
+          <div style="font-size:16px;font-weight:800;color:var(--txt)">📊 Análisis</div>
+          <div style="font-size:11px;color:var(--txt2)">Tendencias · Frecuencias · Avance de meta</div>
+        </div>
+        <button class="btn-ghost" onclick="cargarAnalisisGerUI()">↺</button>
+        <button class="btn-ghost" title="Compartir imagen (WhatsApp)" onclick="compartirBloques(['ger-view-analisis'],'Analisis_Gerencial',this)">📤</button>
+      </div>
+    </div>
+
+    <details class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">Serie de Tiempo · Producción últimos 14 días</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="position:relative;height:210px;margin-top:8px"><canvas id="ger-an-chart-serie"></canvas></div>
+      <div id="ger-an-serie-racional" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title" id="ger-an-frecuencia-titulo">Tabla de Frecuencias · Concentración por canal</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="ger-an-frecuencia" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">Avance de Meta Semanal · Plan vs. Real</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="ger-an-avance" style="margin-top:8px"></div>
+    </details>
+
+    <details class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">Tabla de Doble Entrada · Canal × Día</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div id="ger-an-matriz" style="margin-top:8px;overflow-x:auto"></div>
     </details>
   </div>
 </div>
@@ -3571,7 +3623,7 @@ function cajasRenderResultadoPeriodo(counts, sinClasificar, nEntregas, porCanal,
       if(smC.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smC.cajas)} Caja Mochila (sin mezclar)</span>`);
       html += `<div style="border-bottom:1px solid var(--border);padding-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
-          <span style="font-size:12px;font-weight:700;color:var(--txt)">${c.canal}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--txt)">${escapeHtml(c.canal)}</span>
           <span style="font-size:14px;font-weight:900;color:var(--txt)">${cajasFmt(c.total)} bultos</span>
         </div>
         <div style="font-size:10.5px;color:var(--txt2);margin-top:3px">${partes.join(' · ')||'—'}</div>
@@ -3654,7 +3706,7 @@ function cajasToggleGrupo(idx){
       const smE = cajasCalcularCajasSinMezcla(pe.matSM||{});
       if(smE.cajas>0) partes.push(`<span style="color:#FF8FD1">${cajasFmt(smE.cajas)} Caja Mochila (sin mezclar)</span>`);
       html += `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:10.5px;font-weight:700;color:var(--txt)">${id} <span style="font-weight:400;color:var(--txt3)">· ${pe.cliente}</span></div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--txt)">${escapeHtml(id)} <span style="font-weight:400;color:var(--txt3)">· ${escapeHtml(pe.cliente)}</span></div>
         <div style="font-size:10.5px;color:var(--txt2);margin-top:2px">${partes.join(' · ')||'—'}</div>
       </div>`;
     });
@@ -3784,6 +3836,24 @@ function setScreen(id){
   document.getElementById('sc-'+id).classList.add('on');
 }
 function fmtN(n){return Math.round(n).toLocaleString('es-CL')}
+// ── SEGURIDAD: escapar HTML para evitar XSS almacenado ──
+// Los archivos Excel/ConsultaSQL que sube el supervisor contienen texto libre
+// (canal, cliente, ruta, descripción) que se guarda en Supabase y luego se
+// vuelve a pintar con innerHTML para TODAS las usuarias (operarias, supervisor,
+// gerente). Sin este escape, alguien podría subir un Excel con un valor tipo
+// `<img src=x onerror=...>` en la columna Canal/Cliente y ese código se
+// ejecutaría en el navegador de cualquiera que abra esa pantalla después.
+// Usar SIEMPRE escapeHtml(valor) al interpolar texto libre proveniente de
+// datos cargados (no hace falta para valores de listas fijas como DB/META/ORDEN).
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
 function _gridCols(mobileCols, desktopMult){
   // En pantallas anchas (PC), convierte a fr proporcional para que la tabla
   // ocupe todo el ancho disponible en vez de dejar espacio vacío
@@ -3863,25 +3933,55 @@ function nombreCorto(n){
 // ============================================================
 // LOGIN
 // ============================================================
+// ── SEGURIDAD: bloqueo temporal ante intentos fallidos ──
+// Esto es una capa débil (cualquiera con la consola del navegador puede
+// resetear estas variables), pero frena intentos casuales de adivinar
+// contraseñas desde la propia pantalla de login. La seguridad real depende
+// de las políticas RLS configuradas en Supabase, no de esta validación
+// en el cliente — ver nota de seguridad al final del archivo.
+const LOGIN_MAX_INTENTOS = 5;
+const LOGIN_BLOQUEO_MS = 60*1000; // 1 minuto
+let _loginIntentosFallidos = 0;
+let _loginBloqueadoHasta = 0;
+function _loginRegistrarFallo(){
+  _loginIntentosFallidos++;
+  if(_loginIntentosFallidos>=LOGIN_MAX_INTENTOS){
+    _loginBloqueadoHasta = Date.now()+LOGIN_BLOQUEO_MS;
+    _loginIntentosFallidos = 0;
+  }
+}
+function _loginSegundosRestantesBloqueo(){
+  return Math.max(0, Math.ceil((_loginBloqueadoHasta-Date.now())/1000));
+}
 function doLogin(){
+  const err = document.getElementById('l-err');
+  const segRestantes = _loginSegundosRestantesBloqueo();
+  if(segRestantes>0){
+    err.style.display='block';
+    err.textContent='Demasiados intentos fallidos. Intenta de nuevo en '+segRestantes+' segundos.';
+    return;
+  }
   const raw = document.getElementById('l-cod').value.trim();
   const pass = document.getElementById('l-pass').value;
-  const err = document.getElementById('l-err');
 
   if(raw.toUpperCase()==='GERENTE'){
     if(pass===GER_PASS){
+      _loginIntentosFallidos=0;
       cUser=null;cIsSup=false;cIsGer=true;
       setScreen('ger');
       planSemActual=isoWeekActual();
       cargarPlanSemanal();
+      _iniciarAutoLogout();
     } else {
-      err.style.display='block';err.textContent='Clave de gerente incorrecta.';
+      _loginRegistrarFallo();
+      err.style.display='block';err.textContent='Credenciales incorrectas.';
     }
     return;
   }
 
   if(raw.toUpperCase()==='SUPERVISOR'){
     if(pass===SUP_PASS){
+      _loginIntentosFallidos=0;
       cUser=null;cIsSup=true;
       setScreen('sup');
       loadCargasLog();
@@ -3895,16 +3995,24 @@ function doLogin(){
       }
     }, 1500);
       document.getElementById('eq-fecha').value=today();
+      _iniciarAutoLogout();
     } else {
-      err.style.display='block';err.textContent='Clave de supervisor incorrecta.';
+      _loginRegistrarFallo();
+      err.style.display='block';err.textContent='Credenciales incorrectas.';
     }
     return;
   }
   const cod=raw.replace(/^0*/,'').padStart(6,'0');
-  if(!DB[cod]){err.style.display='block';err.textContent='Código no encontrado.';return}
-  if(USER_PASS[cod]!==pass){err.style.display='block';err.textContent='Contraseña incorrecta.';return}
+  // Mensaje genérico: no distinguir entre "código no existe" y "clave incorrecta"
+  // para no permitir enumerar qué códigos de operaria son válidos.
+  if(!DB[cod] || USER_PASS[cod]!==pass){
+    _loginRegistrarFallo();
+    err.style.display='block';err.textContent='Credenciales incorrectas.';return;
+  }
   err.style.display='none';
+  _loginIntentosFallidos=0;
   cUser=cod; cIsSup=false;
+  _iniciarAutoLogout();
   // ── Precarga historial en background — listo cuando la operaria llegue al tab ──
   getHistorialCache();
   const primerNombre = DB[cod].trim().split(/\s+/)[0];
@@ -3931,7 +4039,32 @@ function doLogin(){
   loadDia();
   setTimeout(()=>mostrarResumenSemanalSiCorresponde(), 1400);
 }
-function doLogout(){cUser=null;cIsSup=false;cIsGer=false;invalidarCache();setScreen('login')}
+function doLogout(){cUser=null;cIsSup=false;cIsGer=false;invalidarCache();_detenerAutoLogout();setScreen('login')}
+// ── SEGURIDAD: cierre de sesión automático por inactividad ──
+// Los equipos de bodega/oficina suelen ser compartidos entre varias personas.
+// Si alguien se loguea como supervisor/gerente y se aleja, esta sesión se
+// cierra sola tras un período sin actividad, para que la siguiente persona
+// que use el equipo no herede accesos que no le corresponden.
+const AUTOLOGOUT_MS = 20*60*1000; // 20 minutos de inactividad
+let _autoLogoutTimer = null;
+function _resetAutoLogoutTimer(){
+  if(!cUser && !cIsSup && !cIsGer) return; // nadie logueado, nada que resetear
+  clearTimeout(_autoLogoutTimer);
+  _autoLogoutTimer = setTimeout(()=>{
+    toast('Sesión cerrada por inactividad');
+    doLogout();
+  }, AUTOLOGOUT_MS);
+}
+function _detenerAutoLogout(){
+  clearTimeout(_autoLogoutTimer);
+  _autoLogoutTimer = null;
+}
+function _iniciarAutoLogout(){
+  _resetAutoLogoutTimer();
+  ['click','keydown','touchstart','scroll'].forEach(ev=>{
+    document.addEventListener(ev, _resetAutoLogoutTimer, {passive:true});
+  });
+}
 function togglePass(){
   const inp=document.getElementById('l-pass');
   const icon=document.getElementById('eye-icon');
@@ -4056,7 +4189,7 @@ function renderDiaHTML(g, meta, pct, fecha, rows, gAyer={}, gfTend={}){
     ${Object.entries(canales).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
       const barW=Math.round(v/g.total*100);
       return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
-        <span class="canal-chip" style="flex-shrink:0">${c||'—'}</span>
+        <span class="canal-chip" style="flex-shrink:0">${escapeHtml(c||'—')}</span>
         <div style="flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">
           <div style="width:${barW}%;height:100%;background:#3B8FFF;border-radius:3px;transition:width .5s ease"></div>
         </div>
@@ -4953,7 +5086,7 @@ async function actualizarCyber(){
         cHtml += `<div style="display:grid;grid-template-columns:1fr 72px 72px;gap:4px;align-items:center;padding:5px 0;border-top:1px solid rgba(255,255,255,.05)">`;
         // nombre + barra de % 
         cHtml += `<div>`;
-        cHtml += `<div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:3px">${nombre}</div>`;
+        cHtml += `<div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:3px">${escapeHtml(nombre)}</div>`;
         cHtml += `<div style="height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden">`;
         cHtml += `<div style="height:3px;width:${pct}%;background:${color};border-radius:2px"></div></div>`;
         cHtml += `</div>`;
@@ -8235,12 +8368,280 @@ function gerShowView(view, btn){
   document.getElementById('ger-view-plan').style.display = view==='plan' ? 'block' : 'none';
   document.getElementById('ger-view-capacidad').style.display = view==='capacidad' ? 'block' : 'none';
   document.getElementById('ger-view-ritmo').style.display = view==='ritmo' ? 'block' : 'none';
-  document.querySelectorAll('#ger-pill-plan,#ger-pill-cap,#ger-pill-rit').forEach(b=>b.classList.remove('on'));
-  const pillId = view==='plan'?'ger-pill-plan':view==='capacidad'?'ger-pill-cap':'ger-pill-rit';
+  document.getElementById('ger-view-analisis').style.display = view==='analisis' ? 'block' : 'none';
+  document.querySelectorAll('#ger-pill-plan,#ger-pill-cap,#ger-pill-rit,#ger-pill-analisis').forEach(b=>b.classList.remove('on'));
+  const pillId = view==='plan'?'ger-pill-plan':view==='capacidad'?'ger-pill-cap':view==='ritmo'?'ger-pill-rit':'ger-pill-analisis';
   if(btn) btn.classList.add('on');
   else document.getElementById(pillId).classList.add('on');
   if(view==='capacidad') cargarCapacidadDinamicaUI();
   if(view==='ritmo') cargarRitmoUI();
+  if(view==='analisis') cargarAnalisisGerUI();
+}
+
+// ════════════════════════════════════════════════════════════
+// VISTA ANÁLISIS (Gerente) — Tendencias, Frecuencias, Avance de
+// meta semanal y Doble entrada. Basado en el mockup revisado con
+// Cristian el 18-ago-2026. Usa datos reales de las tablas
+// `produccion` y `plan_carga` de Supabase — nada de datos de
+// ejemplo. Sin dependencias externas nuevas: usa Chart.js (ya
+// cargado en la app) para la serie de tiempo, y HTML/CSS puro
+// (igual que el resto de los módulos) para el resto.
+// ════════════════════════════════════════════════════════════
+let _anDataCache = null;
+let _anChartSerie = null;
+function _anFechaLocalISO(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+// Últimos N días HÁBILES (lun-vie) terminando en hastaISO (inclusive).
+function _anUltimosNDiasHabiles(n, hastaISO){
+  const out=[];
+  let d = new Date(hastaISO+'T12:00:00');
+  let guard=0;
+  while(out.length<n && guard<60){
+    const dow=d.getDay();
+    if(dow>=1 && dow<=5) out.unshift(_anFechaLocalISO(d));
+    d.setDate(d.getDate()-1);
+    guard++;
+  }
+  return out;
+}
+async function cargarAnalisisGerUI(){
+  ['ger-an-chart-serie','ger-an-frecuencia','ger-an-avance','ger-an-matriz'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && id!=='ger-an-chart-serie') el.innerHTML='<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  });
+  const elRacional = document.getElementById('ger-an-serie-racional');
+  if(elRacional) elRacional.innerHTML='';
+  try{
+    const hoyISO   = fechaLocalStr(new Date());
+    const hace13   = _anFechaLocalISO(new Date(new Date(hoyISO+'T12:00:00').getTime()-13*86400000));
+    const anio     = new Date().getFullYear();
+    const semActual= isoWeekActual();
+    const {lun}    = isoSemanaAFechas(anio, semActual);
+    const vieObjSemana = new Date(lun.getFullYear(), lun.getMonth(), lun.getDate()+4); // viernes real
+    const fLunSem  = fechaLocalStr(lun);
+    const fVieReal = fechaLocalStr(vieObjSemana);
+    const fHastaSem= hoyISO <= fVieReal ? hoyISO : fVieReal;
+
+    const [rows14, planRaw, rowsSem] = await Promise.all([
+      sbFetchAll(`produccion?select=fecha,canal,tipo,cantidad&fecha=gte.${hace13}&fecha=lte.${hoyISO}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`),
+      sbFetchAll(`plan_carga?select=canal,tipo,unidades_plan&semana_iso=eq.${semActual}&anio=eq.${anio}`),
+      sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,fecha&fecha=gte.${fLunSem}&fecha=lte.${fHastaSem}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`)
+    ]);
+    const rowsSemDB = (rowsSem||[]).filter(r=>DB[r.usuario]!==undefined);
+
+    // ── Serie de tiempo (14 días calendario) ──
+    const porFecha={};
+    (rows14||[]).forEach(r=>{ porFecha[r.fecha]=(porFecha[r.fecha]||0)+(Number(r.cantidad)||0); });
+    const fechasSerie=[];
+    for(let i=0;i<14;i++){
+      const d=new Date(hace13+'T12:00:00'); d.setDate(d.getDate()+i);
+      fechasSerie.push(_anFechaLocalISO(d));
+    }
+    const valoresSerie = fechasSerie.map(f=>porFecha[f]||0);
+
+    // ── Tabla de frecuencias: canal del último día con datos ──
+    let fechaFreq = null;
+    for(let i=fechasSerie.length-1;i>=0;i--){ if((porFecha[fechasSerie[i]]||0)>0){ fechaFreq=fechasSerie[i]; break; } }
+    const canalFreqMap={};
+    let totalFreq=0;
+    if(fechaFreq){
+      (rows14||[]).filter(r=>r.fecha===fechaFreq).forEach(r=>{
+        const c=(r.canal||'Sin canal').toString().trim();
+        const cant=Number(r.cantidad)||0;
+        canalFreqMap[c]=(canalFreqMap[c]||0)+cant;
+        totalFreq+=cant;
+      });
+    }
+
+    // ── Avance de meta semanal (plan_carga vs. producción real de la semana) ──
+    const metaCanalMap={}, prodCanalMap={};
+    (planRaw||[]).forEach(r=>{ metaCanalMap[r.canal]=(metaCanalMap[r.canal]||0)+Number(r.unidades_plan); });
+    rowsSemDB.forEach(r=>{ prodCanalMap[r.canal]=(prodCanalMap[r.canal]||0)+Number(r.cantidad); });
+    const totalMetaSem = Object.values(metaCanalMap).reduce((s,v)=>s+v,0);
+    const totalProdSem = Object.values(prodCanalMap).reduce((s,v)=>s+v,0);
+    const diasSemHab   = diasHabileSem(lun, vieObjSemana, null);
+    const diasHastaHab = diasHabileSem(lun, vieObjSemana, new Date(fHastaSem+'T12:00:00'));
+    const pctIdeal = diasSemHab.length>0 ? Math.round(diasHastaHab.length/diasSemHab.length*100) : 0;
+
+    // ── Doble entrada: últimos 6 días hábiles (canal × día) ──
+    const diasMatriz = _anUltimosNDiasHabiles(6, hoyISO);
+    let rowsMatriz = (rows14||[]).filter(r=>diasMatriz.includes(r.fecha));
+    const diasFaltantes = diasMatriz.filter(f=>f<hace13);
+    if(diasFaltantes.length){
+      const fIniExtra=diasFaltantes[0], fFinExtra=diasFaltantes[diasFaltantes.length-1];
+      const extra = await sbFetchAll(`produccion?select=fecha,canal,tipo,cantidad&fecha=gte.${fIniExtra}&fecha=lte.${fFinExtra}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`);
+      rowsMatriz = rowsMatriz.concat(extra||[]);
+    }
+    const matrizDatos={}, totalPorCanalMatriz={};
+    rowsMatriz.forEach(r=>{
+      const c=(r.canal||'Sin canal').toString().trim();
+      if(!matrizDatos[c]) matrizDatos[c]={};
+      const cant=Number(r.cantidad)||0;
+      matrizDatos[c][r.fecha]=(matrizDatos[c][r.fecha]||0)+cant;
+      totalPorCanalMatriz[c]=(totalPorCanalMatriz[c]||0)+cant;
+    });
+
+    _anDataCache = { fechasSerie, valoresSerie, fechaFreq, canalFreqMap, totalFreq,
+      metaCanalMap, prodCanalMap, totalMetaSem, totalProdSem, pctIdeal,
+      diasMatriz, matrizDatos, totalPorCanalMatriz, semActual };
+
+    _anRenderSerie();
+    _anRenderFrecuencia();
+    _anRenderAvance();
+    _anRenderMatriz();
+  }catch(e){
+    const el = document.getElementById('ger-an-frecuencia');
+    if(el) el.innerHTML = `<div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">Error: ${e.message}</div>`;
+    console.error('cargarAnalisisGerUI:', e);
+  }
+}
+const _AN_CANAL_COLORS = {
+  'Locales':'#3B8FFF','Concesiones':'#9A88FF','Grandes Tiendas':'#2ECC8A',
+  'Distribuidor':'#FFBA4D','Ecommerce':'#FF6B6B','Marketplace':'#4DCFFF',
+  'Venta en verde':'#A8FF78','Sin canal':'#8AAED4'
+};
+function _anRenderSerie(){
+  const d = _anDataCache;
+  const el = document.getElementById('ger-an-chart-serie');
+  if(!d || !el || typeof Chart==='undefined') return;
+  const labels = d.fechasSerie.map(f=>f.slice(5).split('-').reverse().join('-'));
+  const promedio = d.valoresSerie.length ? Math.round(d.valoresSerie.reduce((a,b)=>a+b,0)/d.valoresSerie.length) : 0;
+  const maxVal = Math.max(...d.valoresSerie, 1);
+  const idxPico = d.valoresSerie.indexOf(maxVal);
+  const idxHoy  = d.fechasSerie.length-1;
+  if(_anChartSerie) _anChartSerie.destroy();
+  _anChartSerie = new Chart(el.getContext('2d'), {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'Real', data:d.valoresSerie, borderColor:'#3B8FFF',
+          backgroundColor:'rgba(59,143,255,.12)', fill:true, tension:.3,
+          pointRadius:d.valoresSerie.map((v,i)=> i===idxPico?6:(i===idxHoy?5:3)),
+          pointBackgroundColor:d.valoresSerie.map((v,i)=> i===idxPico?'#2ECC8A':(i===idxHoy?'#FF6B6B':'#3B8FFF')),
+          borderWidth:2.5 },
+        { label:'Promedio período', data:labels.map(()=>promedio), borderColor:'rgba(255,255,255,.35)',
+          borderDash:[5,4], pointRadius:0, borderWidth:1.5, fill:false }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#8FA3C4', boxWidth:10, font:{size:9} } } },
+      scales:{
+        x:{ ticks:{color:'#8FA3C4', font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:8}, grid:{display:false} },
+        y:{ ticks:{color:'#8FA3C4', font:{size:9}}, grid:{color:'rgba(255,255,255,.05)'} }
+      }
+    }
+  });
+  const elR = document.getElementById('ger-an-serie-racional');
+  if(elR){
+    const fechaPico = d.fechasSerie[idxPico];
+    const variacionPico = promedio>0 ? Math.round((maxVal-promedio)/promedio*100) : 0;
+    const hoyVal = d.valoresSerie[idxHoy];
+    const variacionHoy = promedio>0 ? Math.round((hoyVal-promedio)/promedio*100) : 0;
+    elR.innerHTML = `<div style="background:rgba(59,143,255,.07);border-left:3px solid #3B8FFF;border-radius:6px;padding:9px 12px;font-size:11.5px;color:var(--txt2);line-height:1.5">
+      <b style="color:#3B8FFF">Racional:</b> el ${fmtFecha(fechaPico)} fue el día más alto del período (${fmtN(maxVal)} uds, ${variacionPico>=0?'+':''}${variacionPico}% sobre el promedio de ${fmtN(promedio)}).
+      El último día con datos (${fmtFecha(d.fechasSerie[idxHoy])}) cerró en ${fmtN(hoyVal)} uds (${variacionHoy>=0?'+':''}${variacionHoy}% vs. promedio).
+    </div>`;
+  }
+}
+function _anRenderFrecuencia(){
+  const d = _anDataCache;
+  const el = document.getElementById('ger-an-frecuencia');
+  const elTit = document.getElementById('ger-an-frecuencia-titulo');
+  if(!d || !el) return;
+  if(!d.fechaFreq || !d.totalFreq){
+    el.innerHTML = '<div class="empty">Sin producción registrada en los últimos 14 días.</div>';
+    return;
+  }
+  if(elTit) elTit.textContent = `Tabla de Frecuencias · Concentración por canal · ${fmtFecha(d.fechaFreq)}`;
+  const entries = Object.entries(d.canalFreqMap).sort((a,b)=>b[1]-a[1]);
+  el.innerHTML = entries.map(([canal,uds])=>{
+    const pct = Math.round(uds/d.totalFreq*100);
+    const col = _AN_CANAL_COLORS[canal] || '#8AAED4';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+      <div style="width:96px;font-size:11px;font-weight:600;color:var(--txt);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(canal)}</div>
+      <div style="flex:1;background:rgba(255,255,255,.06);border-radius:5px;height:15px;position:relative;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};border-radius:5px"></div>
+      </div>
+      <div style="width:100px;text-align:right;font-size:11px;font-weight:800;color:var(--txt);flex-shrink:0">${fmtN(uds)} · ${pct}%</div>
+    </div>`;
+  }).join('');
+  const top = entries[0];
+  if(top){
+    const pctTop = Math.round(top[1]/d.totalFreq*100);
+    el.insertAdjacentHTML('beforeend', `<div style="background:rgba(59,143,255,.07);border-left:3px solid #3B8FFF;border-radius:6px;padding:9px 12px;margin-top:6px;font-size:11.5px;color:var(--txt2);line-height:1.5">
+      <b style="color:#3B8FFF">Racional:</b> ${escapeHtml(top[0])} concentró el ${pctTop}% del volumen del día — el canal con menor peso fue ${escapeHtml(entries[entries.length-1][0])} con ${Math.round(entries[entries.length-1][1]/d.totalFreq*100)}%.
+    </div>`);
+  }
+}
+function _anRenderAvance(){
+  const d = _anDataCache;
+  const el = document.getElementById('ger-an-avance');
+  if(!d || !el) return;
+  if(!d.totalMetaSem){
+    el.innerHTML = `<div class="empty">Sin plan cargado para la Semana ${d.semActual}.</div>`;
+    return;
+  }
+  const ORDEN = ['Locales','Concesiones','Grandes Tiendas','Distribuidor','Ecommerce','Marketplace','Venta en verde'];
+  const filas = ORDEN.filter(c=>d.metaCanalMap[c]>0).map(canal=>{
+    const meta = d.metaCanalMap[canal]||0;
+    const prod = d.prodCanalMap[canal]||0;
+    const pct  = meta>0 ? Math.round(prod/meta*100) : 0;
+    const col  = pct >= d.pctIdeal ? '#2ECC8A' : (pct >= d.pctIdeal*0.6 ? '#FFBA4D' : '#FF6B6B');
+    const colPill = pct >= d.pctIdeal ? 'rgba(46,204,138,.18)' : (pct >= d.pctIdeal*0.6 ? 'rgba(255,186,77,.18)' : 'rgba(255,107,107,.18)');
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <div style="width:96px;font-size:11px;font-weight:600;color:var(--txt);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(canal)}</div>
+      <div style="flex:1;background:rgba(255,255,255,.06);border-radius:5px;height:16px;position:relative;overflow:hidden">
+        <div style="height:100%;width:${Math.min(pct,100)}%;background:${col};border-radius:5px"></div>
+        <div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.6);left:${Math.min(d.pctIdeal,100)}%"></div>
+      </div>
+      <div style="width:150px;text-align:right;font-size:10.5px;font-weight:700;color:var(--txt);flex-shrink:0">${fmtN(prod)} / ${fmtN(meta)} <span style="background:${colPill};color:${col};padding:1px 6px;border-radius:10px;font-size:9.5px;margin-left:4px">${pct}%</span></div>
+    </div>`;
+  }).join('');
+  const pctTotal = d.totalMetaSem>0 ? Math.round(d.totalProdSem/d.totalMetaSem*100) : 0;
+  el.innerHTML = `
+    <div style="font-size:10.5px;color:var(--txt3);margin-bottom:10px">
+      Producción acumulada vs. meta de la <b>semana ISO ${d.semActual}</b> (plan_carga) · línea blanca = ritmo ideal esperado a la fecha (${d.pctIdeal}%)
+    </div>
+    ${filas}
+    <div style="background:rgba(59,143,255,.07);border-left:3px solid #3B8FFF;border-radius:6px;padding:9px 12px;margin-top:6px;font-size:11.5px;color:var(--txt2);line-height:1.5">
+      <b style="color:#3B8FFF">Racional:</b> el avance total es ${pctTotal}% (${fmtN(d.totalProdSem)} de ${fmtN(d.totalMetaSem)} uds planificadas) — el ritmo ideal a esta altura de la semana es ${d.pctIdeal}%.
+      ${pctTotal < d.pctIdeal ? 'La semana va por debajo del ritmo esperado.' : 'La semana va igual o por sobre el ritmo esperado.'}
+    </div>`;
+}
+function _anRenderMatriz(){
+  const d = _anDataCache;
+  const el = document.getElementById('ger-an-matriz');
+  if(!d || !el) return;
+  const canales = Object.keys(d.matrizDatos).sort((a,b)=>(d.totalPorCanalMatriz[b]||0)-(d.totalPorCanalMatriz[a]||0));
+  if(!canales.length){
+    el.innerHTML = '<div class="empty">Sin datos en los últimos días hábiles.</div>';
+    return;
+  }
+  const dias = d.diasMatriz;
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px">`;
+  html += '<tr><th style="text-align:left;padding:4px 6px;color:var(--txt3);font-size:9px;text-transform:uppercase"></th>' +
+    dias.map(f=>`<th style="text-align:center;padding:4px 6px;color:var(--txt3);font-size:9px;text-transform:uppercase">${f.slice(5).split('-').reverse().join('/')}</th>`).join('') + '</tr>';
+  canales.forEach(canal=>{
+    const fila = d.matrizDatos[canal];
+    const max = Math.max(...dias.map(f=>fila[f]||0), 1);
+    html += `<tr><td style="padding:6px;font-weight:700;color:var(--txt);white-space:nowrap">${escapeHtml(canal)}</td>`;
+    dias.forEach(f=>{
+      const v = fila[f]||0;
+      if(v===0){ html += `<td style="padding:6px;text-align:center;background:rgba(255,255,255,.03);color:#3A4A66">—</td>`; return; }
+      const t = Math.min(v/max, 1);
+      const alpha = 0.12 + t*0.55;
+      const txtCol = t>0.55 ? '#EAF2FF' : '#8AAED4';
+      html += `<td style="padding:6px;text-align:center;background:rgba(59,143,255,${alpha.toFixed(2)});color:${txtCol};font-weight:700">${fmtN(v)}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+  html += `<div style="font-size:10px;color:var(--txt3);margin-top:8px">Color = intensidad relativa dentro de cada canal (más oscuro = su día más alto en este período).</div>`;
+  el.innerHTML = html;
 }
 
 
@@ -9339,7 +9740,7 @@ function renderRptBody(d){
     const pct=Math.round(uds/maxC*100);
     const col=CANAL_COLORS_RPT[canal]||'#8AAED4';
     html+=`<div class="rpt-canal-row">
-      <span class="rpt-canal-name">${canal}</span>
+      <span class="rpt-canal-name">${escapeHtml(canal)}</span>
       <div class="rpt-canal-bar-wrap"><div class="rpt-canal-bar" style="width:${pct}%;background:${col}"></div></div>
       <span class="rpt-canal-val">${uds.toLocaleString('es-CL')}</span>
     </div>`;
@@ -10453,9 +10854,9 @@ function abrirDetalleArrastre(){
     var bg  = i % 2 === 0 ? 'rgba(255,255,255,.02)' : 'transparent';
     return '<tr style="background:' + bg + ';border-bottom:1px solid rgba(255,255,255,.04)">'
       + '<td style="padding:7px 10px;color:#E8F1FF;white-space:nowrap">' + (r.fecha_creada||'—') + '</td>'
-      + '<td style="padding:7px 10px"><span style="background:' + col + '22;color:' + col + ';border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">' + (r.canal||'—') + '</span></td>'
-      + '<td style="padding:7px 10px;color:#8AAED4;font-size:10px">' + (r.id_entrega||'—') + '</td>'
-      + '<td style="padding:7px 10px;color:#8AAED4;font-size:10px">' + (r.clientenombre||'—') + '</td>'
+      + '<td style="padding:7px 10px"><span style="background:' + col + '22;color:' + col + ';border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">' + escapeHtml(r.canal||'—') + '</span></td>'
+      + '<td style="padding:7px 10px;color:#8AAED4;font-size:10px">' + escapeHtml(r.id_entrega||'—') + '</td>'
+      + '<td style="padding:7px 10px;color:#8AAED4;font-size:10px">' + escapeHtml(r.clientenombre||'—') + '</td>'
       + '<td style="padding:7px 10px;text-align:right;font-weight:700;color:#FFBA4D">' + r.pendiente.toLocaleString('es-CL') + '</td>'
       + '</tr>';
   }).join('');
@@ -10558,7 +10959,7 @@ async function abrirDetalleCarga(fecha){
         var bg  = rowIdx % 2 === 0 ? 'rgba(255,255,255,.02)' : 'transparent';
         bodyHtml += '<tr style="background:' + bg + ';border-bottom:1px solid rgba(255,255,255,.04)">'
           + '<td style="padding:7px 10px;color:' + (i===0?'#E8F1FF':'transparent') + ';font-weight:' + (i===0?'700':'400') + ';white-space:nowrap">' + (i===0?rango:'') + '</td>'
-          + '<td style="padding:7px 10px"><span style="background:' + col + '22;color:' + col + ';border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">' + canal + '</span></td>'
+          + '<td style="padding:7px 10px"><span style="background:' + col + '22;color:' + col + ';border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600">' + escapeHtml(canal) + '</span></td>'
           + '<td style="padding:7px 10px;text-align:right;font-weight:700;color:#F59E0B">' + canales[canal].toLocaleString('es-CL') + '</td>'
           + '</tr>';
         subtotal += canales[canal];
