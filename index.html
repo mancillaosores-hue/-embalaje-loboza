@@ -1638,6 +1638,103 @@ input[type="month"], input[type="week"]{
     <div id="cajas-resultado" style="margin-top:10px"></div>
   </div>
 
+  <!-- ═══════════════════════════════════════
+       TAB: INDICACIONES DE EMBALAJE
+       Selecciona cliente → indicaciones auto-completadas.
+       OC ingresado → agrega automáticamente "ETIQUETADO".
+       Ticket final se comparte como imagen por WhatsApp
+       (misma librería html2canvas que ya usa compartirBloques).
+       Paleta lavanda/rosa — pantalla usada por coordinadora
+       y equipo 100% femenino.
+  ═══════════════════════════════════════ -->
+  <div id="st-indicaciones" style="display:none">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:.75rem">📝 Datos de la entrega</div>
+
+      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Cliente</label>
+      <select id="ind-cliente" onchange="indActualizarTicket()" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:12px">
+        <option value="">— Selecciona un cliente —</option>
+      </select>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Ruta</label>
+          <input type="number" id="ind-ruta" placeholder="Ej: 12" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">N° Mesón</label>
+          <input type="text" id="ind-meson" placeholder="Ej: 4 - Salida" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+      </div>
+
+      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Embaladora</label>
+      <select id="ind-embaladora" onchange="indActualizarTicket()" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:12px">
+        <option value="">— Selecciona una embaladora —</option>
+      </select>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div>
+          <label style="display:block;font-size:9.5px;font-weight:700;color:#B39DDB;text-transform:uppercase;margin-bottom:5px">Entregas</label>
+          <input type="number" id="ind-entregas" placeholder="0" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 8px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+        <div>
+          <label style="display:block;font-size:9.5px;font-weight:700;color:#B39DDB;text-transform:uppercase;margin-bottom:5px">Unidades</label>
+          <input type="number" id="ind-unidades" placeholder="0" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 8px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+        <div>
+          <label style="display:block;font-size:9.5px;font-weight:700;color:#B39DDB;text-transform:uppercase;margin-bottom:5px">Multi</label>
+          <input type="number" id="ind-multi" placeholder="0" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 8px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+      </div>
+
+      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">OC</label>
+      <input type="text" id="ind-oc" placeholder="N° de orden de compra (si aplica)" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:4px">
+      <div style="font-size:9.5px;color:#FFB199;margin-bottom:12px;line-height:1.4">⚠ Si se ingresa un N° de OC, se agrega automáticamente la indicación "ETIQUETADO".</div>
+
+      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Observaciones</label>
+      <textarea id="ind-obs" rows="2" placeholder="Notas adicionales para esta entrega..." oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical"></textarea>
+    </div>
+
+    <div class="card-title" style="padding:0 2px;margin-bottom:8px">👀 Vista previa (esto se enviará)</div>
+    <div id="ind-ticket-wrap" class="share-block" style="background:linear-gradient(145deg,#1a1230 0%,#150f26 100%);border:1px solid rgba(183,127,224,.35);border-radius:16px;overflow:hidden;margin-bottom:12px">
+      <div style="background:linear-gradient(90deg,#7B4FA8,#C9629E);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div id="ind-t-cliente" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.02em">Selecciona un cliente</div>
+          <div id="ind-t-fecha" style="font-size:10px;color:rgba(255,255,255,.65);margin-top:2px">—</div>
+        </div>
+        <div style="font-size:26px">📦</div>
+      </div>
+      <div style="padding:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div id="ind-tb-ruta" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Ruta</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+          <div id="ind-tb-meson" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">N° Mesón</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+          <div id="ind-tb-embaladora" style="grid-column:1/-1;background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Embaladora</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+          <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div id="ind-tb-entregas" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Entregas</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+            <div id="ind-tb-unidades" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Unidades</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+            <div id="ind-tb-multi" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Multi</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+          </div>
+        </div>
+        <div id="ind-tb-oc-wrap" style="display:none;margin-bottom:14px">
+          <div style="background:rgba(255,177,153,.1);border:1px solid rgba(255,177,153,.3);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#FFB199;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">N° OC</div><div id="ind-tb-oc-val" style="font-size:16px;font-weight:900;color:#FFB199">—</div></div>
+        </div>
+
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin:2px 0 8px">Indicaciones de embalaje</div>
+        <div id="ind-t-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"><span style="font-size:11.5px;color:var(--txt3);font-style:italic">Selecciona un cliente para ver las indicaciones</span></div>
+
+        <div id="ind-t-obs-wrap" style="display:none">
+          <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin:2px 0 8px">Observaciones</div>
+          <div id="ind-t-obs-val" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--txt2);line-height:1.5"></div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:9px;color:var(--txt3);padding:10px 16px 14px;border-top:1px solid rgba(255,255,255,.05);margin-top:4px">Mi Productividad · CD Lo Boza — Ficha generada el <span id="ind-t-foot-fecha">—</span></div>
+    </div>
+
+    <button class="btn-ghost no-share" onclick="indGenerarYEnviar(this)" style="width:100%;box-sizing:border-box;padding:14px;background:linear-gradient(135deg,#25D366,#1EBE5A);border:none;color:#04150a;font-size:14px;font-weight:800;border-radius:12px;cursor:pointer">
+      📤 Generar imagen y enviar por WhatsApp
+    </button>
+  </div>
+
   <nav class="bottom-nav" id="bottom-nav-sup">
     <button class="bnav-item on" onclick="bnavGo('carga',this)">
       <div class="bnav-icon">
@@ -1728,6 +1825,14 @@ input[type="month"], input[type="week"]{
         </svg>
       </div>
       <span class="bnav-lbl">Análisis</span>
+    </button>
+    <button class="bnav-item" onclick="bnavGo('indicaciones',this)">
+      <div class="bnav-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 12h6M9 16h4M13 3H8a2 2 0 00-2 2v14a2 2 0 002 2h8a2 2 0 002-2V7z"/><path d="M13 3v4h4"/>
+        </svg>
+      </div>
+      <span class="bnav-lbl">Indic.</span>
     </button>
 
 </div>
@@ -5728,7 +5833,7 @@ let _tabActual = null; // tab actualmente visible
 
 function showSupTab(tab, btn){
   // Tabs fijos dentro de sc-sup
-  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis'].forEach(t=>{
+  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis','indicaciones'].forEach(t=>{
     const el=document.getElementById('st-'+t);
     if(el) el.style.display=t===tab?'block':'none';
   });
@@ -5769,6 +5874,9 @@ function showSupTab(tab, btn){
   if(tab==='bonos'){
     if(!document.getElementById('bono-mes').value) document.getElementById('bono-mes').value=currentMonth();
     cargarBonosUI();
+  }
+  if(tab==='indicaciones'){
+    indInit();
   }
   _tabActual = tab;
 }
@@ -10101,6 +10209,7 @@ const BNAV_TITULOS={
   embalaje:'Cómo se embala',
   cajas:'Calculadora de cajas',
   analisis:'Análisis · Tendencias y frecuencias',
+  indicaciones:'Indicaciones de embalaje',
 };
 
 function bnavGo(tab, btn){
@@ -10116,7 +10225,7 @@ function bnavGo(tab, btn){
   showSupTab(tab, {classList:{add:()=>{},remove:()=>{}}});
   // Animar el contenido activo
   setTimeout(()=>{
-    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis'];
+    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis','indicaciones'];
     tabs.forEach(t=>{
       const el=document.getElementById('st-'+t);
       if(el && el.style.display!=='none') el.classList.add('anim-in');
@@ -11532,6 +11641,120 @@ function embalajeLightbox(src){
 embalajeInitDropdown();
 </script>
 
+<!-- ═══════════════════════════════════════
+     MÓDULO: INDICACIONES DE EMBALAJE
+     Selecciona Cliente → indicaciones de embalaje auto-completadas.
+     Si se ingresa N° de OC, se agrega automáticamente "ETIQUETADO".
+     El ticket final se comparte como imagen por WhatsApp reutilizando
+     compartirComoImagen() (misma función/librería html2canvas que ya
+     usa el resto de la app) — sin dependencias nuevas.
+═══════════════════════════════════════ -->
+<script>
+// Mapeo Cliente → Indicaciones de embalaje (según especificación de Diego).
+// Para agregar o modificar un cliente, solo edita este objeto.
+const IND_CLIENTE_INDICACIONES = {
+  'LOCALES SANTIAGO':      ['CAJA AZUL','EMBALADO POR ENTREGA'],
+  'LOCALES REGIONES':      ['CAJA CARTÓN','BOLSA','SELLO','CINTA SAMSONITE','RECICLAR CAJA','EMBALADO POR ENTREGA'],
+  'CONCESIONES PARIS':     ['CAJA CARTÓN','CINTA SAMSONITE','RECICLAR CAJA','EMBALADO POR ENTREGA','SENSAR PLAZA NORTE Y LYON'],
+  'CONCESIONES RIPLEY':    ['CAJA CARTÓN','CINTA SAMSONITE','RECICLAR CAJA','EMBALADO POR ENTREGA'],
+  'CONCESIONES HITES':     ['CAJA CARTÓN','CINTA SAMSONITE','RECICLAR CAJA','EMBALADO POR ENTREGA'],
+  'CONCESIONES LA POLAR':  ['CAJA CARTÓN','CINTA SAMSONITE','RECICLAR CAJA','EMBALADO POR ENTREGA'],
+  'DISTRIBUIDOR':          ['CAJA CARTÓN','CINTA SAMSONITE','RECICLAR CAJA','EMBALADO POR ENTREGA'],
+  'GGTT':                  ['CAJA CARTÓN','CINTA TRANSPARENTE','ETIQUETADO','SENSADO','EMBALADO POR ENTREGA'],
+  'GGTT INTERNET':         ['CAJA CARTÓN','CINTA TRANSPARENTE','ETIQUETADO','EMBALADO POR SKU'],
+};
+let _indInicializado = false;
+function indInit(){
+  if(_indInicializado) return; // los <select> se llenan una sola vez
+  _indInicializado = true;
+  const selCliente = document.getElementById('ind-cliente');
+  Object.keys(IND_CLIENTE_INDICACIONES).forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    selCliente.appendChild(opt);
+  });
+  // Embaladoras = mismas operarias reales del sistema (las que tienen META
+  // asignada, igual criterio que usan Bonos/Ritmo para filtrar operativas).
+  const selEmb = document.getElementById('ind-embaladora');
+  Object.keys(META).filter(uid=>DB[uid]).forEach(uid=>{
+    const opt = document.createElement('option');
+    opt.value = nombreCorto(DB[uid]); opt.textContent = nombreCorto(DB[uid]);
+    selEmb.appendChild(opt);
+  });
+  indActualizarTicket();
+}
+function _indFmtBox(id, valor){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const valEl = el.querySelector('div:last-child');
+  if(valor===''||valor===null||valor===undefined){
+    valEl.textContent = '—';
+    valEl.style.color = 'var(--txt3)';
+    valEl.style.fontSize = '13px';
+  } else {
+    valEl.textContent = valor;
+    valEl.style.color = 'var(--txt)';
+    valEl.style.fontSize = '16px';
+  }
+}
+function indActualizarTicket(){
+  const cliente    = document.getElementById('ind-cliente').value;
+  const ruta       = document.getElementById('ind-ruta').value;
+  const meson      = document.getElementById('ind-meson').value;
+  const embaladora = document.getElementById('ind-embaladora').value;
+  const entregas   = document.getElementById('ind-entregas').value;
+  const unidades   = document.getElementById('ind-unidades').value;
+  const multi      = document.getElementById('ind-multi').value;
+  const oc         = document.getElementById('ind-oc').value.trim();
+  const obs        = document.getElementById('ind-obs').value.trim();
+
+  document.getElementById('ind-t-cliente').textContent = cliente || 'Selecciona un cliente';
+  const hoy = new Date();
+  document.getElementById('ind-t-fecha').textContent = hoy.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('ind-t-foot-fecha').textContent = hoy.toLocaleString('es-CL');
+
+  _indFmtBox('ind-tb-ruta', ruta);
+  _indFmtBox('ind-tb-meson', meson);
+  _indFmtBox('ind-tb-embaladora', embaladora);
+  _indFmtBox('ind-tb-entregas', entregas);
+  _indFmtBox('ind-tb-unidades', unidades);
+  _indFmtBox('ind-tb-multi', multi);
+
+  const ocWrap = document.getElementById('ind-tb-oc-wrap');
+  if(oc){ ocWrap.style.display='block'; document.getElementById('ind-tb-oc-val').textContent = oc; }
+  else  { ocWrap.style.display='none'; }
+
+  // ── Chips de indicaciones: las del cliente + ETIQUETADO automático si hay OC ──
+  const chipsEl = document.getElementById('ind-t-chips');
+  if(!cliente){
+    chipsEl.innerHTML = '<span style="font-size:11.5px;color:var(--txt3);font-style:italic">Selecciona un cliente para ver las indicaciones</span>';
+  } else {
+    let indicaciones = [...(IND_CLIENTE_INDICACIONES[cliente]||[])];
+    let ocForzoEtiquetado = false;
+    if(oc && !indicaciones.includes('ETIQUETADO')){
+      indicaciones.push('ETIQUETADO');
+      ocForzoEtiquetado = true;
+    }
+    chipsEl.innerHTML = indicaciones.map(txt=>{
+      const esEtiquetadoPorOC = ocForzoEtiquetado && txt==='ETIQUETADO';
+      const bg = esEtiquetadoPorOC ? 'rgba(255,177,153,.15)' : 'rgba(216,136,201,.14)';
+      const bd = esEtiquetadoPorOC ? 'rgba(255,177,153,.45)' : 'rgba(216,136,201,.4)';
+      const co = esEtiquetadoPorOC ? '#FFB199' : '#F0A8E0';
+      return `<span style="background:${bg};border:1px solid ${bd};color:${co};font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:5px">${esEtiquetadoPorOC?'🏷️':'✓'} ${escapeHtml(txt)}${esEtiquetadoPorOC?' (por OC)':''}</span>`;
+    }).join('');
+  }
+
+  const obsWrap = document.getElementById('ind-t-obs-wrap');
+  if(obs){ obsWrap.style.display='block'; document.getElementById('ind-t-obs-val').innerHTML = '<b>Obs:</b> ' + escapeHtml(obs); }
+  else   { obsWrap.style.display='none'; }
+}
+async function indGenerarYEnviar(btnEl){
+  const cliente = document.getElementById('ind-cliente').value;
+  if(!cliente){ toast('⚠ Selecciona un cliente primero'); return; }
+  const filename = 'Indicaciones_'+cliente.replace(/\s+/g,'_');
+  await compartirComoImagen(['ind-ticket-wrap'], filename, btnEl);
+}
+</script>
 
 <script>
 if ('serviceWorker' in navigator) {
