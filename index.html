@@ -1647,91 +1647,243 @@ input[type="month"], input[type="week"]{
        Paleta lavanda/rosa — pantalla usada por coordinadora
        y equipo 100% femenino.
   ═══════════════════════════════════════ -->
-  <div id="st-indicaciones" style="display:none">
-    <div class="card">
-      <div class="card-title" style="margin-bottom:.75rem">📝 Datos de la entrega</div>
+  <div id="st-indicaciones" class="ind-light" style="display:none">
+    <style>
+      /* ══════════════════════════════════════════════════════
+         Estilos con scope (#st-indicaciones.ind-light ...) para
+         no afectar el resto de la app, que mantiene su tema oscuro.
+         Paleta clara "rosa palo" — pantalla usada por la coordinadora
+         y el equipo de embaladoras (100% femenino).
+      ══════════════════════════════════════════════════════ */
+      #st-indicaciones.ind-light{
+        --il-bg:#FFF8F4; --il-card:#FFFFFF; --il-card-soft:#FFF1F4; --il-border:rgba(216,140,160,.22);
+        --il-txt:#7A2E42; --il-txt2:#B5788C; --il-txt3:#D3AEB9;
+        --il-pink:#E8899F; --il-pink-dark:#D5728B; --il-pink-light:#F6C9D3;
+        --il-gold:#D9AE74; --il-gold-light:#F2E2C6;
+        background:var(--il-bg); margin:-1rem -1rem -78px; padding:1rem 1rem calc(150px + env(safe-area-inset-bottom,0px));
+        border-radius:0;
+      }
+      #st-indicaciones.ind-light .il-card{background:var(--il-card);border:1px solid var(--il-border);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 18px rgba(216,140,160,.14);}
+      #st-indicaciones.ind-light .il-card-title{font-size:12.5px;font-weight:800;color:var(--il-txt);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+      #st-indicaciones.ind-light label{display:block;font-size:10.5px;font-weight:700;color:var(--il-txt2);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px;margin-top:12px;}
+      #st-indicaciones.ind-light label:first-of-type{margin-top:0;}
+      #st-indicaciones.ind-light select,
+      #st-indicaciones.ind-light input,
+      #st-indicaciones.ind-light textarea{
+        width:100%;background:var(--il-card-soft);border:1px solid var(--il-border);border-radius:12px;
+        padding:10px 12px;color:var(--il-txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;
+        box-sizing:border-box;
+      }
+      #st-indicaciones.ind-light select:focus,
+      #st-indicaciones.ind-light input:focus,
+      #st-indicaciones.ind-light textarea:focus{border-color:var(--il-pink);}
+      #st-indicaciones.ind-light select{
+        appearance:none;-webkit-appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23B5788C' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+        background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+      }
+      #st-indicaciones.ind-light ::placeholder{color:var(--il-txt3);}
+      #st-indicaciones.ind-light .il-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+      #st-indicaciones.ind-light .il-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+      #st-indicaciones.ind-light .il-row3 label{font-size:9.5px;}
+      #st-indicaciones.ind-light .il-hint{font-size:9.5px;color:var(--il-txt2);margin-top:4px;line-height:1.4;}
+      #st-indicaciones.ind-light .il-hint.warn{color:var(--il-gold);}
 
-      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Cliente</label>
-      <select id="ind-cliente" onchange="indActualizarTicket()" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:12px">
+      #st-indicaciones.ind-light .il-ico{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--il-pink-light);}
+      #st-indicaciones.ind-light .il-ico.gold{background:var(--il-gold-light);}
+      #st-indicaciones.ind-light .il-ico svg{width:16px;height:16px;stroke:var(--il-pink-dark);}
+      #st-indicaciones.ind-light .il-ico.gold svg{stroke:var(--il-gold);}
+
+      #st-indicaciones.ind-light #ind-ticket{background:var(--il-card);border:1px solid rgba(216,140,160,.3);border-radius:20px;overflow:hidden;box-shadow:0 8px 28px rgba(216,140,160,.18);}
+      #st-indicaciones.ind-light .il-t-head{background:linear-gradient(135deg,#F6C9D3 0%,#EDA0B4 100%);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;}
+      #st-indicaciones.ind-light .il-t-head-left{display:flex;align-items:center;gap:11px;}
+      #st-indicaciones.ind-light .il-t-avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+      #st-indicaciones.ind-light .il-t-avatar svg{width:19px;height:19px;stroke:#8B3A52;}
+      #st-indicaciones.ind-light #ind-t-cliente{font-size:15.5px;font-weight:800;color:#6B2737;letter-spacing:.01em;}
+      #st-indicaciones.ind-light #ind-t-fecha{font-size:10px;color:rgba(107,39,55,.65);margin-top:2px;}
+      #st-indicaciones.ind-light .il-t-body{padding:16px;}
+      #st-indicaciones.ind-light .il-t-row{display:flex;align-items:center;gap:10px;background:var(--il-card-soft);border:1px solid var(--il-border);border-radius:14px;padding:11px 13px;margin-bottom:10px;}
+      #st-indicaciones.ind-light .il-t-row .il-t-txt{flex:1;min-width:0;}
+      #st-indicaciones.ind-light .il-t-row .il-t-lbl{font-size:8.5px;font-weight:700;color:var(--il-txt2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
+      #st-indicaciones.ind-light .il-t-row .il-t-val{font-size:14px;font-weight:800;color:var(--il-txt);line-height:1.2;}
+      #st-indicaciones.ind-light .il-t-row.empty .il-t-val{color:var(--il-txt3);font-size:13px;font-weight:600;}
+      #st-indicaciones.ind-light .il-t-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+      #st-indicaciones.ind-light .il-t-grid2 .il-t-row{margin-bottom:0;}
+      #st-indicaciones.ind-light .il-t-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+      #st-indicaciones.ind-light .il-t-grid3 .il-t-row{flex-direction:column;align-items:flex-start;padding:10px 11px;}
+      #st-indicaciones.ind-light .il-t-grid3 .il-ico{margin-bottom:6px;}
+      #st-indicaciones.ind-light .il-t-oc{background:var(--il-gold-light);border-color:rgba(217,174,116,.45);}
+      #st-indicaciones.ind-light .il-t-oc .il-t-lbl{color:var(--il-gold);}
+      #st-indicaciones.ind-light .il-t-oc .il-t-val{color:#A87B2E;}
+      #st-indicaciones.ind-light .il-t-section-lbl{font-size:9.5px;font-weight:700;color:var(--il-txt2);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 9px;display:flex;align-items:center;gap:5px;}
+      #st-indicaciones.ind-light .il-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+      #st-indicaciones.ind-light .il-chip{background:var(--il-pink-light);border:1px solid rgba(232,137,159,.35);color:#A94A66;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;}
+      #st-indicaciones.ind-light .il-chip.etiquetado{background:var(--il-gold-light);border-color:rgba(217,174,116,.5);color:#A87B2E;}
+      #st-indicaciones.ind-light .il-chip-empty{font-size:11.5px;color:var(--il-txt3);font-style:italic;}
+      #st-indicaciones.ind-light .il-t-obs{background:var(--il-card-soft);border:1px solid var(--il-border);border-radius:12px;padding:10px 13px;font-size:11.5px;color:var(--il-txt2);line-height:1.5;}
+      #st-indicaciones.ind-light .il-t-obs b{color:var(--il-txt);}
+      #st-indicaciones.ind-light .il-t-foot{text-align:center;font-size:9px;color:var(--il-txt3);padding:12px 16px 14px;border-top:1px solid rgba(216,140,160,.15);margin-top:6px;display:flex;align-items:center;justify-content:center;gap:5px;}
+      #st-indicaciones.ind-light .il-t-foot svg{width:10px;height:10px;fill:var(--il-pink);}
+
+      /* NOTA: #ind-action-bar vive FUERA de #st-indicaciones (como hermano
+         en el DOM) a propósito. La animación "anim-in" que la app aplica
+         al cambiar de tab usa CSS transform sobre #st-indicaciones, y
+         cualquier ancestro con transform convierte a ESE ancestro en el
+         "contenedor" de los elementos position:fixed dentro de él (en vez
+         del viewport) — por eso la barra quedaba invisible/mal ubicada
+         cuando vivía adentro. Al sacarla afuera, vuelve a posicionarse
+         correctamente contra el viewport real. */
+      #ind-action-bar{
+        position:fixed;bottom:67px;left:0;right:0;background:#FFFFFF;border-top:1px solid rgba(216,140,160,.22);
+        padding:12px 16px;
+        display:none;gap:10px;align-items:center;box-shadow:0 -6px 20px rgba(216,140,160,.12);
+        z-index:901; font-family:'DM Sans',sans-serif;
+      }
+      #ind-action-bar .il-btn-editar{background:transparent;border:1.5px solid #E8899F;color:#D5728B;font-weight:800;font-size:13px;padding:12px 16px;border-radius:14px;cursor:pointer;white-space:nowrap;font-family:inherit;}
+      #ind-action-bar .il-btn-wsp{flex:1;background:linear-gradient(135deg,#F0A6BE,#E0839F);border:none;border-radius:14px;padding:12px 14px;color:#fff;font-size:13.5px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;}
+      #ind-action-bar .il-btn-wsp:active{transform:scale(.97);}
+      #ind-action-bar .il-btn-wsp:disabled{opacity:.5;cursor:not-allowed;}
+      #ind-action-bar .il-btn-wsp svg{width:17px;height:17px;fill:#fff;}
+    </style>
+
+    <div class="il-card">
+      <div class="il-card-title">📝 Datos de la entrega</div>
+
+      <label>Cliente</label>
+      <select id="ind-cliente" onchange="indActualizarTicket()">
         <option value="">— Selecciona un cliente —</option>
       </select>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="il-row2">
         <div>
-          <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Ruta</label>
-          <input type="number" id="ind-ruta" placeholder="Ej: 12" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <label>Ruta</label>
+          <input type="number" id="ind-ruta" placeholder="Ej: 12" oninput="indActualizarTicket()">
         </div>
         <div>
-          <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">N° Mesón</label>
-          <input type="text" id="ind-meson" placeholder="Ej: 4 - Salida" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <label>N° Mesón</label>
+          <input type="text" id="ind-meson" placeholder="Ej: 4 - Salida" oninput="indActualizarTicket()">
         </div>
       </div>
 
-      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Embaladora</label>
-      <select id="ind-embaladora" onchange="indActualizarTicket()" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:12px">
+      <label>Embaladora</label>
+      <select id="ind-embaladora" onchange="indActualizarTicket()">
         <option value="">— Selecciona una embaladora —</option>
       </select>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="il-row3">
         <div>
-          <label style="display:block;font-size:9.5px;font-weight:700;color:#B39DDB;text-transform:uppercase;margin-bottom:5px">Entregas</label>
-          <input type="number" id="ind-entregas" placeholder="0" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 8px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <label>Entregas</label>
+          <input type="number" id="ind-entregas" placeholder="0" oninput="indActualizarTicket()">
         </div>
         <div>
-          <label style="display:block;font-size:9.5px;font-weight:700;color:#B39DDB;text-transform:uppercase;margin-bottom:5px">Unidades</label>
-          <input type="number" id="ind-unidades" placeholder="0" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 8px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <label>Unidades</label>
+          <input type="number" id="ind-unidades" placeholder="0" oninput="indActualizarTicket()">
         </div>
         <div>
-          <label style="display:block;font-size:9.5px;font-weight:700;color:#B39DDB;text-transform:uppercase;margin-bottom:5px">Multi</label>
-          <input type="number" id="ind-multi" placeholder="0" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 8px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <label>Multi</label>
+          <input type="number" id="ind-multi" placeholder="0" oninput="indActualizarTicket()">
         </div>
       </div>
 
-      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">OC</label>
-      <input type="text" id="ind-oc" placeholder="N° de orden de compra (si aplica)" oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:4px">
-      <div style="font-size:9.5px;color:#FFB199;margin-bottom:12px;line-height:1.4">⚠ Si se ingresa un N° de OC, se agrega automáticamente la indicación "ETIQUETADO".</div>
+      <label>OC</label>
+      <input type="text" id="ind-oc" placeholder="N° de orden de compra (si aplica)" oninput="indActualizarTicket()">
+      <div class="il-hint warn">✨ Si se ingresa un N° de OC, se agrega automáticamente la indicación "ETIQUETADO".</div>
 
-      <label style="display:block;font-size:11px;font-weight:700;color:#B39DDB;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Observaciones</label>
-      <textarea id="ind-obs" rows="2" placeholder="Notas adicionales para esta entrega..." oninput="indActualizarTicket()" style="width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical"></textarea>
+      <label>Observaciones</label>
+      <textarea id="ind-obs" rows="2" placeholder="Notas adicionales para esta entrega..." oninput="indActualizarTicket()"></textarea>
     </div>
 
-    <div class="card-title" style="padding:0 2px;margin-bottom:8px">👀 Vista previa (esto se enviará)</div>
-    <div id="ind-ticket-wrap" class="share-block" style="background:linear-gradient(145deg,#1a1230 0%,#150f26 100%);border:1px solid rgba(183,127,224,.35);border-radius:16px;overflow:hidden;margin-bottom:12px">
-      <div style="background:linear-gradient(90deg,#7B4FA8,#C9629E);padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div id="ind-t-cliente" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.02em">Selecciona un cliente</div>
-          <div id="ind-t-fecha" style="font-size:10px;color:rgba(255,255,255,.65);margin-top:2px">—</div>
-        </div>
-        <div style="font-size:26px">📦</div>
-      </div>
-      <div style="padding:16px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-          <div id="ind-tb-ruta" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Ruta</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
-          <div id="ind-tb-meson" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">N° Mesón</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
-          <div id="ind-tb-embaladora" style="grid-column:1/-1;background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Embaladora</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
-          <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-            <div id="ind-tb-entregas" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Entregas</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
-            <div id="ind-tb-unidades" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Unidades</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
-            <div id="ind-tb-multi" style="background:rgba(183,127,224,.10);border:1px solid rgba(183,127,224,.25);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#D4A8F0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Multi</div><div style="font-size:16px;font-weight:900;color:var(--txt)">—</div></div>
+    <div class="il-card-title" style="padding:0 2px">👀 Vista previa (esto se enviará)</div>
+    <div id="ind-ticket-wrap" class="share-block">
+      <div id="ind-ticket">
+        <div class="il-t-head">
+          <div class="il-t-head-left">
+            <div class="il-t-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+            </div>
+            <div>
+              <div id="ind-t-cliente">Selecciona un cliente</div>
+              <div id="ind-t-fecha">—</div>
+            </div>
+          </div>
+          <div style="opacity:.9">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".85">
+              <path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>
+              <path d="M12 12.5c-1-1.2-3-1-3 .5s3 2.5 3 2.5 3-1 3-2.5-2-1.7-3-.5z" fill="#fff" stroke="none"/>
+            </svg>
           </div>
         </div>
-        <div id="ind-tb-oc-wrap" style="display:none;margin-bottom:14px">
-          <div style="background:rgba(255,177,153,.1);border:1px solid rgba(255,177,153,.3);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:8px;font-weight:700;color:#FFB199;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">N° OC</div><div id="ind-tb-oc-val" style="font-size:16px;font-weight:900;color:#FFB199">—</div></div>
+
+        <div class="il-t-body">
+          <div class="il-t-grid2">
+            <div class="il-t-row" id="ind-tb-ruta">
+              <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0114 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+              <div class="il-t-txt"><div class="il-t-lbl">Ruta</div><div class="il-t-val">—</div></div>
+            </div>
+            <div class="il-t-row" id="ind-tb-meson">
+              <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="9" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="15" y2="20"/></svg></div>
+              <div class="il-t-txt"><div class="il-t-lbl">N° Mesón</div><div class="il-t-val">—</div></div>
+            </div>
+          </div>
+
+          <div class="il-t-row" id="ind-tb-embaladora">
+            <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+            <div class="il-t-txt"><div class="il-t-lbl">Embaladora</div><div class="il-t-val">—</div></div>
+          </div>
+
+          <div class="il-t-grid3">
+            <div class="il-t-row" id="ind-tb-entregas">
+              <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="8" width="13" height="8" rx="1.5"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="6" cy="18.5" r="1.6"/><circle cx="17.5" cy="18.5" r="1.6"/></svg></div>
+              <div class="il-t-txt"><div class="il-t-lbl">Entregas</div><div class="il-t-val">—</div></div>
+            </div>
+            <div class="il-t-row" id="ind-tb-unidades">
+              <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l-2 6 5 12 5-12-2-6"/></svg></div>
+              <div class="il-t-txt"><div class="il-t-lbl">Unidades</div><div class="il-t-val">—</div></div>
+            </div>
+            <div class="il-t-row" id="ind-tb-multi">
+              <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><rect x="9" y="1.5" width="6" height="3" rx="1"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg></div>
+              <div class="il-t-txt"><div class="il-t-lbl">Multi</div><div class="il-t-val">—</div></div>
+            </div>
+          </div>
+
+          <div id="ind-tb-oc-wrap" style="display:none">
+            <div class="il-t-row il-t-oc" id="ind-tb-oc">
+              <div class="il-ico gold"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+              <div class="il-t-txt"><div class="il-t-lbl">N° OC</div><div class="il-t-val">—</div></div>
+            </div>
+          </div>
+
+          <div class="il-t-section-lbl">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D5728B" stroke-width="2"><path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5z"/></svg>
+            Indicaciones de embalaje
+          </div>
+          <div id="ind-t-chips" class="il-chips"><span class="il-chip-empty">Selecciona un cliente para ver las indicaciones</span></div>
+
+          <div id="ind-t-obs-wrap" style="display:none">
+            <div class="il-t-section-lbl">Observaciones</div>
+            <div class="il-t-obs" id="ind-t-obs-val"></div>
+          </div>
         </div>
 
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin:2px 0 8px">Indicaciones de embalaje</div>
-        <div id="ind-t-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"><span style="font-size:11.5px;color:var(--txt3);font-style:italic">Selecciona un cliente para ver las indicaciones</span></div>
-
-        <div id="ind-t-obs-wrap" style="display:none">
-          <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin:2px 0 8px">Observaciones</div>
-          <div id="ind-t-obs-val" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--txt2);line-height:1.5"></div>
+        <div class="il-t-foot">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.35-9.33-8.9C1.4 9.14 2.94 6 6 6c1.74 0 3.15 1 4 2.3C10.85 7 12.26 6 14 6c3.06 0 4.6 3.14 3.33 6.1C19 16.65 12 21 12 21z"/></svg>
+          Mi Productividad · CD Lo Boza — Ficha generada el <span id="ind-t-foot-fecha">—</span>
         </div>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--txt3);padding:10px 16px 14px;border-top:1px solid rgba(255,255,255,.05);margin-top:4px">Mi Productividad · CD Lo Boza — Ficha generada el <span id="ind-t-foot-fecha">—</span></div>
     </div>
 
-    <button class="btn-ghost no-share" onclick="indGenerarYEnviar(this)" style="width:100%;box-sizing:border-box;padding:14px;background:linear-gradient(135deg,#25D366,#1EBE5A);border:none;color:#04150a;font-size:14px;font-weight:800;border-radius:12px;cursor:pointer">
-      📤 Generar imagen y enviar por WhatsApp
+    <div style="height:80px"></div>
+  </div>
+
+  <!-- Barra de acciones de Indicaciones: vive FUERA de #st-indicaciones
+       a propósito (ver nota en el <style> de arriba sobre por qué el
+       transform de "anim-in" rompía el position:fixed si quedaba adentro).
+       Se muestra/oculta vía JS en showSupTab()/bnavGo(). -->
+  <div id="ind-action-bar">
+    <button class="il-btn-editar no-share" onclick="document.querySelector('#st-indicaciones .il-card').scrollIntoView({behavior:'smooth'})">Editar</button>
+    <button class="il-btn-wsp no-share" onclick="indGenerarYEnviar(this)">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.37 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.2 14.2c-.22.62-1.28 1.2-1.77 1.24-.46.04-.97.06-1.56-.1-.36-.1-.82-.26-1.4-.5-2.47-1.07-4.08-3.6-4.2-3.77-.12-.16-1-1.34-1-2.55 0-1.22.63-1.82.86-2.06.22-.25.5-.3.66-.3h.48c.15 0 .36-.06.56.43.22.5.74 1.75.8 1.88.06.12.1.27.02.44-.08.16-.12.27-.24.4-.12.15-.26.33-.37.44-.12.12-.25.25-.1.5.13.25.6 1 1.3 1.6.9.8 1.65 1.06 1.9 1.18.25.12.4.1.55-.06.15-.15.63-.72.8-.97.16-.25.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.6-.16 1.2z"/></svg>
+      Generar imagen y enviar por WhatsApp
     </button>
   </div>
 
@@ -5878,6 +6030,10 @@ function showSupTab(tab, btn){
   if(tab==='indicaciones'){
     indInit();
   }
+  // Barra de acciones flotante (Editar/WhatsApp) de Indicaciones: solo
+  // visible en ese tab. Vive fuera de #st-indicaciones (ver nota arriba).
+  const indBar = document.getElementById('ind-action-bar');
+  if(indBar) indBar.style.display = tab==='indicaciones' ? 'flex' : 'none';
   _tabActual = tab;
 }
 
@@ -11686,15 +11842,14 @@ function indInit(){
 function _indFmtBox(id, valor){
   const el = document.getElementById(id);
   if(!el) return;
-  const valEl = el.querySelector('div:last-child');
+  const valEl = el.querySelector('.il-t-val');
+  if(!valEl) return;
   if(valor===''||valor===null||valor===undefined){
+    el.classList.add('empty');
     valEl.textContent = '—';
-    valEl.style.color = 'var(--txt3)';
-    valEl.style.fontSize = '13px';
   } else {
+    el.classList.remove('empty');
     valEl.textContent = valor;
-    valEl.style.color = 'var(--txt)';
-    valEl.style.fontSize = '16px';
   }
 }
 function indActualizarTicket(){
@@ -11721,13 +11876,13 @@ function indActualizarTicket(){
   _indFmtBox('ind-tb-multi', multi);
 
   const ocWrap = document.getElementById('ind-tb-oc-wrap');
-  if(oc){ ocWrap.style.display='block'; document.getElementById('ind-tb-oc-val').textContent = oc; }
+  if(oc){ ocWrap.style.display='block'; _indFmtBox('ind-tb-oc', oc); }
   else  { ocWrap.style.display='none'; }
 
   // ── Chips de indicaciones: las del cliente + ETIQUETADO automático si hay OC ──
   const chipsEl = document.getElementById('ind-t-chips');
   if(!cliente){
-    chipsEl.innerHTML = '<span style="font-size:11.5px;color:var(--txt3);font-style:italic">Selecciona un cliente para ver las indicaciones</span>';
+    chipsEl.innerHTML = '<span class="il-chip-empty">Selecciona un cliente para ver las indicaciones</span>';
   } else {
     let indicaciones = [...(IND_CLIENTE_INDICACIONES[cliente]||[])];
     let ocForzoEtiquetado = false;
@@ -11737,10 +11892,7 @@ function indActualizarTicket(){
     }
     chipsEl.innerHTML = indicaciones.map(txt=>{
       const esEtiquetadoPorOC = ocForzoEtiquetado && txt==='ETIQUETADO';
-      const bg = esEtiquetadoPorOC ? 'rgba(255,177,153,.15)' : 'rgba(216,136,201,.14)';
-      const bd = esEtiquetadoPorOC ? 'rgba(255,177,153,.45)' : 'rgba(216,136,201,.4)';
-      const co = esEtiquetadoPorOC ? '#FFB199' : '#F0A8E0';
-      return `<span style="background:${bg};border:1px solid ${bd};color:${co};font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:5px">${esEtiquetadoPorOC?'🏷️':'✓'} ${escapeHtml(txt)}${esEtiquetadoPorOC?' (por OC)':''}</span>`;
+      return `<span class="il-chip${esEtiquetadoPorOC?' etiquetado':''}">${esEtiquetadoPorOC?'✨':'✓'} ${escapeHtml(txt)}</span>`;
     }).join('');
   }
 
