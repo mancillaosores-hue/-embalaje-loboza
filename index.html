@@ -11872,25 +11872,25 @@ function _indFmtBox(id, valor){
 }
 // ── Fotos de embaladoras ─────────────────────────────────────────
 // Mapeo nombre-corto (igual a lo que devuelve nombreCorto()) → ruta de
-// la foto. Las rutas son RELATIVAS a este index.html — asumen que subes
-// las 11 fotos a una carpeta llamada "fotos" en el mismo repositorio de
-// GitHub, junto al index.html (ej. tu-repo/fotos/susan-carrizo.jpg).
-// Si usas otro nombre de carpeta, solo cambia el prefijo "./fotos/" de
-// todas las líneas de abajo. Las operarias que no tienen foto acá
-// (Carolina Carrasco, Karina Farías) simplemente muestran el ícono
-// genérico — no hace falta ninguna otra configuración.
+// la foto. Las rutas son RELATIVAS a este index.html — apuntan a la
+// carpeta "fotos" tal cual la subiste a GitHub, con los nombres de
+// archivo ORIGINALES (mayúsculas, espacios y extensión .jpeg/.JPG
+// variada) — no hace falta renombrar nada en el repositorio.
+// Las rutas se pasan por encodeURI() al usarlas (ver más abajo) para
+// que los espacios y la Ñ no rompan la carga de la imagen.
 const IND_FOTOS_EMBALADORAS = {
-  'Susan Carrizo':     './fotos/susan-carrizo.jpg',
-  'Evita Arévalo':     './fotos/evita-arevalo.jpg',
-  'Paola Marchant':    './fotos/paola-marchant.jpg',
-  'Elena Nahuelñir':   './fotos/elena-nahuelnir.jpg',
-  'Melissa Pino':      './fotos/melissa-pino.jpg',
-  'Daniela Acevedo':   './fotos/daniela-acevedo.jpg',
-  'Norma Troncoso':    './fotos/norma-troncoso.jpg',
-  'Paola Cortés':      './fotos/paola-cortes.jpg',
-  'Corina San Martín': './fotos/corina-sanmartin.jpg',
-  'Karen Sepúlveda':   './fotos/karen-sepulveda.jpg',
-  'Aida Torres':       './fotos/aida-torres.jpg',
+  'Susan Carrizo':     './fotos/SUSSAN CARRIZO.jpeg',
+  'Evita Arévalo':     './fotos/EVITA AREVALOS.jpeg',
+  'Paola Marchant':    './fotos/PAOLA MARCHANT2.jpeg',
+  'Elena Nahuelñir':   './fotos/ELENA NAHUELÑIR.jpeg',
+  'Melissa Pino':      './fotos/MELISA PICNO.jpeg',
+  'Daniela Acevedo':   './fotos/DANIELA ACEVEDO.JPG',
+  'Norma Troncoso':    './fotos/NORMA TRONCOSO.jpeg',
+  'Paola Cortés':      './fotos/PAOLA CORTES.jpeg',
+  'Corina San Martín': './fotos/CORINA SAN MARTIN.jpeg',
+  'Karen Sepúlveda':   './fotos/KAREN SEPULVEDA.jpeg',
+  'Aida Torres':       './fotos/AIDA TORRES.jpeg',
+  'Carolina Carrasco': './fotos/CAROLINA CARRASCO.jpeg',
 };
 function _indIconoEmbaladoraSvg(){
   return '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>';
@@ -11900,10 +11900,13 @@ function _indActualizarFotoEmbaladora(nombre){
   if(!cont) return;
   const foto = IND_FOTOS_EMBALADORAS[nombre];
   if(foto){
+    // encodeURI() convierte los espacios y la Ñ en su forma %20 / %C3%91
+    // para que el navegador pueda cargar el archivo correctamente.
     // onerror: si la foto aún no existe en esa ruta (ej. todavía no subida
-    // a GitHub), vuelve automáticamente al ícono genérico en vez de
-    // mostrar un ícono de imagen rota.
-    cont.innerHTML = `<img src="${foto}" alt="${escapeHtml(nombre)}" onerror="this.parentElement.innerHTML=_indIconoEmbaladoraSvg()">`;
+    // a GitHub, o el nombre de archivo no coincide exacto), vuelve
+    // automáticamente al ícono genérico en vez de mostrar una imagen rota.
+    const fotoUrl = encodeURI(foto);
+    cont.innerHTML = `<img src="${fotoUrl}" alt="${escapeHtml(nombre)}" onerror="this.parentElement.innerHTML=_indIconoEmbaladoraSvg()">`;
   } else {
     cont.innerHTML = _indIconoEmbaladoraSvg();
   }
