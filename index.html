@@ -3988,9 +3988,112 @@ function groupByFecha(rows){
   });
   return g;
 }
+// ── SEGURIDAD/CORRECCIÓN: excepciones de nombre corto en Ranking/Podio ──
+// nombreCorto() toma "primera palabra + ÚLTIMA palabra" como atajo para
+// nombre+apellido. Eso falla con nombres de 4+ palabras donde la ÚLTIMA
+// palabra es el apellido MATERNO, no el paterno — ej. "Paola del Carmen
+// Marchant Cornejo" daba "Paola Cornejo" en vez de "Paola Marchant".
+// Se corrige acá con una excepción puntual (sin cambiar el algoritmo
+// general, para no romper casos como "Corina San Martín" que sí depende
+// de tomar la última palabra por ser un apellido compuesto).
+const NOMBRE_CORTO_EXCEPCIONES = {
+  'PAOLA DEL CARMEN MARCHANT CORNEJO': 'Paola Marchant',
+  'SUSAN LIZ CARRIZO SANDOVAL': 'Susan Carrizo'
+};
 function nombreCorto(n){
+  const key = (n||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(NOMBRE_CORTO_EXCEPCIONES[key]) return NOMBRE_CORTO_EXCEPCIONES[key];
   const p=n.trim().split(/\s+/);
   return p.length>=2?p[0]+' '+p[p.length-1]:n;
+}
+
+// ── Ranking por % de meta (Día/Semana/Mes) ──
+// Helpers para calcular cuánto le falta a cada operaria para llegar a SU
+// meta del período completo, y a qué ritmo diario debe producir en los
+// días hábiles que le quedan. Se usa en loadEquipo() (resto del ranking
+// del día), loadSupSemana() y loadSupMes().
+function _diasHabilesEnRango(desdeISO, hastaISO){
+  let count=0;
+  let d = new Date(desdeISO+'T12:00:00');
+  const fin = new Date(hastaISO+'T12:00:00');
+  while(d<=fin){
+    const dow=d.getDay();
+    if(dow>=1 && dow<=5) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+function _avancePeriodoInfo(desdeISO, hastaISO){
+  const hoyISO = fechaLocalStr(new Date());
+  const diasHabilesTotales = _diasHabilesEnRango(desdeISO, hastaISO);
+  let diasHabilesTranscurridos;
+  if(hoyISO < desdeISO){
+    diasHabilesTranscurridos = 0; // período futuro, aún no comienza
+  } else {
+    const hastaHoyISO = hoyISO > hastaISO ? hastaISO : hoyISO;
+    diasHabilesTranscurridos = _diasHabilesEnRango(desdeISO, hastaHoyISO);
+  }
+  const diasHabilesRestantes = Math.max(diasHabilesTotales - diasHabilesTranscurridos, 0);
+  return { diasHabilesTotales, diasHabilesTranscurridos, diasHabilesRestantes };
+}
+// Construye una fila de ranking con el mismo lenguaje visual que ya usa
+// la app (círculo de posición, pill de %, barra de progreso), agregando
+// Meta / Llevas / Falta / Ritmo por día. `mostrarRitmo=false` para el
+// ranking del día (no aplica ritmo diario dentro de un solo día).
+function _filaRankingMeta(pos, nombre, total, metaPeriodo, diasHabilesRestantes, mostrarRitmo){
+  const pct = metaPeriodo>0 ? Math.round(total/metaPeriodo*100) : null;
+  const falta = metaPeriodo>0 ? Math.max(metaPeriodo-total,0) : 0;
+  const cumplida = metaPeriodo>0 && total>=metaPeriodo;
+  const barCol=pct===null?'#3B8FFF':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
+  const semCol=pct===null?'#8AAED4':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
+  const pillBg=pct===null?'rgba(138,174,212,.12)':pct>=100?'rgba(46,204,138,.12)':pct>=70?'rgba(255,186,77,.12)':'rgba(239,68,68,.12)';
+  const pillBd=pct===null?'rgba(138,174,212,.3)':pct>=100?'rgba(46,204,138,.3)':pct>=70?'rgba(255,186,77,.3)':'rgba(239,68,68,.3)';
+  const ritmoDia = (mostrarRitmo && diasHabilesRestantes>0 && !cumplida) ? Math.ceil(falta/diasHabilesRestantes) : null;
+
+  let statsHtml;
+  if(metaPeriodo<=0){
+    statsHtml = ''; // sin meta asignada, no mostrar fila de stats
+  } else if(cumplida){
+    statsHtml = `<div style="display:flex;gap:6px;margin-top:5px">
+      <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Meta</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(metaPeriodo)}</div></div>
+      <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Llevas</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(total)}</div></div>
+      <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Estado</div><div style="font-size:11px;font-weight:800;color:#2ECC8A">✅ Cumplida</div></div>
+    </div>`;
+  } else {
+    const cols = mostrarRitmo
+      ? `<div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Meta</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(metaPeriodo)}</div></div>
+         <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Llevas</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(total)}</div></div>
+         <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Falta</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(falta)}</div></div>
+         <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Ritmo/día</div><div style="font-size:11px;font-weight:800;color:${semCol}">${ritmoDia!==null?fmtN(ritmoDia):'—'}</div></div>`
+      : `<div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Meta</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(metaPeriodo)}</div></div>
+         <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Llevas</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(total)}</div></div>
+         <div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--txt3);text-transform:uppercase">Falta</div><div style="font-size:11px;font-weight:800;color:var(--txt)">${fmtN(falta)}</div></div>`;
+    statsHtml = `<div style="display:flex;gap:6px;margin-top:5px">${cols}</div>`;
+  }
+
+  return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">`
+    +`<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--txt3);flex-shrink:0">${pos}</div>`
+    +`<div style="flex:1;min-width:0">`
+    +`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`
+    +`<span style="font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nombre)}</span>`
+    +`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">`
+    +`<span style="font-size:12px;font-weight:700;color:var(--txt)">${fmtN(total)}</span>`
+    +(pct!==null?`<span style="font-size:9px;font-weight:700;color:${semCol};background:${pillBg};border:1px solid ${pillBd};padding:1px 6px;border-radius:10px">${pct}%</span>`:'')
+    +`</div></div>`
+    +`<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">`
+    +`<div style="height:100%;width:${pct!==null?Math.min(pct,100):0}%;background:${barCol};border-radius:3px;transition:width .5s ease"></div></div>`
+    +statsHtml
+    +`</div></div>`;
+}
+// Ordena entradas [uid,{total}] por % de cumplimiento de meta descendente
+// (no por cantidad absoluta) — las que no tienen meta asignada quedan al final.
+function _ordenarPorPctMeta(entries, metaPorUid){
+  return entries.slice().sort((a,b)=>{
+    const metaA=metaPorUid(a[0]), metaB=metaPorUid(b[0]);
+    const pctA=metaA>0?a[1].total/metaA:-1;
+    const pctB=metaB>0?b[1].total/metaB:-1;
+    return pctB-pctA;
+  });
 }
 
 // ============================================================
@@ -5424,28 +5527,14 @@ async function loadEquipo(){
       </div>`;
     }
 
-    // Lista resto (4º en adelante) con barra hacia meta
-    const restoHtml=sorted.slice(3).map(([uid,d],i)=>{
+    // Lista resto (4º en adelante) — ordenada por % de cumplimiento de
+    // la meta DIARIA (no por cantidad absoluta), con Meta/Llevas/Falta.
+    // El podio (top 3) se mantiene arriba sin cambios.
+    const restoOrdenado = _ordenarPorPctMeta(sorted.slice(3), uid=>META[uid]||0);
+    const restoHtml = restoOrdenado.map(([uid,d],i)=>{
       const nombre=DB[uid]?nombreCorto(DB[uid]):uid;
       const meta=META[uid]||0;
-      const pct=meta>0?Math.round(d.total/meta*100):null;
-      const barW=meta>0?Math.min(pct,100):Math.round(d.total/maxV*100);
-      const barCol=pct===null?'#3B8FFF':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
-      const semCol=pct===null?'#8AAED4':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
-      const pillBg=pct===null?'rgba(138,174,212,.12)':pct>=100?'rgba(46,204,138,.12)':pct>=70?'rgba(255,186,77,.12)':'rgba(239,68,68,.12)';
-      const pillBd=pct===null?'rgba(138,174,212,.3)':pct>=100?'rgba(46,204,138,.3)':pct>=70?'rgba(255,186,77,.3)':'rgba(239,68,68,.3)';
-      return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">`
-        +`<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--txt3);flex-shrink:0">${i+4}</div>`
-        +`<div style="flex:1;min-width:0">`
-        +`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`
-        +`<span style="font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre}</span>`
-        +`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">`
-        +`<span style="font-size:12px;font-weight:700;color:var(--txt)">${fmtN(d.total)}</span>`
-        +(pct!==null?`<span style="font-size:9px;font-weight:700;color:${semCol};background:${pillBg};border:1px solid ${pillBd};padding:1px 6px;border-radius:10px">${pct}%</span>`:'')
-        +`</div></div>`
-        +`<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">`
-        +`<div style="height:100%;width:${barW}%;background:${barCol};border-radius:3px;transition:width .5s ease"></div></div>`
-        +`</div></div>`;
+      return _filaRankingMeta(i+4, nombre, d.total, meta, 0, false);
     }).join('');
 
     const soloInsumoHtml = soloInsumos.length
@@ -5764,28 +5853,17 @@ async function loadSupMes(){
     gu[r.usuario].total+=r.cantidad;
     gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
   });
-  const sortedU=Object.entries(gu).sort((a,b)=>b[1].total-a[1].total);
-  const maxU=sortedU[0]?.[1].total||1;
+  // Ranking acumulado mes — mismo criterio que Semana: ordenado por %
+  // de cumplimiento de la meta MENSUAL completa (no por cantidad
+  // absoluta), con Meta/Llevas/Falta/Ritmo por día según los días
+  // hábiles que quedan en el mes.
+  const avanceMes = _avancePeriodoInfo(desde, hasta);
+  const metaMesPorUid = uid => (META[uid]||0) * avanceMes.diasHabilesTotales;
+  const sortedU = _ordenarPorPctMeta(Object.entries(gu), metaMesPorUid);
   document.getElementById('sup-mes-ranking').innerHTML=sortedU.map(([uid,d],i)=>{
     const nombre=DB[uid]?nombreCorto(DB[uid]):uid;
-    const metaMes=(META[uid]||0)*dias;
-    const pct=metaMes>0?Math.round(d.total/metaMes*100):null;
-    const barCol=pct===null?'#3B8FFF':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
-    const semCol=pct===null?'#8AAED4':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
-    const pillBg=pct===null?'rgba(138,174,212,.12)':pct>=100?'rgba(46,204,138,.12)':pct>=70?'rgba(255,186,77,.12)':'rgba(239,68,68,.12)';
-    const pillBd=pct===null?'rgba(138,174,212,.3)':pct>=100?'rgba(46,204,138,.3)':pct>=70?'rgba(255,186,77,.3)':'rgba(239,68,68,.3)';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">`
-      +`<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--txt3);flex-shrink:0">${i+1}</div>`
-      +`<div style="flex:1;min-width:0">`
-      +`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`
-      +`<span style="font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre}</span>`
-      +`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">`
-      +`<span style="font-size:12px;font-weight:700;color:var(--txt)">${fmtN(d.total)}</span>`
-      +(pct!==null?`<span style="font-size:9px;font-weight:700;color:${semCol};background:${pillBg};border:1px solid ${pillBd};padding:1px 6px;border-radius:10px">${pct}%</span>`:'')
-      +`</div></div>`
-      +`<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">`
-      +`<div style="height:100%;width:${Math.round(d.total/maxU*100)}%;background:${barCol};border-radius:3px;transition:width .5s ease"></div></div>`
-      +`</div></div>`;
+    const metaMes=metaMesPorUid(uid);
+    return _filaRankingMeta(i+1, nombre, d.total, metaMes, avanceMes.diasHabilesRestantes, true);
   }).join('');
   document.getElementById('sup-mes-ranking-card').style.display='block';
 }
@@ -6259,35 +6337,22 @@ async function loadSupSemana(){
   }).join('');
   document.getElementById('sup-sem-dias-card').style.display='block';
 
-  // Ranking acumulado semana
+  // Ranking acumulado semana — ordenado por % de cumplimiento de la
+  // meta SEMANAL completa (no por cantidad absoluta), con Meta/Llevas/
+  // Falta/Ritmo por día según los días hábiles que quedan en la semana.
   const gu={};
   rows.forEach(r=>{
     if(!gu[r.usuario])gu[r.usuario]={total:0};
     gu[r.usuario].total+=r.cantidad;
   });
-  const sortedU=Object.entries(gu).sort((a,b)=>b[1].total-a[1].total);
-  const maxU=sortedU[0]?.[1].total||1;
+  const avanceSem = _avancePeriodoInfo(desde, hasta);
+  const metaSemPorUid = uid => (META[uid]||0) * avanceSem.diasHabilesTotales;
+  const sortedU = _ordenarPorPctMeta(Object.entries(gu), metaSemPorUid);
   const rnkEl=document.getElementById('sup-sem-ranking');
   rnkEl.innerHTML=sortedU.map(([uid,d],i)=>{
     const nombre=DB[uid]?nombreCorto(DB[uid]):uid;
-    const metaSem=(META[uid]||0)*dias;
-    const pct=metaSem>0?Math.round(d.total/metaSem*100):null;
-    const barCol=pct===null?'#3B8FFF':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
-    const semCol=pct===null?'#8AAED4':pct>=100?'#2ECC8A':pct>=70?'#FFBA4D':'#EF4444';
-    const pillBg=pct===null?'rgba(138,174,212,.12)':pct>=100?'rgba(46,204,138,.12)':pct>=70?'rgba(255,186,77,.12)':'rgba(239,68,68,.12)';
-    const pillBd=pct===null?'rgba(138,174,212,.3)':pct>=100?'rgba(46,204,138,.3)':pct>=70?'rgba(255,186,77,.3)':'rgba(239,68,68,.3)';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">`
-      +`<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--txt3);flex-shrink:0">${i+1}</div>`
-      +`<div style="flex:1;min-width:0">`
-      +`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">`
-      +`<span style="font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre}</span>`
-      +`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">`
-      +`<span style="font-size:12px;font-weight:700;color:var(--txt)">${fmtN(d.total)}</span>`
-      +(pct!==null?`<span style="font-size:9px;font-weight:700;color:${semCol};background:${pillBg};border:1px solid ${pillBd};padding:1px 6px;border-radius:10px">${pct}%</span>`:'')
-      +`</div></div>`
-      +`<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">`
-      +`<div style="height:100%;width:${Math.round(d.total/maxU*100)}%;background:${barCol};border-radius:3px;transition:width .5s ease"></div></div>`
-      +`</div></div>`;
+    const metaSem=metaSemPorUid(uid);
+    return _filaRankingMeta(i+1, nombre, d.total, metaSem, avanceSem.diasHabilesRestantes, true);
   }).join('');
   document.getElementById('sup-sem-ranking-card').style.display='block';
 }
