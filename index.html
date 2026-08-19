@@ -1702,16 +1702,18 @@ input[type="month"], input[type="week"]{
       #st-indicaciones.ind-light #ind-t-cliente{font-size:15.5px;font-weight:800;color:#6B2737;letter-spacing:.01em;}
       #st-indicaciones.ind-light #ind-t-fecha{font-size:10px;color:rgba(107,39,55,.65);margin-top:2px;}
       #st-indicaciones.ind-light .il-t-body{padding:16px;}
-      #st-indicaciones.ind-light .il-t-row{display:flex;align-items:center;gap:10px;background:var(--il-card-soft);border:1px solid var(--il-border);border-radius:14px;padding:11px 13px;margin-bottom:10px;}
-      #st-indicaciones.ind-light .il-t-row .il-t-txt{flex:1;min-width:0;}
+      #st-indicaciones.ind-light .il-t-row{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--il-card-soft);border:1px solid var(--il-border);border-radius:14px;padding:11px 13px;margin-bottom:10px;}
+      #st-indicaciones.ind-light .il-t-row .il-t-txt{flex:0 1 auto;min-width:0;text-align:center;}
       #st-indicaciones.ind-light .il-t-row .il-t-lbl{font-size:8.5px;font-weight:700;color:var(--il-txt2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
-      #st-indicaciones.ind-light .il-t-row .il-t-val{font-size:14px;font-weight:800;color:var(--il-txt);line-height:1.2;}
-      #st-indicaciones.ind-light .il-t-row.empty .il-t-val{color:var(--il-txt3);font-size:13px;font-weight:600;}
+      #st-indicaciones.ind-light .il-t-row .il-t-val{font-size:19px;font-weight:900;color:var(--il-txt);line-height:1.2;}
+      #st-indicaciones.ind-light .il-t-row.empty .il-t-val{color:var(--il-txt3);font-size:16px;font-weight:700;}
       #st-indicaciones.ind-light .il-t-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
       #st-indicaciones.ind-light .il-t-grid2 .il-t-row{margin-bottom:0;}
       #st-indicaciones.ind-light .il-t-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
-      #st-indicaciones.ind-light .il-t-grid3 .il-t-row{flex-direction:column;align-items:flex-start;padding:10px 11px;}
-      #st-indicaciones.ind-light .il-t-grid3 .il-ico{margin-bottom:6px;}
+      #st-indicaciones.ind-light .il-t-grid3 .il-t-row{flex-direction:row;align-items:center;padding:10px 8px;}
+      #st-indicaciones.ind-light .il-t-grid3 .il-ico{margin-bottom:0;flex-shrink:0;}
+      #st-indicaciones.ind-light .il-t-grid3 .il-ico{width:26px;height:26px;}
+      #st-indicaciones.ind-light .il-t-grid3 .il-ico svg{width:13px;height:13px;}
       #st-indicaciones.ind-light .il-t-oc{background:var(--il-gold-light);border-color:rgba(217,174,116,.45);}
       #st-indicaciones.ind-light .il-t-oc .il-t-lbl{color:var(--il-gold);}
       #st-indicaciones.ind-light .il-t-oc .il-t-val{color:#A87B2E;}
@@ -1734,11 +1736,14 @@ input[type="month"], input[type="week"]{
          cuando vivía adentro. Al sacarla afuera, vuelve a posicionarse
          correctamente contra el viewport real. */
       #ind-action-bar{
-        position:fixed;bottom:67px;left:0;right:0;background:#FFFFFF;border-top:1px solid rgba(216,140,160,.22);
+        position:fixed;bottom:67px;left:50%;transform:translateX(-50%);
+        width:100%;max-width:560px;box-sizing:border-box;
+        background:#FFFFFF;border-top:1px solid rgba(216,140,160,.22);
         padding:12px 16px;
         display:none;gap:10px;align-items:center;box-shadow:0 -6px 20px rgba(216,140,160,.12);
         z-index:901; font-family:'DM Sans',sans-serif;
       }
+      @media(min-width:900px){ #ind-action-bar{ max-width:720px; } }
       #ind-action-bar .il-btn-editar{background:transparent;border:1.5px solid #E8899F;color:#D5728B;font-weight:800;font-size:13px;padding:12px 16px;border-radius:14px;cursor:pointer;white-space:nowrap;font-family:inherit;}
       #ind-action-bar .il-btn-wsp{flex:1;background:linear-gradient(135deg,#F0A6BE,#E0839F);border:none;border-radius:14px;padding:12px 14px;color:#fff;font-size:13.5px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;}
       #ind-action-bar .il-btn-wsp:active{transform:scale(.97);}
@@ -1799,7 +1804,7 @@ input[type="month"], input[type="week"]{
         <div class="il-t-head">
           <div class="il-t-head-left">
             <div class="il-t-avatar">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10l9-6 9 6v11"/><path d="M3 21h18"/><path d="M9 21v-8h6v8"/></svg>
             </div>
             <div>
               <div id="ind-t-cliente">Selecciona un cliente</div>
@@ -1827,7 +1832,7 @@ input[type="month"], input[type="week"]{
           </div>
 
           <div class="il-t-row" id="ind-tb-embaladora">
-            <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+            <div class="il-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></div>
             <div class="il-t-txt"><div class="il-t-lbl">Embaladora</div><div class="il-t-val">—</div></div>
           </div>
 
@@ -1880,7 +1885,7 @@ input[type="month"], input[type="week"]{
        transform de "anim-in" rompía el position:fixed si quedaba adentro).
        Se muestra/oculta vía JS en showSupTab()/bnavGo(). -->
   <div id="ind-action-bar">
-    <button class="il-btn-editar no-share" onclick="document.querySelector('#st-indicaciones .il-card').scrollIntoView({behavior:'smooth'})">Editar</button>
+    <button class="il-btn-editar no-share" onclick="indLimpiarFormulario()">Limpiar</button>
     <button class="il-btn-wsp no-share" onclick="indGenerarYEnviar(this)">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.37 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.2 14.2c-.22.62-1.28 1.2-1.77 1.24-.46.04-.97.06-1.56-.1-.36-.1-.82-.26-1.4-.5-2.47-1.07-4.08-3.6-4.2-3.77-.12-.16-1-1.34-1-2.55 0-1.22.63-1.82.86-2.06.22-.25.5-.3.66-.3h.48c.15 0 .36-.06.56.43.22.5.74 1.75.8 1.88.06.12.1.27.02.44-.08.16-.12.27-.24.4-.12.15-.26.33-.37.44-.12.12-.25.25-.1.5.13.25.6 1 1.3 1.6.9.8 1.65 1.06 1.9 1.18.25.12.4.1.55-.06.15-.15.63-.72.8-.97.16-.25.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.6-.16 1.2z"/></svg>
       Generar imagen y enviar por WhatsApp
@@ -11905,6 +11910,23 @@ async function indGenerarYEnviar(btnEl){
   if(!cliente){ toast('⚠ Selecciona un cliente primero'); return; }
   const filename = 'Indicaciones_'+cliente.replace(/\s+/g,'_');
   await compartirComoImagen(['ind-ticket-wrap'], filename, btnEl);
+}
+// Botón "Limpiar" de la barra de acciones: borra todos los campos ingresados
+// (cliente, ruta, mesón, embaladora, entregas, unidades, multi, OC, obs) y
+// vuelve a pintar el ticket en su estado vacío inicial — a diferencia del
+// comportamiento anterior ("Editar") que solo hacía scroll hacia el formulario.
+function indLimpiarFormulario(){
+  ['ind-cliente','ind-embaladora'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  ['ind-ruta','ind-meson','ind-entregas','ind-unidades','ind-multi','ind-oc','ind-obs'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  indActualizarTicket();
+  document.querySelector('#st-indicaciones .il-card').scrollIntoView({behavior:'smooth'});
+  toast('✨ Formulario limpio');
 }
 </script>
 
