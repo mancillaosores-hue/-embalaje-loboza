@@ -3988,23 +3988,24 @@ function groupByFecha(rows){
   });
   return g;
 }
-// ── SEGURIDAD/CORRECCIÓN: excepciones de nombre corto en Ranking/Podio ──
-// nombreCorto() toma "primera palabra + ÚLTIMA palabra" como atajo para
+// ── CORRECCIÓN: nombre corto en Ranking/Podio (Día/Semana/Mes) ──
+// nombreCorto() tomaba "primera palabra + ÚLTIMA palabra" como atajo para
 // nombre+apellido. Eso falla con nombres de 4+ palabras donde la ÚLTIMA
 // palabra es el apellido MATERNO, no el paterno — ej. "Paola del Carmen
 // Marchant Cornejo" daba "Paola Cornejo" en vez de "Paola Marchant".
-// Se corrige acá con una excepción puntual (sin cambiar el algoritmo
-// general, para no romper casos como "Corina San Martín" que sí depende
-// de tomar la última palabra por ser un apellido compuesto).
+// Se corrige usando "primera palabra + PENÚLTIMA palabra" (mismo criterio
+// que ya usa el módulo de Ritmo en _acortarNombre), ya que el apellido
+// paterno casi siempre es la penúltima palabra del nombre completo.
+// Única excepción real: apellidos compuestos de una sola persona (ej.
+// "San Martín"), donde tomar la penúltima palabra los cortaría mal.
 const NOMBRE_CORTO_EXCEPCIONES = {
-  'PAOLA DEL CARMEN MARCHANT CORNEJO': 'Paola Marchant',
-  'SUSAN LIZ CARRIZO SANDOVAL': 'Susan Carrizo'
+  'CORINA SAN MARTIN': 'Corina San Martín' // apellido compuesto, no cortar
 };
 function nombreCorto(n){
   const key = (n||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   if(NOMBRE_CORTO_EXCEPCIONES[key]) return NOMBRE_CORTO_EXCEPCIONES[key];
   const p=n.trim().split(/\s+/);
-  return p.length>=2?p[0]+' '+p[p.length-1]:n;
+  return p.length<=2?n:p[0]+' '+p[p.length-2];
 }
 
 // ── Ranking por % de meta (Día/Semana/Mes) ──
@@ -5857,8 +5858,11 @@ async function loadSupMes(){
   // de cumplimiento de la meta MENSUAL completa (no por cantidad
   // absoluta), con Meta/Llevas/Falta/Ritmo por día según los días
   // hábiles que quedan en el mes.
+  // Meta mensual = meta diaria × 20 (fija, NO depende de los días hábiles
+  // reales que tenga el mes calendario). El "ritmo/día" sí usa los días
+  // hábiles reales restantes, calculados por separado más abajo.
   const avanceMes = _avancePeriodoInfo(desde, hasta);
-  const metaMesPorUid = uid => (META[uid]||0) * avanceMes.diasHabilesTotales;
+  const metaMesPorUid = uid => (META[uid]||0) * 20;
   const sortedU = _ordenarPorPctMeta(Object.entries(gu), metaMesPorUid);
   document.getElementById('sup-mes-ranking').innerHTML=sortedU.map(([uid,d],i)=>{
     const nombre=DB[uid]?nombreCorto(DB[uid]):uid;
@@ -6345,8 +6349,11 @@ async function loadSupSemana(){
     if(!gu[r.usuario])gu[r.usuario]={total:0};
     gu[r.usuario].total+=r.cantidad;
   });
+  // Meta semanal = meta diaria × 5 (fija, NO depende de los días hábiles
+  // reales que tenga esa semana calendario). El "ritmo/día" sí usa los
+  // días hábiles reales restantes, calculados por separado más abajo.
   const avanceSem = _avancePeriodoInfo(desde, hasta);
-  const metaSemPorUid = uid => (META[uid]||0) * avanceSem.diasHabilesTotales;
+  const metaSemPorUid = uid => (META[uid]||0) * 5;
   const sortedU = _ordenarPorPctMeta(Object.entries(gu), metaSemPorUid);
   const rnkEl=document.getElementById('sup-sem-ranking');
   rnkEl.innerHTML=sortedU.map(([uid,d],i)=>{
