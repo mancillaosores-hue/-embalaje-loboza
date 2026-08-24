@@ -12140,92 +12140,188 @@ function resRenderFicha(d){
   const pct = d.pct;
   let ringColor, badgeIcon, badgeTxt, badgeSub;
   if(pct===null){       ringColor='#8AAED4'; badgeIcon='📊'; badgeTxt='Sin meta asignada';    badgeSub='Esta operaria no tiene meta diaria configurada.'; }
-  else if(pct>=100){    ringColor='#2ECC8A'; badgeIcon='🏆'; badgeTxt='¡Meta cumplida!';       badgeSub='Superó su meta diaria — ¡excelente jornada!'; }
+  else if(pct>=100){    ringColor='#FFBA4D'; badgeIcon='⭐'; badgeTxt='¡Meta cumplida!';       badgeSub='¡Felicidades! Superaste tu meta del día.'; }
   else if(pct>=70){     ringColor='#FFBA4D'; badgeIcon='💪'; badgeTxt='Casi llega a la meta';  badgeSub='Muy cerca de cumplir su meta del día.'; }
   else if(pct>=40){     ringColor='#3B8FFF'; badgeIcon='🚀'; badgeTxt='Vas en camino';          badgeSub='Buen avance, todavía queda jornada.'; }
   else {                ringColor='#FF6B6B'; badgeIcon='⚡'; badgeTxt='A darle con todo';       badgeSub='Recién arrancando el día.'; }
-  const R=50, C=2*Math.PI*R;
+  const R=52, C=2*Math.PI*R;
   const pctRing = pct===null ? 0 : Math.min(pct,100);
   const dash = (pctRing/100*C).toFixed(1);
+  // Segundo color del donut (verde) para el tramo cumplido, como en el mockup
+  const donutVerde = '#2ECC8A';
+  const dashOro   = Math.min(pctRing,100) >= 100 ? (C*0.72).toFixed(1) : dash;
+  const dashVerde = Math.min(pctRing,100) >= 100 ? (C*0.28).toFixed(1) : '0';
   // Insights (récord, racha, comparación vs. ayer)
   const insights=[];
   if(d.esNuevoRecord && d.totalShow>0) insights.push({icon:'🏅',color:'#9A88FF',txt:'¡Nuevo récord personal! Superó su mejor marca histórica.'});
   if(d.racha>=3) insights.push({icon:(d.racha>=10?'💎':d.racha>=5?'⚡':'🔥'),color:'#FFBA4D',txt:d.racha+' días consecutivos sobre su meta diaria.'});
-  let trendHtml='';
+  let trendChip='';
   if(d.totalAyer>0){
     const diff = d.totalShow - d.totalAyer;
     const diffPct = Math.round(Math.abs(diff)/d.totalAyer*100);
-    if(diff>0){ insights.push({icon:'📈',color:'#2ECC8A',txt:'+'+fmtN(diff)+' uds vs. ayer (+'+diffPct+'%)'}); trendHtml=`<div class="mini-trend trend-up">↑ +${fmtN(diff)} vs ayer (+${diffPct}%)</div>`; }
-    else if(diff<0){ insights.push({icon:'📉',color:'#FF6B6B',txt:'−'+fmtN(Math.abs(diff))+' uds vs. ayer (−'+diffPct+'%)'}); trendHtml=`<div class="mini-trend trend-dn">↓ ${fmtN(Math.abs(diff))} vs ayer (−${diffPct}%)</div>`; }
-    else { trendHtml=`<div class="mini-trend trend-eq">= Igual que ayer</div>`; }
+    if(diff>0){ insights.push({icon:'📈',color:'#2ECC8A',txt:'+'+fmtN(diff)+' uds vs. ayer (+'+diffPct+'%)'}); trendChip=`<span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:#2ECC8A"><svg width="11" height="11" viewBox="0 0 24 24" fill="#2ECC8A"><path d="M12 4l8 10H4z"/></svg>${diffPct}%</span><div style="font-size:9.5px;color:var(--txt3);margin-top:1px">vs. ayer</div>`; }
+    else if(diff<0){ insights.push({icon:'📉',color:'#FF6B6B',txt:'−'+fmtN(Math.abs(diff))+' uds vs. ayer (−'+diffPct+'%)'}); trendChip=`<span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:#FF6B6B"><svg width="11" height="11" viewBox="0 0 24 24" fill="#FF6B6B"><path d="M12 20L4 10h16z"/></svg>${diffPct}%</span><div style="font-size:9.5px;color:var(--txt3);margin-top:1px">vs. ayer</div>`; }
+    else { trendChip=`<span style="font-size:12px;font-weight:700;color:var(--txt3)">= igual</span><div style="font-size:9.5px;color:var(--txt3);margin-top:1px">vs. ayer</div>`; }
   }
-  // Por canal
+  // ── Tarjetas de material con icono circular (Maleta / No maleta / Insumo) ──
+  const eq = d.eq, g = d.g;
+  const realMaleta = eq?eq.realMaleta:g.maleta;
+  const realLinea  = eq?eq.realLinea:g.linea;
+  const realInsumo = eq?eq.realInsumo:g.insumo;
+  const totalReal  = eq?eq.realTotal:g.total;
+  const pctOf = v => totalReal>0 ? Math.round(v/totalReal*100) : 0;
+  const ICON_MALETA = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1200" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/></svg>';
+  const ICON_LINEA  = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a8 4 0 0116 0v7a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>';
+  const ICON_INSUMO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v3.5l2.5 3.5v9a2 2 0 01-2 2h-6a2 2 0 01-2-2v-9L9 6.5z"/><line x1="9" y1="10" x2="15" y2="10"/></svg>';
+  const materialCards = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:rgba(255,186,77,.08);border:1px solid rgba(255,186,77,.25);border-radius:14px;padding:12px 8px;text-align:center">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(160deg,#FFD98A,#D9A02E);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;box-shadow:0 2px 8px rgba(255,186,77,.35)">${ICON_MALETA}</div>
+        <div style="font-size:9px;font-weight:800;color:#FFBA4D;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Maleta</div>
+        <div style="font-size:20px;font-weight:900;color:#fff;line-height:1">${fmtN(realMaleta)}</div>
+        <div style="font-size:9px;color:var(--txt3);margin-top:2px">${pctOf(realMaleta)}% del total</div>
+      </div>
+      <div style="background:rgba(59,143,255,.08);border:1px solid rgba(59,143,255,.25);border-radius:14px;padding:12px 8px;text-align:center">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(160deg,#60B0FF,#2A6FD9);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;box-shadow:0 2px 8px rgba(59,143,255,.35)">${ICON_LINEA}</div>
+        <div style="font-size:9px;font-weight:800;color:#60B0FF;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">No maleta</div>
+        <div style="font-size:20px;font-weight:900;color:#fff;line-height:1">${fmtN(realLinea)}</div>
+        <div style="font-size:9px;color:var(--txt3);margin-top:2px">${pctOf(realLinea)}% del total</div>
+      </div>
+      <div style="background:rgba(154,136,255,.08);border:1px solid rgba(154,136,255,.25);border-radius:14px;padding:12px 8px;text-align:center">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(160deg,#B8A6FF,#7A5FDB);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;box-shadow:0 2px 8px rgba(154,136,255,.35)">${ICON_INSUMO}</div>
+        <div style="font-size:9px;font-weight:800;color:#9A88FF;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Insumo</div>
+        <div style="font-size:20px;font-weight:900;color:#fff;line-height:1">${fmtN(realInsumo)}</div>
+        <div style="font-size:9px;color:var(--txt3);margin-top:2px">${pctOf(realInsumo)}% del total</div>
+      </div>
+    </div>`;
+  // ── Por canal, con iconos ──
+  const CANAL_ICONS = {
+    'Locales':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5"/><path d="M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9"/><path d="M3 9h18"/></svg>',
+    'Concesiones':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 12.6L11.4 3.4a2 2 0 00-1.4-.6H4a1 1 0 00-1 1v6a2 2 0 00.6 1.4l9.2 9.2a2 2 0 002.8 0l5-5a2 2 0 000-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>',
+    'Grandes Tiendas':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l1.5-4h13L20 8"/><path d="M4 8h16v11a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><path d="M9 12v4M15 12v4"/></svg>',
+    'Distribuidor':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="8" width="13" height="8" rx="1.5"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="6" cy="18.5" r="1.6"/><circle cx="17.5" cy="18.5" r="1.6"/></svg>',
+    'Ecommerce':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1.4"/><circle cx="18" cy="21" r="1.4"/><path d="M2 3h2l2.4 12.2A2 2 0 008.4 17H18a2 2 0 002-1.6L21.6 6H6"/></svg>',
+    'Marketplace':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l1.5-5h15L21 8"/><path d="M3 8h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 12a3 3 0 006 0"/></svg>',
+    'Venta en verde':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s7 4 7 11a7 7 0 01-14 0c0-7 7-11 7-11z"/><path d="M12 8v13"/></svg>',
+  };
   const realTotalCanal = Object.values(d.canalMap).reduce((a,b)=>a+b,0)||1;
   const canalHtml = Object.entries(d.canalMap).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
     const w = Math.round(v/realTotalCanal*100);
-    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0">
-      <span class="canal-chip" style="flex-shrink:0">${escapeHtml(c)}</span>
-      <div style="flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">
-        <div style="width:${w}%;height:100%;background:#3B8FFF;border-radius:3px"></div>
+    const ic = CANAL_ICONS[c] || '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
+    return `<div style="display:flex;align-items:center;gap:9px;padding:7px 0">
+      <span style="color:${ringColor};flex-shrink:0;display:flex">${ic}</span>
+      <span style="font-size:11.5px;font-weight:700;color:#fff;flex-shrink:0;min-width:78px;text-transform:uppercase;letter-spacing:.02em">${escapeHtml(c)}</span>
+      <div style="flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden">
+        <div style="width:${w}%;height:100%;background:${ringColor};border-radius:4px"></div>
       </div>
-      <span style="font-size:12px;font-weight:700;color:var(--txt);min-width:42px;text-align:right">${fmtN(v)}</span>
+      <span style="font-size:12.5px;font-weight:800;color:#fff;min-width:40px;text-align:right">${fmtN(v)}</span>
+      <span style="font-size:10px;color:var(--txt3);min-width:30px;text-align:right">${w}%</span>
     </div>`;
   }).join('') || '<div style="font-size:11px;color:var(--txt3);padding:6px 0">Sin canal registrado.</div>';
+  // ── Conversión a equivalente, estilo cajas con × y = (como el mockup) ──
+  let conversionHtml = '';
+  if(eq){
+    const filas = [];
+    if(eq.realLinea>0)  filas.push({label:'No maleta', val:eq.realLinea,  factor:eq.tipoBase==='maleta'?'÷ 4':'× 1', res:eq.eqLinea,  ic:ICON_LINEA,  bg:'linear-gradient(160deg,#60B0FF,#2A6FD9)'});
+    if(eq.realMaleta>0) filas.push({label:'Maleta',    val:eq.realMaleta, factor:eq.tipoBase==='maleta'?'× 1':'× 4', res:eq.eqMaleta, ic:ICON_MALETA, bg:'linear-gradient(160deg,#FFD98A,#D9A02E)'});
+    if(eq.realInsumo>0) filas.push({label:'Insumo',    val:eq.realInsumo, factor:'÷ 20', res:eq.eqInsumo, ic:ICON_INSUMO, bg:'linear-gradient(160deg,#B8A6FF,#7A5FDB)'});
+    conversionHtml = `
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2"><path d="M21 12a9 9 0 10-3 6.7"/><path d="M21 8v5h-5"/></svg>
+          Conversión a equivalente
+        </div>
+        ${filas.map(f=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="width:26px;height:26px;border-radius:50%;background:${f.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;transform:scale(.72)">${f.ic}</div>
+          <div style="flex:1;font-size:11px;color:var(--txt2);font-weight:600">${f.label}</div>
+          <div style="font-size:13px;font-weight:800;color:#fff">${fmtN(f.val)}</div>
+          <div style="font-size:11px;color:var(--txt3);font-weight:700;min-width:34px;text-align:center">${f.factor}</div>
+          <div style="font-size:13px;font-weight:900;color:${ringColor}">= ${fmtN(f.res)}</div>
+        </div>`).join('')}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-top:4px;border-top:1px solid rgba(255,255,255,.08)">
+          <span style="font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em">Total equivalente</span>
+          <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.02em">${fmtN(eq.total)}</span>
+        </div>
+      </div>`;
+  }
   const frase = getFrase(pct===null?0:pct);
   const fechaTxt = new Date(d.fecha+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const fechaCap = fechaTxt.charAt(0).toUpperCase()+fechaTxt.slice(1);
   ticket.innerHTML = `
-    <div style="background:linear-gradient(160deg,#0F2038 0%,#081428 100%);border:1px solid ${ringColor}44;border-radius:22px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.4)">
-      <div style="display:flex;align-items:center;gap:12px;padding:18px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08);position:relative">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,${ringColor},#3B8FFF,transparent)"></div>
-        <div style="width:100px;height:100px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.06);border:4px solid ${ringColor}88;flex-shrink:0;display:flex;align-items:center;justify-content:center">
-          ${fotoHtml}
+    <div style="background:linear-gradient(160deg,#0F2038 0%,#081428 100%);border:1px solid rgba(255,255,255,.1);border-radius:22px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5)">
+      <div style="display:flex;align-items:center;gap:14px;padding:20px 20px 16px">
+        <div style="position:relative;width:92px;height:92px;flex-shrink:0">
+          <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.06);border:3px solid ${ringColor};box-shadow:0 0 0 3px ${ringColor}22, 0 0 22px ${ringColor}66, 0 6px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center">
+            ${fotoHtml}
+          </div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nombre)}</div>
-          <div style="font-size:11px;color:var(--txt2);margin-top:2px">${fechaCap}</div>
-          <div style="font-size:9.5px;color:var(--txt3);margin-top:1px;text-transform:uppercase;letter-spacing:.06em">Reporte de desempeño diario</div>
+          <div style="font-size:19px;font-weight:900;color:#fff;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nombre)}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span style="font-size:12px;color:var(--txt2)">${fechaCap}</span>
+          </div>
         </div>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${ringColor}" stroke-width="1.6" opacity=".55"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:13px;font-weight:900;color:#fff;letter-spacing:1.5px;display:flex;align-items:center;gap:4px;justify-content:flex-end">
+            SAMSONITE
+          </div>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${ringColor}" stroke-width="1.8" style="margin-top:2px;filter:drop-shadow(0 0 4px ${ringColor}88)"><rect x="5" y="7" width="14" height="13" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/></svg>
+        </div>
       </div>
-      <div style="padding:18px">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div style="position:relative;width:104px;height:104px;flex-shrink:0">
-            <svg width="104" height="104" viewBox="0 0 116 116" style="transform:rotate(-90deg)">
-              <circle cx="58" cy="58" r="${R}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="11"/>
-              <circle cx="58" cy="58" r="${R}" fill="none" stroke="${ringColor}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${dash} ${C.toFixed(1)}"/>
+      <div style="padding:0 20px 20px">
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;margin-bottom:14px">
+          <div style="position:relative;width:110px;height:110px;flex-shrink:0">
+            <svg width="110" height="110" viewBox="0 0 124 124" style="transform:rotate(-90deg);filter:drop-shadow(0 0 8px ${ringColor}55)">
+              <circle cx="62" cy="62" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="12"/>
+              <circle cx="62" cy="62" r="${R}" fill="none" stroke="${ringColor}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${dashOro} ${C.toFixed(1)}"/>
+              ${pctRing>=100?`<circle cx="62" cy="62" r="${R}" fill="none" stroke="${donutVerde}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${dashVerde} ${C.toFixed(1)}" stroke-dashoffset="-${dashOro}"/>`:''}
             </svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-              <div style="font-size:22px;font-weight:900;color:${ringColor};line-height:1">${pct===null?'—':pct+'%'}</div>
-              <div style="font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px">de meta</div>
+              <div style="font-size:26px;font-weight:900;color:${ringColor};line-height:1">${pct===null?'—':pct+'%'}</div>
+              <div style="font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px;text-align:center">Cumplimiento<br>de meta</div>
             </div>
           </div>
-          <div style="flex:1">
-            <div style="font-size:14px;font-weight:800;color:${ringColor};display:flex;align-items:center;gap:6px">${badgeIcon} ${badgeTxt}</div>
-            <div style="font-size:11px;color:var(--txt2);margin-top:4px;line-height:1.4">${badgeSub}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:900;color:${ringColor};display:flex;align-items:center;gap:6px;letter-spacing:.02em">${badgeIcon} ${badgeTxt.toUpperCase()}</div>
+            <div style="font-size:12px;color:var(--txt2);margin-top:6px;line-height:1.4">${badgeSub}</div>
           </div>
         </div>
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:12px">
-          <div style="font-size:9.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total unidades embaladas</div>
-          <div style="font-size:34px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.02em">${fmtN(d.totalShow)}${d.meta>0?`<span style="font-size:13px;font-weight:600;color:var(--txt3);margin-left:6px">/ ${fmtN(d.meta)} meta</span>`:''}</div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:32px;height:32px;border-radius:9px;background:rgba(59,143,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#60B0FF" stroke-width="2"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+              </div>
+              <div>
+                <div style="font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em">Total unidades embaladas</div>
+                <div style="font-size:30px;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.02em">${fmtN(d.totalShow)}${d.meta>0?`<span style="font-size:12px;font-weight:600;color:var(--txt3);margin-left:5px">/ ${fmtN(d.meta)}</span>`:''}</div>
+              </div>
+            </div>
+            ${trendChip?`<div style="text-align:center;flex-shrink:0">${trendChip}</div>`:''}
+          </div>
           ${d.eq?equivRefLineHTML(d.eq):''}
-          ${trendHtml}
         </div>
-        ${materialRealCardsHTML(d.g, d.eq)}
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:9.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Por canal</div>
+        ${materialCards}
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+            Desempeño por canal
+          </div>
           ${canalHtml}
         </div>
-        ${d.eq?equivConversionCardHTML(d.eq):''}
-        ${insights.length?`<div style="margin-bottom:12px">${insights.map(i=>`
+        ${conversionHtml}
+        ${insights.length?`<div style="margin-bottom:14px">${insights.map(i=>`
           <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
             <span style="font-size:15px">${i.icon}</span>
-            <span style="font-size:11.5px;color:${i.color};font-weight:600">${i.txt}</span>
+            <span style="font-size:11.5px;color:${i.color};font-weight:700">${i.txt}</span>
           </div>`).join('')}</div>`:''}
-        <div style="background:linear-gradient(135deg,rgba(255,186,77,.1),rgba(59,143,255,.08));border:1px solid rgba(255,186,77,.3);border-radius:14px;padding:14px 16px;text-align:center;position:relative">
-          <div style="font-size:20px;position:absolute;top:6px;left:10px;opacity:.5">✨</div>
-          <div style="font-size:13.5px;font-weight:700;color:#FFBA4D;font-style:italic;line-height:1.4">"${escapeHtml(frase)}"</div>
-          <div style="font-size:20px;position:absolute;bottom:6px;right:10px;opacity:.5">✨</div>
+        <div style="background:linear-gradient(135deg,rgba(255,186,77,.12),rgba(255,186,77,.04));border:1.5px solid rgba(255,186,77,.4);border-radius:16px;padding:18px 20px;text-align:center;position:relative;box-shadow:0 0 20px rgba(255,186,77,.1) inset">
+          <div style="font-size:22px;position:absolute;top:8px;left:14px;opacity:.55">✨</div>
+          <div style="font-size:26px;color:#FFBA4D;line-height:.4;margin-bottom:6px;font-family:Georgia,serif">&ldquo;</div>
+          <div style="font-size:15px;font-weight:800;color:#FFBA4D;font-style:italic;line-height:1.4;font-family:Georgia,serif">${escapeHtml(frase)}</div>
+          <div style="font-size:22px;position:absolute;bottom:8px;right:14px;opacity:.55">✨</div>
         </div>
       </div>
       <div style="text-align:center;font-size:9px;color:var(--txt3);padding:12px 16px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;gap:5px">
@@ -12234,6 +12330,7 @@ function resRenderFicha(d){
       </div>
     </div>`;
 }
+
 async function resGenerarYEnviar(btnEl){
   const uid = document.getElementById('res-embaladora').value;
   const fecha = document.getElementById('res-fecha').value;
