@@ -5904,6 +5904,29 @@ async function _intentarCompartirArchivos(files, titulo){
   }
 }
 
+// ── Ignorar canvases "fantasma" al capturar con html2canvas ────────────────
+// Los gráficos (Chart.js) de otras pestañas/acordeones colapsados a veces
+// quedan en el DOM con 0×0 de tamaño (ej. <canvas id="plan-chart-diario"
+// width="0" height="0">). Capturarlos no aporta nada (no se ve nada) y en
+// ciertas configuraciones de PC (extensiones de privacidad/antifingerprint
+// como uBlock Origin, Brave Shields, o el modo "Estricto" de prevención de
+// seguimiento de Edge, que "envenenan" la lectura de canvases para evitar
+// huellas digitales) esto hace que html2canvas falle con "Unable to clone
+// canvas as it is tainted" y aborte TODA la captura — de ahí que en el
+// celular funcione perfecto pero en ese PC en particular no. Ignorar estos
+// canvases vacíos evita que un gráfico invisible tumbe la generación de
+// toda la imagen.
+function _html2canvasIgnorarElemento(el){
+  return el.tagName==='CANVAS' && (el.width===0 || el.height===0);
+}
+// Mensaje más claro cuando el navegador bloquea la lectura de un gráfico
+// (Chart.js) por protección "anti-fingerprinting" de canvas — muy común en
+// PC con bloqueadores de anuncios/privacidad, poco común en celular.
+function _esErrorCanvasTainted(e){
+  return e && /tainted|SecurityError/i.test((e.name||'')+' '+(e.message||''));
+}
+const MSG_CANVAS_TAINTED = '⚠ Tu navegador bloqueó la lectura de un gráfico (probablemente por una extensión de privacidad/bloqueo de anuncios, o el modo "estricto" de protección contra rastreo). Prueba desactivándola para este sitio, o ábrelo en una ventana de incógnito, e intenta de nuevo.';
+
 // ── Compartir por bloques (Plan, Capacidad) — varias imágenes en un solo envío ──
 async function compartirBloques(ids, nombreArchivo, btnEl){
   const contenedor = ids.map(id=>document.getElementById(id)).find(el=>el && el.offsetParent!==null);
@@ -5951,11 +5974,12 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
         while(scaleBloque > 1 && (anchoReal*scaleBloque) * (altoReal*scaleBloque) > AREA_MAX){
           scaleBloque -= 0.5;
         }
-        const canvas = await html2canvas(b, {backgroundColor:bg, scale:scaleBloque, useCORS:true, onclone});
+        const canvas = await html2canvas(b, {backgroundColor:bg, scale:scaleBloque, useCORS:true, onclone, ignoreElements:_html2canvasIgnorarElemento});
         const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
         if(blob) files.push(new File([blob], nombreArchivo+'_'+(i+1)+'.png', {type:'image/png'}));
       }catch(eBloque){
         console.warn('compartirBloques: falló un bloque, se omite:', eBloque);
+        if(_esErrorCanvasTainted(eBloque)) toast(MSG_CANVAS_TAINTED);
         fallidos.push(i+1);
       }
     }
@@ -6016,6 +6040,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
       backgroundColor: getComputedStyle(document.body).backgroundColor || '#0B1220',
       scale,
       useCORS: true,
+      ignoreElements: _html2canvasIgnorarElemento,
       onclone: (clonedDoc)=>{
         // Los pseudo-elementos decorativos de fondo (body::before/::after) son position:fixed
         // y html2canvas los filtra en cualquier captura, tapando todo con un velo translúcido.
@@ -6029,7 +6054,10 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
     const file = new File([blob], nombreArchivo+'.png', {type:'image/png'});
     await _intentarCompartirArchivos([file], nombreArchivo);
   }catch(e){
-    if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen: '+(e.message||e)); }
+    if(e && e.name !== 'AbortError') {
+      console.error('compartirComoImagen:', e);
+      toast(_esErrorCanvasTainted(e) ? MSG_CANVAS_TAINTED : 'Error al generar la imagen: '+(e.message||e));
+    }
   }finally{
     ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
     if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
@@ -6968,7 +6996,13 @@ async function compartirReportePorBloques(btnEl){
       _descargarRpt('');
     }
   }catch(e){
-    if(e && e.name !== 'AbortError'){ console.error(e); alert('Error al generar las imágenes: '+(e.message||e)); }
+    if(e && e.name !== 'AbortError'){
+      console.error(e);
+      const esTainted = e && /tainted|SecurityError/i.test((e.name||'')+' '+(e.message||''));
+      alert(esTainted
+        ? '⚠ Tu navegador bloqueó la lectura de un gráfico (probablemente por una extensión de privacidad/bloqueo de anuncios). Prueba desactivándola para este sitio, o ábrelo en una ventana de incógnito.'
+        : 'Error al generar las imágenes: '+(e.message||e));
+    }
   }finally{
     btnEl.innerHTML = txtOriginal; btnEl.disabled = false;
   }
