@@ -5850,6 +5850,39 @@ const _planCache = { sem:null, anio:null, planRaw:null, prodRawSemana:null, entr
 let planDiaActual = null; // null = semana completa; 'YYYY-MM-DD' = día específico filtrado
 function invalidarPlanCache(){ _planCache.sem=null; _planCache.planRaw=null; _planCache.idEntregasSAnt=new Set(); _planCache.embalBackPorFecha={}; _planCache.arrastreInicial=null; }
 
+// ── Candado global para la Web Share API ──────────────────────────────────
+// El navegador solo permite UNA llamada a navigator.share() en curso a la vez
+// (por pestaña). Si se invoca de nuevo antes de que la anterior termine (o
+// mientras la hoja de "Compartir" del sistema sigue abierta), rechaza con
+// InvalidStateError: "An earlier share has not yet completed." — este era el
+// error que veía Diego en Plan, Ritmo, Capacidad, Análisis y el generador de
+// Indicaciones, porque cada módulo llamaba a navigator.share() por su cuenta
+// sin saber si otro ya estaba en curso. Este candado es compartido por TODAS
+// las funciones de compartir de la app (compartirBloques, compartirComoImagen,
+// etc.) para que nunca se pisen entre sí, sin importar desde qué pestaña se
+// dispare.
+window._shareEnCurso = false;
+async function safeNavigatorShare(payload){
+  if(window._shareEnCurso){
+    toast('Ya hay un envío en curso — espera a que termine e intenta de nuevo');
+    const err = new Error('Ya hay un envío en curso'); err.name='AbortError';
+    throw err;
+  }
+  window._shareEnCurso = true;
+  try{
+    await navigator.share(payload);
+  } catch(e){
+    if(e && (e.name==='InvalidStateError' || /earlier share/i.test(e.message||''))){
+      toast('Ya hay un envío en curso — espera a que termine e intenta de nuevo');
+      const err2 = new Error('Ya hay un envío en curso'); err2.name='AbortError';
+      throw err2;
+    }
+    throw e;
+  } finally {
+    window._shareEnCurso = false;
+  }
+}
+
 // ── Compartir por bloques (Plan, Capacidad) — varias imágenes en un solo envío ──
 async function compartirBloques(ids, nombreArchivo, btnEl){
   const contenedor = ids.map(id=>document.getElementById(id)).find(el=>el && el.offsetParent!==null);
@@ -5918,7 +5951,7 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
         btnEl.innerHTML = '✅ Toca para compartir ('+files.length+')';
         btnEl.disabled = false;
         btnEl.onclick = async ()=>{
-          try{ await navigator.share({files, title:nombreArchivo}); }
+          try{ await safeNavigatorShare({files, title:nombreArchivo}); }
           catch(eShare){ if(eShare && eShare.name!=='AbortError'){ toast('Error al compartir: '+(eShare.message||eShare)); } }
           finally{
             btnEl.innerHTML = txtOriginal;
@@ -5927,7 +5960,7 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
         };
         return; // no restaurar el botón en el finally — queda a la espera del segundo toque
       } else {
-        await navigator.share({files, title:nombreArchivo});
+        await safeNavigatorShare({files, title:nombreArchivo});
       }
     } else {
       files.forEach((file,i)=>{
@@ -5982,7 +6015,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
     if(!blob){ toast('No se pudo generar la imagen'); return; }
     const file = new File([blob], nombreArchivo+'.png', {type:'image/png'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title:nombreArchivo});
+      await safeNavigatorShare({files:[file], title:nombreArchivo});
     } else {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -6899,7 +6932,10 @@ async function compartirReportePorBloques(btnEl){
     }
     if(!files.length){ alert('No se pudo generar ninguna imagen'); return; }
     if(navigator.canShare && navigator.canShare({files})){
-      await navigator.share({files, title:'Reporte Diario'});
+      if(window._shareEnCurso){ alert('Ya hay un envío en curso — espera a que termine e intenta de nuevo'); return; }
+      window._shareEnCurso = true;
+      try{ await navigator.share({files, title:'Reporte Diario'}); }
+      finally{ window._shareEnCurso = false; }
     } else {
       files.forEach(file=>{
         const url = URL.createObjectURL(file);
