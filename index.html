@@ -1893,6 +1893,36 @@ input[type="month"], input[type="week"]{
     <div style="height:80px"></div>
   </div>
 
+  <!-- TAB: REPORTE INDIVIDUAL -->
+  <div id="st-reporte" style="display:none">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:.75rem">Generar reporte individual</div>
+      <div class="filter-bar">
+        <label>Embaladora:</label>
+        <select id="rep-embaladora" style="min-width:170px">
+          <option value="">Selecciona una embaladora</option>
+        </select>
+        <label>Fecha:</label>
+        <input type="date" id="rep-fecha"/>
+        <button class="btn-ghost" id="rep-btn-generar" onclick="repGenerar()">Generar</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--txt3);margin-top:8px;line-height:1.5">
+        Genera una imagen con el reporte de desempeño diario de la embaladora seleccionada — incluye su foto, cumplimiento de meta, unidades por tipo y por canal — lista para compartir por WhatsApp.
+      </div>
+    </div>
+
+    <div id="rep-card-wrap" style="display:none;margin-top:12px">
+      <div id="rep-card-inner"></div>
+    </div>
+
+    <button id="rep-btn-compartir" style="display:none;width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#2563EB,#3B8FFF);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(37,99,235,.35)" onclick="compartirComoImagen(['rep-card-wrap'], repNombreArchivo(), this)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.37 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.2 14.2c-.22.62-1.28 1.2-1.77 1.24-.46.04-.97.06-1.56-.1-.36-.1-.82-.26-1.4-.5-2.47-1.07-4.08-3.6-4.2-3.77-.12-.16-1-1.34-1-2.55 0-1.22.63-1.82.86-2.06.22-.25.5-.3.66-.3h.48c.15 0 .36-.06.56.43.22.5.74 1.75.8 1.88.06.12.1.27.02.44-.08.16-.12.27-.24.4-.12.15-.26.33-.37.44-.12.12-.25.25-.1.5.13.25.6 1 1.3 1.6.9.8 1.65 1.06 1.9 1.18.25.12.4.1.55-.06.15-.15.63-.72.8-.97.16-.25.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.6-.16 1.2z"/></svg>
+      Generar imagen y enviar por WhatsApp
+    </button>
+
+    <div style="height:80px"></div>
+  </div>
+
   <!-- Barra de acciones de Indicaciones: vive FUERA de #st-indicaciones
        a propósito (ver nota en el <style> de arriba sobre por qué el
        transform de "anim-in" rompía el position:fixed si quedaba adentro).
@@ -2003,6 +2033,14 @@ input[type="month"], input[type="week"]{
         </svg>
       </div>
       <span class="bnav-lbl">Indic.</span>
+    </button>
+    <button class="bnav-item" onclick="bnavGo('reporte',this)">
+      <div class="bnav-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/><path d="M18 3l1 2 2 .3-1.5 1.4.4 2.1L18 7.7 16.1 8.8l.4-2.1L15 5.3 17 5z"/>
+        </svg>
+      </div>
+      <span class="bnav-lbl">Reporte</span>
     </button>
 
 </div>
@@ -6003,7 +6041,7 @@ let _tabActual = null; // tab actualmente visible
 
 function showSupTab(tab, btn){
   // Tabs fijos dentro de sc-sup
-  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis','indicaciones'].forEach(t=>{
+  ['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis','indicaciones','reporte'].forEach(t=>{
     const el=document.getElementById('st-'+t);
     if(el) el.style.display=t===tab?'block':'none';
   });
@@ -6047,6 +6085,9 @@ function showSupTab(tab, btn){
   }
   if(tab==='indicaciones'){
     indInit();
+  }
+  if(tab==='reporte'){
+    repInit();
   }
   // Barra de acciones flotante (Editar/WhatsApp) de Indicaciones: solo
   // visible en ese tab. Vive fuera de #st-indicaciones (ver nota arriba).
@@ -10384,6 +10425,7 @@ const BNAV_TITULOS={
   cajas:'Calculadora de cajas',
   analisis:'Análisis · Tendencias y frecuencias',
   indicaciones:'Indicaciones de embalaje',
+  reporte:'Reporte individual',
 };
 
 function bnavGo(tab, btn){
@@ -10399,7 +10441,7 @@ function bnavGo(tab, btn){
   showSupTab(tab, {classList:{add:()=>{},remove:()=>{}}});
   // Animar el contenido activo
   setTimeout(()=>{
-    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis','indicaciones'];
+    const tabs=['carga','equipo','mes','alertas','plan','capacidad','ritmo','bonos','embalaje','cajas','analisis','indicaciones','reporte'];
     tabs.forEach(t=>{
       const el=document.getElementById('st-'+t);
       if(el && el.style.display!=='none') el.classList.add('anim-in');
@@ -11981,6 +12023,248 @@ function indLimpiarFormulario(){
   indActualizarTicket();
   document.querySelector('#st-indicaciones .il-card').scrollIntoView({behavior:'smooth'});
   toast('✨ Formulario limpio');
+}
+</script>
+
+<!-- ═══════════════════════════════════════
+     MÓDULO: REPORTE INDIVIDUAL POR EMBALADORA
+     Genera, para la embaladora y fecha seleccionadas, una imagen tipo
+     ficha de desempeño diario (foto, % cumplimiento de meta, unidades
+     por tipo y por canal, conversión a equivalente) lista para compartir
+     por WhatsApp. Reutiliza datos/funciones ya existentes en la app:
+     DB/META (identidad y meta), fetchProdAll (producción del día),
+     calcEquivDesglose (conversión a equivalente, igual criterio que
+     Bonos), IND_FOTOS_EMBALADORAS (mismas fotos que Indicaciones de
+     embalaje) y compartirComoImagen (mismo generador html2canvas).
+═══════════════════════════════════════ -->
+<script>
+let _repInicializado = false;
+function repInit(){
+  const selEmb = document.getElementById('rep-embaladora');
+  if(!_repInicializado){
+    _repInicializado = true;
+    Object.keys(META).filter(uid=>DB[uid])
+      .sort((a,b)=>nombreCorto(DB[a]).localeCompare(nombreCorto(DB[b]),'es'))
+      .forEach(uid=>{
+        const opt = document.createElement('option');
+        opt.value = uid; opt.textContent = nombreCorto(DB[uid]);
+        selEmb.appendChild(opt);
+      });
+  }
+  const fEl = document.getElementById('rep-fecha');
+  if(fEl && !fEl.value) fEl.value = today();
+}
+
+function repNombreArchivo(){
+  const uid = document.getElementById('rep-embaladora').value;
+  const fecha = document.getElementById('rep-fecha').value || today();
+  const nombre = (uid && DB[uid]) ? nombreCorto(DB[uid]).replace(/\s+/g,'_') : 'Reporte';
+  return 'Reporte_'+nombre+'_'+fecha;
+}
+
+// Retrocede al día hábil calendario anterior (evita comparar un lunes
+// contra un domingo/sábado sin producción).
+function _repFechaHabilAnterior(fechaISO){
+  const d = new Date(fechaISO+'T12:00:00');
+  do{ d.setDate(d.getDate()-1); } while(d.getDay()===0 || d.getDay()===6);
+  return fechaLocalStr(d);
+}
+function _repFechaLarga(fechaISO){
+  const d = new Date(fechaISO+'T12:00:00');
+  return d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function _repFraseMotivacional(pct){
+  if(pct===null) return 'Cada unidad cuenta, gracias por tu esfuerzo.';
+  if(pct>=120) return 'Rendimiento excepcional, ¡vas espectacular!';
+  if(pct>=100) return 'Cada unidad cuenta, ¡vas espectacular!';
+  if(pct>=70)  return 'Vas por buen camino, sigue así hasta el cierre.';
+  return 'Todo esfuerzo cuenta, ánimo para el resto del día.';
+}
+function _repIconoDefaultHTML(){
+  return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#132040"><svg width="60%" height="60%" viewBox="0 0 24 24" fill="none" stroke="#7FA8D4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></div>';
+}
+
+async function repGenerar(){
+  const uid = document.getElementById('rep-embaladora').value;
+  const fecha = document.getElementById('rep-fecha').value;
+  if(!uid){ toast('⚠ Selecciona una embaladora'); return; }
+  if(!fecha){ toast('⚠ Selecciona una fecha'); return; }
+  const btn = document.getElementById('rep-btn-generar');
+  const txtOriginal = btn.innerHTML;
+  btn.innerHTML = '⏳'; btn.disabled = true;
+  try{
+    const fechaAyer = _repFechaHabilAnterior(fecha);
+    const [filasHoy, filasAyer] = await Promise.all([
+      fetchProdAll(fecha, fecha),
+      fetchProdAll(fechaAyer, fechaAyer)
+    ]);
+    const rowsUsr  = filasHoy.filter(r=>r.usuario===uid);
+    const rowsAyer = filasAyer.filter(r=>r.usuario===uid);
+
+    _repRenderCard(uid, fecha, rowsUsr, rowsAyer);
+    document.getElementById('rep-card-wrap').style.display = 'block';
+    document.getElementById('rep-btn-compartir').style.display = 'flex';
+    setTimeout(()=>document.getElementById('rep-card-wrap').scrollIntoView({behavior:'smooth',block:'start'}), 60);
+  }catch(e){
+    console.error('repGenerar:', e);
+    toast('Error al cargar datos: '+(e.message||e));
+  }finally{
+    btn.innerHTML = txtOriginal; btn.disabled = false;
+  }
+}
+
+function _repRenderCard(uid, fecha, rowsUsr, rowsAyer){
+  const nombre = nombreCorto(DB[uid] || uid);
+  const meta = META[uid] || 0;
+
+  const cantLinea  = rowsUsr.filter(r=>r.tipo==='linea').reduce((s,r)=>s+r.cantidad,0);
+  const cantMaleta = rowsUsr.filter(r=>r.tipo==='maleta').reduce((s,r)=>s+r.cantidad,0);
+  const cantInsumo = rowsUsr.filter(r=>r.tipo==='insumo').reduce((s,r)=>s+r.cantidad,0);
+  const totalReal  = cantLinea + cantMaleta;
+
+  // Misma conversión a equivalente que usan Bonos (calcEquivDesglose) — null
+  // si la operaria no tiene tipo base asignado en BONO_TIPO_OPERARIA.
+  const eq = calcEquivDesglose(uid, cantLinea, cantMaleta, cantInsumo);
+  const totalEquiv = eq ? eq.total : totalReal;
+  const cumplPct = meta>0 ? Math.round(totalEquiv/meta*100) : null;
+  const factorConv = totalReal>0 ? (totalEquiv/totalReal) : 1;
+
+  const totalAyer = rowsAyer.filter(r=>r.tipo!=='insumo').reduce((s,r)=>s+r.cantidad,0);
+  const varPct = totalAyer>0 ? Math.round((totalReal-totalAyer)/totalAyer*100) : null;
+
+  const semCol  = cumplPct===null ? '#8AAED4' : cumplPct>=100 ? '#2ECC8A' : cumplPct>=70 ? '#FFBA4D' : '#EF4444';
+  const metaTxt = cumplPct===null ? 'SIN META ASIGNADA' : cumplPct>=100 ? 'META CUMPLIDA' : cumplPct>=70 ? 'META EN PROGRESO' : 'BAJO LA META';
+  const metaSub = cumplPct===null ? 'Esta operaria no tiene meta diaria configurada.'
+                : cumplPct>=100 ? '¡Felicidades! Superaste tu meta del día.'
+                : cumplPct>=70  ? 'Vas en camino, sigue así hasta el cierre.'
+                : 'Necesita apoyo para llegar a la meta de hoy.';
+  const starIcon = cumplPct!==null && cumplPct>=100 ? '⭐' : '📦';
+
+  // Desglose por canal (insumos excluidos, mismo criterio que el resto de la app)
+  const canalMap = {};
+  rowsUsr.filter(r=>r.tipo!=='insumo').forEach(r=>{
+    const c = (r.canal||'Sin canal').toString().trim() || 'Sin canal';
+    canalMap[c] = (canalMap[c]||0) + r.cantidad;
+  });
+  const CANAL_COLOR = {
+    'Locales':'#3B8FFF','Concesiones':'#FFBA4D','Grandes Tiendas':'#9A88FF',
+    'Distribuidor':'#FF8A5B','Ecommerce':'#2ECC8A','Marketplace':'#FF6FA5','Venta en verde':'#65D6A0'
+  };
+  const canalEntries = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const canalHTML = canalEntries.length ? canalEntries.map(([nom,uds])=>{
+    const pct = totalReal>0 ? Math.round(uds/totalReal*100) : 0;
+    const col = CANAL_COLOR[nom] || '#7FA8D4';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:11px;font-weight:700;color:#EEF4FF;min-width:100px;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nom.toUpperCase())}</span>
+        <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div>
+        </div>
+        <span style="font-size:12px;font-weight:800;color:#EEF4FF;min-width:38px;text-align:right">${fmtN(uds)}</span>
+        <span style="font-size:10px;font-weight:600;color:${col};min-width:32px;text-align:right">${pct}%</span>
+      </div>`;
+  }).join('') : `<div style="font-size:11.5px;color:#3D6A99;font-style:italic;text-align:center;padding:10px 0">Sin producción registrada este día</div>`;
+
+  // Foto de la embaladora — mismo mapeo que Indicaciones de embalaje
+  const fotoRuta = IND_FOTOS_EMBALADORAS[nombre];
+  const fotoHTML = fotoRuta
+    ? `<img src="${encodeURI(fotoRuta)}" alt="${escapeHtml(nombre)}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML=_repIconoDefaultHTML()">`
+    : _repIconoDefaultHTML();
+
+  const ringPct = cumplPct===null ? 0 : Math.max(0, Math.min(100, cumplPct));
+  const ringHTML = `<div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(${semCol} ${ringPct*3.6}deg, rgba(255,255,255,.08) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="width:114px;height:114px;border-radius:50%;background:#0D1B2E;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div style="font-size:27px;font-weight:900;color:${semCol};line-height:1">${cumplPct===null?'—':cumplPct+'%'}</div>
+        <div style="font-size:8px;font-weight:700;color:#7FA8D4;text-transform:uppercase;letter-spacing:.04em;text-align:center;margin-top:4px;line-height:1.3">Cumplimiento<br>de meta</div>
+      </div>
+    </div>`;
+
+  const varHTML = varPct===null ? '<span style="font-size:10px;color:#3D6A99">Sin dato de ayer</span>' :
+    `<span style="font-size:13px;font-weight:800;color:${varPct>=0?'#2ECC8A':'#EF4444'}">${varPct>=0?'▲':'▼'} ${Math.abs(varPct)}%</span><div style="font-size:9px;color:#3D6A99;margin-top:1px">vs. ayer</div>`;
+
+  const html = `
+  <div style="background:linear-gradient(160deg,#0D1B2E 0%,#080F1E 100%);border:1px solid #1A3354;border-radius:22px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.45)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px;min-width:0">
+        <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid #FFBA4D;box-shadow:0 0 14px rgba(255,186,77,.35);flex-shrink:0;background:#132040">${fotoHTML}</div>
+        <div style="min-width:0">
+          <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nombre)}</div>
+          <div style="font-size:11px;color:#7FA8D4;margin-top:3px">📅 ${_repFechaLarga(fecha)}</div>
+          <div style="font-size:10px;color:#3D6A99;margin-top:1px">Reporte de desempeño diario</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.03em">Samsonite</div>
+        <div style="font-size:22px;margin-top:2px">🧳</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.03);border:1px solid #1A3354;border-radius:16px;padding:16px;margin-bottom:12px;flex-wrap:wrap">
+      ${ringHTML}
+      <div style="flex:1;min-width:150px">
+        <div style="font-size:14px;font-weight:800;color:${semCol};display:flex;align-items:center;gap:6px">${starIcon} ${metaTxt}</div>
+        <div style="font-size:11.5px;color:#B8CFE8;margin-top:6px;line-height:1.5">${metaSub}</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border:1px solid #1A3354;border-radius:14px;padding:14px 16px;margin-bottom:10px">
+      <div>
+        <div style="font-size:9.5px;font-weight:700;color:#7FA8D4;text-transform:uppercase;letter-spacing:.05em">Total unidades embaladas</div>
+        <div style="font-size:32px;font-weight:900;color:#fff;line-height:1.15;margin-top:4px">${fmtN(totalReal)}</div>
+      </div>
+      <div style="text-align:right">${varHTML}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:rgba(255,186,77,.07);border:1px solid rgba(255,186,77,.25);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:#FFBA4D;text-transform:uppercase;margin-bottom:3px">Maleta</div>
+        <div style="font-size:19px;font-weight:900;color:#fff">${fmtN(cantMaleta)}</div>
+        <div style="font-size:8.5px;color:#3D6A99;margin-top:2px">${totalReal>0?Math.round(cantMaleta/totalReal*100):0}% del total</div>
+      </div>
+      <div style="background:rgba(59,143,255,.07);border:1px solid rgba(59,143,255,.25);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:#60B0FF;text-transform:uppercase;margin-bottom:3px">No maleta</div>
+        <div style="font-size:19px;font-weight:900;color:#fff">${fmtN(cantLinea)}</div>
+        <div style="font-size:8.5px;color:#3D6A99;margin-top:2px">${totalReal>0?Math.round(cantLinea/totalReal*100):0}% del total</div>
+      </div>
+      <div style="background:rgba(154,136,255,.07);border:1px solid rgba(154,136,255,.25);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:#9A88FF;text-transform:uppercase;margin-bottom:3px">Insumo</div>
+        <div style="font-size:19px;font-weight:900;color:#fff">${fmtN(cantInsumo)}</div>
+        <div style="font-size:8.5px;color:#3D6A99;margin-top:2px">${(totalReal+cantInsumo)>0?Math.round(cantInsumo/(totalReal+cantInsumo)*100):0}% del total</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border:1px solid #1A3354;border-radius:14px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:#7FA8D4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">📊 Desempeño por canal de venta</div>
+      ${canalHTML}
+    </div>
+
+    ${eq ? `<div style="background:rgba(255,255,255,.03);border:1px solid #1A3354;border-radius:14px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:#7FA8D4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🔄 Conversión equivalente</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
+        <div style="background:#0A1628;border:1px solid #1A3354;border-radius:10px;padding:8px 10px;text-align:center;min-width:72px">
+          <div style="font-size:15px;font-weight:900;color:#fff">${fmtN(totalReal)}</div>
+          <div style="font-size:7.5px;color:#7FA8D4;text-transform:uppercase;line-height:1.3">unidades<br>embaladas</div>
+        </div>
+        <span style="font-size:16px;color:#3D6A99;font-weight:700">×</span>
+        <div style="background:#0A1628;border:1px solid #1A3354;border-radius:10px;padding:8px 10px;text-align:center;min-width:72px">
+          <div style="font-size:15px;font-weight:900;color:#60B0FF">${factorConv.toFixed(2)}</div>
+          <div style="font-size:7.5px;color:#7FA8D4;text-transform:uppercase;line-height:1.3">factor de<br>conversión</div>
+        </div>
+        <span style="font-size:16px;color:#3D6A99;font-weight:700">=</span>
+        <div style="background:#0A1628;border:1px solid #1A3354;border-radius:10px;padding:8px 10px;text-align:center;min-width:72px">
+          <div style="font-size:15px;font-weight:900;color:#2ECC8A">${fmtN(totalEquiv)}</div>
+          <div style="font-size:7.5px;color:#7FA8D4;text-transform:uppercase;line-height:1.3">unidades<br>equivalentes</div>
+        </div>
+      </div>
+    </div>` : ''}
+
+    <div style="border:1px solid rgba(255,186,77,.35);border-radius:14px;padding:14px 18px;text-align:center;background:rgba(255,186,77,.05)">
+      <div style="font-size:13px;font-style:italic;color:#FFBA4D;font-weight:700;line-height:1.4">"${_repFraseMotivacional(cumplPct)}"</div>
+    </div>
+
+    <div style="text-align:center;font-size:8.5px;color:#3D6A99;margin-top:12px">Mi Productividad · CD Lo Boza — Generado el ${new Date().toLocaleString('es-CL')}</div>
+  </div>`;
+
+  document.getElementById('rep-card-inner').innerHTML = html;
 }
 </script>
 
