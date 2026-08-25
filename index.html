@@ -1762,13 +1762,6 @@ input[type="month"], input[type="week"]{
       #ind-action-bar .il-btn-wsp:active{transform:scale(.97);}
       #ind-action-bar .il-btn-wsp:disabled{opacity:.5;cursor:not-allowed;}
       #ind-action-bar .il-btn-wsp svg{width:17px;height:17px;fill:#fff;}
-
-      /* Modal selector de número de WhatsApp — mismos motivos que arriba
-         (transform de "anim-in") obligan a que este modal viva FUERA de
-         #st-indicaciones. Se referencia por id directo, no por esta clase. */
-      #ind-modal-wsp .ind-wsp-input{width:100%;box-sizing:border-box;background:#FFF1F4;border:1px solid rgba(216,140,160,.3);border-radius:12px;padding:10px 12px;color:#7A2E42;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
-      #ind-modal-wsp .ind-wsp-input::placeholder{color:#D3AEB9;}
-      #ind-modal-wsp .ind-wsp-input:focus{border-color:#E8899F;}
     </style>
 
     <div class="il-card">
@@ -1910,35 +1903,6 @@ input[type="month"], input[type="week"]{
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.37 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.2 14.2c-.22.62-1.28 1.2-1.77 1.24-.46.04-.97.06-1.56-.1-.36-.1-.82-.26-1.4-.5-2.47-1.07-4.08-3.6-4.2-3.77-.12-.16-1-1.34-1-2.55 0-1.22.63-1.82.86-2.06.22-.25.5-.3.66-.3h.48c.15 0 .36-.06.56.43.22.5.74 1.75.8 1.88.06.12.1.27.02.44-.08.16-.12.27-.24.4-.12.15-.26.33-.37.44-.12.12-.25.25-.1.5.13.25.6 1 1.3 1.6.9.8 1.65 1.06 1.9 1.18.25.12.4.1.55-.06.15-.15.63-.72.8-.97.16-.25.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.6-.16 1.2z"/></svg>
       Generar imagen y enviar por WhatsApp
     </button>
-  </div>
-
-  <!-- Modal selector de número de WhatsApp — vive FUERA de #st-indicaciones
-       por la misma razón que #ind-action-bar (ver nota más arriba sobre el
-       transform de "anim-in" rompiendo position:fixed). Permite elegir un
-       contacto ya guardado o ingresar uno nuevo antes de generar la imagen
-       y abrir WhatsApp directo en ese número. -->
-  <div id="ind-modal-wsp" style="display:none;position:fixed;inset:0;background:rgba(60,20,35,.55);z-index:1300;align-items:flex-end;justify-content:center" onclick="if(event.target===this)indCerrarModalWsp()">
-    <div style="background:#FFF8F4;border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(216,140,160,.3);font-family:'DM Sans',sans-serif;box-sizing:border-box">
-      <div style="background:linear-gradient(135deg,#F6C9D3,#EDA0B4);padding:16px 18px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:#6B2737">📲 Enviar por WhatsApp</div>
-          <div style="font-size:11px;color:rgba(107,39,55,.7);margin-top:2px">Elige un contacto guardado o ingresa un número</div>
-        </div>
-        <button onclick="indCerrarModalWsp()" style="background:rgba(255,255,255,.5);border:none;color:#6B2737;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0">×</button>
-      </div>
-      <div style="padding:16px 18px">
-        <div id="ind-wsp-lista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
-        <div id="ind-wsp-lista-vacio" style="display:none;font-size:11.5px;color:#B5788C;font-style:italic;padding:8px 0;text-align:center">Aún no tienes contactos guardados — agrega uno abajo</div>
-        <div style="border-top:1px solid rgba(216,140,160,.22);padding-top:14px;margin-top:6px">
-          <label style="display:block;font-size:10.5px;font-weight:700;color:#B5788C;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Nombre (opcional)</label>
-          <input id="ind-wsp-nombre" class="ind-wsp-input" type="text" placeholder="Ej: Supervisor turno tarde" style="margin-bottom:10px">
-          <label style="display:block;font-size:10.5px;font-weight:700;color:#B5788C;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Número de WhatsApp</label>
-          <input id="ind-wsp-numero" class="ind-wsp-input" type="tel" placeholder="Ej: 9 1234 5678" inputmode="tel">
-          <div style="font-size:9.5px;color:#B5788C;margin-top:5px;line-height:1.4">Ingresa el número con o sin +56 — se guarda para la próxima vez.</div>
-          <button onclick="indConfirmarNumeroWsp()" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#F0A6BE,#E0839F);border:none;border-radius:14px;padding:12px 14px;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit">Generar y enviar a este número</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <nav class="bottom-nav" id="bottom-nav-sup">
@@ -5886,36 +5850,57 @@ const _planCache = { sem:null, anio:null, planRaw:null, prodRawSemana:null, entr
 let planDiaActual = null; // null = semana completa; 'YYYY-MM-DD' = día específico filtrado
 function invalidarPlanCache(){ _planCache.sem=null; _planCache.planRaw=null; _planCache.idEntregasSAnt=new Set(); _planCache.embalBackPorFecha={}; _planCache.arrastreInicial=null; }
 
-// ── Candado global para la Web Share API ──────────────────────────────────
-// El navegador solo permite UNA llamada a navigator.share() en curso a la vez
-// (por pestaña). Si se invoca de nuevo antes de que la anterior termine (o
-// mientras la hoja de "Compartir" del sistema sigue abierta), rechaza con
-// InvalidStateError: "An earlier share has not yet completed." — este era el
-// error que veía Diego en Plan, Ritmo, Capacidad, Análisis y el generador de
-// Indicaciones, porque cada módulo llamaba a navigator.share() por su cuenta
-// sin saber si otro ya estaba en curso. Este candado es compartido por TODAS
-// las funciones de compartir de la app (compartirBloques, compartirComoImagen,
-// etc.) para que nunca se pisen entre sí, sin importar desde qué pestaña se
-// dispare.
-window._shareEnCurso = false;
-async function safeNavigatorShare(payload){
-  if(window._shareEnCurso){
-    toast('Ya hay un envío en curso — espera a que termine e intenta de nuevo');
-    const err = new Error('Ya hay un envío en curso'); err.name='AbortError';
-    throw err;
+// ── Ayudantes para compartir (panel nativo: WhatsApp, Instagram, etc.) ─────
+// Chrome/Edge en Windows y en el celular SÍ soportan el panel nativo de
+// compartir con imágenes (navigator.share con files) — el mismo que ves en
+// el teléfono. El problema reportado ("Failed to execute 'share'... An
+// earlier share has not yet completed") es un BUG CONOCIDO de Chromium en
+// Windows (https://issues.chromium.org/issues/40066580): si el panel se
+// cierra o se cancela de forma "brusca" (doble clic, clic afuera muy rápido),
+// el navegador queda con un candado interno trabado y CUALQUIER intento de
+// compartir posterior en esa misma pestaña falla — hasta recargar (F5).
+// Por eso se rompió en Plan, Ritmo, Capacidad e Indicaciones a la vez: el
+// candado no es de cada botón, es de toda la pestaña.
+// No se puede "arreglar" el bug del navegador desde JS, pero sí evitamos
+// mandar dos share() a la vez y, si el bug ya se disparó, dejamos de
+// insistir (evitando más errores) y avisamos claramente que hay que
+// recargar, mientras se ofrece la descarga como respaldo inmediato.
+let _compartiendoAhora = false;
+window._shareRotoEnEstaSesion = false;
+function _descargarArchivosCompartir(files, prefijoMsg){
+  files.forEach(file=>{
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  });
+  toast((prefijoMsg||'') + (files.length>1 ? files.length+' imágenes descargadas' : 'Imagen descargada') + ' — adjúntalas manualmente en WhatsApp/Instagram');
+}
+async function _intentarCompartirArchivos(files, titulo){
+  if(window._shareRotoEnEstaSesion){
+    _descargarArchivosCompartir(files, '⚠ El panel de compartir de Chrome sigue bloqueado por el bug del navegador — recarga la página (F5) para restablecerlo. Mientras tanto, ');
+    return;
   }
-  window._shareEnCurso = true;
+  if(_compartiendoAhora){ toast('Espera a que termine el envío anterior…'); return; }
+  if(!(navigator.canShare && navigator.canShare({files}))){
+    _descargarArchivosCompartir(files);
+    return;
+  }
+  _compartiendoAhora = true;
   try{
-    await navigator.share(payload);
-  } catch(e){
-    if(e && (e.name==='InvalidStateError' || /earlier share/i.test(e.message||''))){
-      toast('Ya hay un envío en curso — espera a que termine e intenta de nuevo');
-      const err2 = new Error('Ya hay un envío en curso'); err2.name='AbortError';
-      throw err2;
+    await navigator.share({files, title:titulo});
+  }catch(eShare){
+    if(eShare && eShare.name==='AbortError'){ /* el usuario cerró el panel — no hacer nada */ }
+    else if(eShare && (eShare.name==='InvalidStateError' || /earlier share/i.test(eShare.message||''))){
+      window._shareRotoEnEstaSesion = true;
+      _descargarArchivosCompartir(files, '⚠ Chrome se bloqueó por un bug conocido del navegador (pasa al cancelar o hacer doble clic en un envío). Recarga la página (F5) para restablecer el panel nativo. Mientras tanto, ');
+    } else {
+      toast('Error al compartir: '+(eShare.message||eShare));
+      _descargarArchivosCompartir(files);
     }
-    throw e;
   } finally {
-    window._shareEnCurso = false;
+    _compartiendoAhora = false;
   }
 }
 
@@ -5980,33 +5965,25 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
     // El navegador exige un gesto del usuario "fresco" para compartir — como generar varias
     // imágenes (sobre todo con gráficos) puede tardar unos segundos, el permiso del toque
     // original ya expiró. En vez de fallar, se deja todo listo y se pide un segundo toque.
-    if(navigator.canShare && navigator.canShare({files})){
+    if(navigator.canShare && navigator.canShare({files}) && !window._shareRotoEnEstaSesion){
       if(btnEl){
         detallesForzados.forEach(d=>d.open=false);
         ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
         btnEl.innerHTML = '✅ Toca para compartir ('+files.length+')';
         btnEl.disabled = false;
         btnEl.onclick = async ()=>{
-          try{ await safeNavigatorShare({files, title:nombreArchivo}); }
-          catch(eShare){ if(eShare && eShare.name!=='AbortError'){ toast('Error al compartir: '+(eShare.message||eShare)); } }
-          finally{
-            btnEl.innerHTML = txtOriginal;
-            btnEl.onclick = ()=>compartirBloques(ids, nombreArchivo, btnEl);
-          }
+          btnEl.disabled = true; // evita el doble clic que dispara el bug de Chrome
+          await _intentarCompartirArchivos(files, nombreArchivo);
+          btnEl.innerHTML = txtOriginal;
+          btnEl.disabled = false;
+          btnEl.onclick = ()=>compartirBloques(ids, nombreArchivo, btnEl);
         };
         return; // no restaurar el botón en el finally — queda a la espera del segundo toque
       } else {
-        await safeNavigatorShare({files, title:nombreArchivo});
+        await _intentarCompartirArchivos(files, nombreArchivo);
       }
     } else {
-      files.forEach((file,i)=>{
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a');
-        a.href = url; a.download = file.name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      });
-      toast(files.length+' imágenes descargadas — compártelas desde tu galería');
+      _descargarArchivosCompartir(files, window._shareRotoEnEstaSesion ? '⚠ Recarga la página (F5) para restablecer el panel de compartir. Mientras tanto, ' : '');
     }
   }catch(e){
     if(e && e.name !== 'AbortError'){ console.error('compartirBloques:', e); toast('Error al generar las imágenes: '+(e.message||e)); }
@@ -6050,16 +6027,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
     const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
     if(!blob){ toast('No se pudo generar la imagen'); return; }
     const file = new File([blob], nombreArchivo+'.png', {type:'image/png'});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      await safeNavigatorShare({files:[file], title:nombreArchivo});
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = nombreArchivo+'.png';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      toast('Imagen descargada — compártela desde tu galería');
-    }
+    await _intentarCompartirArchivos([file], nombreArchivo);
   }catch(e){
     if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen: '+(e.message||e)); }
   }finally{
@@ -6967,12 +6935,13 @@ async function compartirReportePorBloques(btnEl){
       if(blob) files.push(new File([blob], 'Reporte_Diario_'+(i+1)+'_'+g.nombre+'.png', {type:'image/png'}));
     }
     if(!files.length){ alert('No se pudo generar ninguna imagen'); return; }
-    if(navigator.canShare && navigator.canShare({files})){
-      if(window._shareEnCurso){ alert('Ya hay un envío en curso — espera a que termine e intenta de nuevo'); return; }
-      window._shareEnCurso = true;
-      try{ await navigator.share({files, title:'Reporte Diario'}); }
-      finally{ window._shareEnCurso = false; }
-    } else {
+    // Este popup del Reporte es una ventana/documento aparte (no comparte el
+    // mismo contexto JS que el resto de la app), así que usa su propio
+    // candado simple con la misma lógica: bug conocido de Chrome en Windows
+    // ("An earlier share has not yet completed") que se dispara al cancelar
+    // o doble-clickear un share() y bloquea TODOS los envíos posteriores en
+    // esa pestaña hasta recargar (F5).
+    const _descargarRpt = (prefijo)=>{
       files.forEach(file=>{
         const url = URL.createObjectURL(file);
         const a = document.createElement('a');
@@ -6980,7 +6949,23 @@ async function compartirReportePorBloques(btnEl){
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(()=>URL.revokeObjectURL(url), 4000);
       });
-      alert(files.length+' imágenes descargadas — compártelas desde tu galería');
+      alert((prefijo||'') + files.length+' imágenes descargadas — adjúntalas manualmente en WhatsApp/Instagram');
+    };
+    if(window._shareRotoRpt){
+      _descargarRpt('⚠ Recarga la página (F5) para restablecer el panel de compartir. ');
+    } else if(navigator.canShare && navigator.canShare({files})){
+      try{ await navigator.share({files, title:'Reporte Diario'}); }
+      catch(eShare){
+        if(eShare && eShare.name==='AbortError'){ /* cancelado por el usuario */ }
+        else if(eShare && (eShare.name==='InvalidStateError' || /earlier share/i.test(eShare.message||''))){
+          window._shareRotoRpt = true;
+          _descargarRpt('⚠ Chrome se bloqueó por un bug conocido del navegador. Recarga la página (F5) para restablecer el panel nativo. ');
+        } else {
+          _descargarRpt('');
+        }
+      }
+    } else {
+      _descargarRpt('');
     }
   }catch(e){
     if(e && e.name !== 'AbortError'){ console.error(e); alert('Error al generar las imágenes: '+(e.message||e)); }
@@ -12032,144 +12017,11 @@ function indActualizarTicket(){
   if(obs){ obsWrap.style.display='block'; document.getElementById('ind-t-obs-val').innerHTML = '<b>Obs:</b> ' + escapeHtml(obs); }
   else   { obsWrap.style.display='none'; }
 }
-// ── Selector de número de WhatsApp — Indicaciones ──────────────────────────
-// Antes de generar la imagen, se abre un modal para elegir (o ingresar) el
-// número de WhatsApp de destino — igual que antes. Los contactos usados se
-// guardan en localStorage para no reescribirlos cada vez. Como WhatsApp no
-// permite adjuntar una imagen automáticamente vía link (wa.me), el flujo es:
-// 1) se genera y descarga la imagen del ticket, 2) se abre WhatsApp ya con
-// ese número seleccionado, 3) el usuario adjunta manualmente la imagen recién
-// descargada (queda como la más reciente en su galería/descargas).
-const IND_WSP_STORAGE_KEY = 'ind_wsp_contactos';
-let _indWspBtnPendiente = null;
-function _indWspLeerContactos(){
-  try{ return JSON.parse(localStorage.getItem(IND_WSP_STORAGE_KEY)) || []; }
-  catch(e){ return []; }
-}
-function _indWspGuardarContactos(lista){
-  try{ localStorage.setItem(IND_WSP_STORAGE_KEY, JSON.stringify(lista)); }catch(e){}
-}
-// Normaliza a formato internacional sin '+' (ej. 569XXXXXXXX) asumiendo Chile
-// cuando el usuario ingresa el número corto (con o sin el 9 inicial).
-function _indWspNormalizarNumero(raw){
-  let d = (raw||'').replace(/\D/g,'');
-  if(!d) return '';
-  if(d.length===9 && d.startsWith('9')) d = '56'+d;   // 9XXXXXXXX  -> 569XXXXXXXX
-  else if(d.length===8) d = '569'+d;                   // XXXXXXXX   -> 569XXXXXXXX
-  return d;
-}
-function indRenderContactosWsp(){
-  const cont = document.getElementById('ind-wsp-lista');
-  const vacio = document.getElementById('ind-wsp-lista-vacio');
-  if(!cont) return;
-  const lista = _indWspLeerContactos();
-  if(!lista.length){
-    cont.innerHTML = '';
-    if(vacio) vacio.style.display = 'block';
-    return;
-  }
-  if(vacio) vacio.style.display = 'none';
-  cont.innerHTML = lista.map((c,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;background:#FFF1F4;border:1px solid rgba(216,140,160,.25);border-radius:12px;padding:9px 10px">
-      <div onclick="indElegirContactoWsp(${i})" style="flex:1;cursor:pointer;min-width:0">
-        <div style="font-size:12.5px;font-weight:700;color:#7A2E42;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.nombre||'Sin nombre')}</div>
-        <div style="font-size:10.5px;color:#B5788C">+${escapeHtml(c.numero)}</div>
-      </div>
-      <button onclick="event.stopPropagation();indEliminarContactoWsp(${i})" title="Eliminar" style="background:none;border:none;color:#D5728B;font-size:15px;padding:4px 6px;cursor:pointer;flex-shrink:0">✕</button>
-    </div>`).join('');
-}
-function indAbrirModalWsp(btnEl){
-  _indWspBtnPendiente = btnEl || null;
-  const modal = document.getElementById('ind-modal-wsp');
-  if(!modal) return;
-  indRenderContactosWsp();
-  const nombreEl = document.getElementById('ind-wsp-nombre');
-  const numeroEl = document.getElementById('ind-wsp-numero');
-  if(nombreEl) nombreEl.value = '';
-  if(numeroEl) numeroEl.value = '';
-  modal.style.display = 'flex';
-}
-function indCerrarModalWsp(){
-  const modal = document.getElementById('ind-modal-wsp');
-  if(modal) modal.style.display = 'none';
-}
-function indEliminarContactoWsp(idx){
-  const lista = _indWspLeerContactos();
-  lista.splice(idx,1);
-  _indWspGuardarContactos(lista);
-  indRenderContactosWsp();
-}
-function indElegirContactoWsp(idx){
-  const lista = _indWspLeerContactos();
-  const c = lista[idx];
-  if(!c) return;
-  indProcederConNumeroWsp(c.numero);
-}
-function indConfirmarNumeroWsp(){
-  const nombre = (document.getElementById('ind-wsp-nombre').value||'').trim();
-  const numeroRaw = document.getElementById('ind-wsp-numero').value||'';
-  const numero = _indWspNormalizarNumero(numeroRaw);
-  if(!numero || numero.length<11){ toast('⚠ Ingresa un número de WhatsApp válido'); return; }
-  // Guardar/actualizar en la lista de contactos (evita duplicados por número)
-  const lista = _indWspLeerContactos();
-  const existente = lista.findIndex(c=>c.numero===numero);
-  const entrada = {nombre: nombre || ('Contacto '+(lista.length+1)), numero};
-  if(existente>=0) lista[existente] = entrada; else lista.push(entrada);
-  _indWspGuardarContactos(lista);
-  indProcederConNumeroWsp(numero);
-}
-async function indProcederConNumeroWsp(numero){
-  const cliente = document.getElementById('ind-cliente').value;
-  const btnEl = _indWspBtnPendiente;
-  indCerrarModalWsp();
-  if(!cliente){ toast('⚠ Selecciona un cliente primero'); return; }
-  const filename = 'Indicaciones_'+cliente.replace(/\s+/g,'_');
-  await indGenerarImagenYAbrirWsp(numero, filename, btnEl);
-}
-// Genera la imagen del ticket, la descarga, y abre WhatsApp con el número ya
-// seleccionado (wa.me no permite adjuntar imágenes vía link, así que el
-// usuario adjunta manualmente la imagen recién descargada en el chat).
-async function indGenerarImagenYAbrirWsp(numero, nombreArchivo, btnEl){
-  const contenedor = document.getElementById('ind-ticket-wrap');
-  if(!contenedor){ toast('No se encontró el ticket para compartir'); return; }
-  const txtOriginal = btnEl ? btnEl.innerHTML : null;
-  if(btnEl){ btnEl.innerHTML='⏳ Generando...'; btnEl.disabled=true; }
-  const ocultos = Array.from(contenedor.querySelectorAll('.no-share'));
-  const prevDisplay = ocultos.map(el=>el.style.display);
-  ocultos.forEach(el=>el.style.display='none');
-  try{
-    if(typeof html2canvas === 'undefined'){ toast('No se pudo cargar el generador de imágenes'); return; }
-    const scale = Math.max(window.devicePixelRatio || 2, 3);
-    const canvas = await html2canvas(contenedor, {
-      backgroundColor:'#FFFFFF', scale, useCORS:true,
-      onclone:(clonedDoc)=>{
-        const s = clonedDoc.createElement('style');
-        s.textContent = 'body::before,body::after{display:none!important;content:none!important}';
-        clonedDoc.head.appendChild(s);
-      }
-    });
-    const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
-    if(!blob){ toast('No se pudo generar la imagen'); return; }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = nombreArchivo+'.png';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 4000);
-    const texto = encodeURIComponent('📋 Ficha de indicaciones de embalaje generada desde Mi Productividad.');
-    window.open('https://wa.me/'+numero+'?text='+texto, '_blank');
-    toast('✓ Imagen descargada — adjúntala en el chat que se abrió en WhatsApp');
-  }catch(e){
-    console.error('indGenerarImagenYAbrirWsp:', e);
-    toast('Error al generar la imagen: '+(e.message||e));
-  }finally{
-    ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
-    if(btnEl){ btnEl.innerHTML=txtOriginal; btnEl.disabled=false; }
-  }
-}
 async function indGenerarYEnviar(btnEl){
   const cliente = document.getElementById('ind-cliente').value;
   if(!cliente){ toast('⚠ Selecciona un cliente primero'); return; }
-  indAbrirModalWsp(btnEl);
+  const filename = 'Indicaciones_'+cliente.replace(/\s+/g,'_');
+  await compartirComoImagen(['ind-ticket-wrap'], filename, btnEl);
 }
 // Botón "Limpiar" de la barra de acciones: borra todos los campos ingresados
 // y vuelve a pintar el ticket en su estado vacío inicial (incluyendo volver
