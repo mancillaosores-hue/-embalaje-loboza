@@ -5850,36 +5850,41 @@ const _planCache = { sem:null, anio:null, planRaw:null, prodRawSemana:null, entr
 let planDiaActual = null; // null = semana completa; 'YYYY-MM-DD' = día específico filtrado
 function invalidarPlanCache(){ _planCache.sem=null; _planCache.planRaw=null; _planCache.idEntregasSAnt=new Set(); _planCache.embalBackPorFecha={}; _planCache.arrastreInicial=null; }
 
-// ── Candado global para la Web Share API ──────────────────────────────────
-// El navegador solo permite UNA llamada a navigator.share() en curso a la vez
-// (por pestaña). Si se invoca de nuevo antes de que la anterior termine (o
-// mientras la hoja de "Compartir" del sistema sigue abierta), rechaza con
-// InvalidStateError: "An earlier share has not yet completed." — este era el
-// error que veía Diego en Plan, Ritmo, Capacidad, Análisis y el generador de
-// Indicaciones, porque cada módulo llamaba a navigator.share() por su cuenta
-// sin saber si otro ya estaba en curso. Este candado es compartido por TODAS
-// las funciones de compartir de la app (compartirBloques, compartirComoImagen,
-// etc.) para que nunca se pisen entre sí, sin importar desde qué pestaña se
-// dispare.
-window._shareEnCurso = false;
-async function safeNavigatorShare(payload){
-  if(window._shareEnCurso){
-    toast('Ya hay un envío en curso — espera a que termine e intenta de nuevo');
-    const err = new Error('Ya hay un envío en curso'); err.name='AbortError';
-    throw err;
-  }
-  window._shareEnCurso = true;
-  try{
-    await navigator.share(payload);
-  } catch(e){
-    if(e && (e.name==='InvalidStateError' || /earlier share/i.test(e.message||''))){
-      toast('Ya hay un envío en curso — espera a que termine e intenta de nuevo');
-      const err2 = new Error('Ya hay un envío en curso'); err2.name='AbortError';
-      throw err2;
+// ── Ayudantes para compartir (WhatsApp/Instagram) ───────────────────────────
+// En celulares el navegador abre el panel nativo para elegir la app destino.
+// En PC (Windows/Mac/Linux) el "Web Share API" con archivos es inestable en
+// Chromium — a veces revienta con "Failed to execute 'share' on 'Navigator':
+// An earlier share has not yet completed" incluso en el PRIMER intento, y deja
+// el navegador "trabado" para compartir hasta recargar la pestaña. Por eso en
+// PC vamos directo a descargar la(s) imagen(es) para adjuntarlas a mano —
+// más lento, pero 100% confiable (no depende de un bug del navegador).
+let _compartiendoAhora = false;
+function _esCelularOTablet(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function _descargarArchivosCompartir(files, prefijoMsg){
+  files.forEach(file=>{
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  });
+  toast((prefijoMsg||'') + (files.length>1 ? files.length+' imágenes descargadas' : 'Imagen descargada') + ' — adjúntalas manualmente en WhatsApp/Instagram');
+}
+async function _intentarCompartirArchivos(files, titulo){
+  if(_compartiendoAhora){ toast('Espera a que termine el envío anterior…'); return; }
+  if(_esCelularOTablet() && navigator.canShare && navigator.canShare({files})){
+    _compartiendoAhora = true;
+    try{
+      await navigator.share({files, title:titulo});
+    }catch(eShare){
+      if(eShare && eShare.name!=='AbortError'){ _descargarArchivosCompartir(files); }
+    }finally{
+      _compartiendoAhora = false;
     }
-    throw e;
-  } finally {
-    window._shareEnCurso = false;
+  } else {
+    _descargarArchivosCompartir(files, _esCelularOTablet() ? '' : 'Estás en PC, así que ');
   }
 }
 
@@ -5944,33 +5949,24 @@ async function compartirBloques(ids, nombreArchivo, btnEl){
     // El navegador exige un gesto del usuario "fresco" para compartir — como generar varias
     // imágenes (sobre todo con gráficos) puede tardar unos segundos, el permiso del toque
     // original ya expiró. En vez de fallar, se deja todo listo y se pide un segundo toque.
-    if(navigator.canShare && navigator.canShare({files})){
+    if(_esCelularOTablet() && navigator.canShare && navigator.canShare({files})){
       if(btnEl){
         detallesForzados.forEach(d=>d.open=false);
         ocultos.forEach((el,i)=>el.style.display=prevDisplay[i]);
         btnEl.innerHTML = '✅ Toca para compartir ('+files.length+')';
         btnEl.disabled = false;
         btnEl.onclick = async ()=>{
-          try{ await safeNavigatorShare({files, title:nombreArchivo}); }
-          catch(eShare){ if(eShare && eShare.name!=='AbortError'){ toast('Error al compartir: '+(eShare.message||eShare)); } }
-          finally{
-            btnEl.innerHTML = txtOriginal;
-            btnEl.onclick = ()=>compartirBloques(ids, nombreArchivo, btnEl);
-          }
+          await _intentarCompartirArchivos(files, nombreArchivo);
+          btnEl.innerHTML = txtOriginal;
+          btnEl.onclick = ()=>compartirBloques(ids, nombreArchivo, btnEl);
         };
         return; // no restaurar el botón en el finally — queda a la espera del segundo toque
       } else {
-        await safeNavigatorShare({files, title:nombreArchivo});
+        await _intentarCompartirArchivos(files, nombreArchivo);
       }
     } else {
-      files.forEach((file,i)=>{
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a');
-        a.href = url; a.download = file.name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      });
-      toast(files.length+' imágenes descargadas — compártelas desde tu galería');
+      // PC / sin soporte de Web Share con archivos: descarga directa (evita el bug de Chromium en Windows).
+      _descargarArchivosCompartir(files, _esCelularOTablet() ? '' : 'Estás en PC, así que ');
     }
   }catch(e){
     if(e && e.name !== 'AbortError'){ console.error('compartirBloques:', e); toast('Error al generar las imágenes: '+(e.message||e)); }
@@ -6014,16 +6010,7 @@ async function compartirComoImagen(ids, nombreArchivo, btnEl){
     const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
     if(!blob){ toast('No se pudo generar la imagen'); return; }
     const file = new File([blob], nombreArchivo+'.png', {type:'image/png'});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      await safeNavigatorShare({files:[file], title:nombreArchivo});
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = nombreArchivo+'.png';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      toast('Imagen descargada — compártela desde tu galería');
-    }
+    await _intentarCompartirArchivos([file], nombreArchivo);
   }catch(e){
     if(e && e.name !== 'AbortError') { console.error('compartirComoImagen:', e); toast('Error al generar la imagen: '+(e.message||e)); }
   }finally{
@@ -6931,12 +6918,11 @@ async function compartirReportePorBloques(btnEl){
       if(blob) files.push(new File([blob], 'Reporte_Diario_'+(i+1)+'_'+g.nombre+'.png', {type:'image/png'}));
     }
     if(!files.length){ alert('No se pudo generar ninguna imagen'); return; }
-    if(navigator.canShare && navigator.canShare({files})){
-      if(window._shareEnCurso){ alert('Ya hay un envío en curso — espera a que termine e intenta de nuevo'); return; }
-      window._shareEnCurso = true;
-      try{ await navigator.share({files, title:'Reporte Diario'}); }
-      finally{ window._shareEnCurso = false; }
-    } else {
+    // En PC el Web Share API con archivos es inestable en Chromium (a veces lanza
+    // "An earlier share has not yet completed" incluso en el primer intento) — por
+    // eso en PC vamos directo a descargar, y en celular usamos el panel nativo.
+    const _esMovilRpt = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const _descargarRpt = ()=>{
       files.forEach(file=>{
         const url = URL.createObjectURL(file);
         const a = document.createElement('a');
@@ -6944,7 +6930,13 @@ async function compartirReportePorBloques(btnEl){
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(()=>URL.revokeObjectURL(url), 4000);
       });
-      alert(files.length+' imágenes descargadas — compártelas desde tu galería');
+      alert(files.length+' imágenes descargadas — ' + (_esMovilRpt ? 'compártelas desde tu galería' : 'adjúntalas manualmente en WhatsApp/Instagram'));
+    };
+    if(_esMovilRpt && navigator.canShare && navigator.canShare({files})){
+      try{ await navigator.share({files, title:'Reporte Diario'}); }
+      catch(eShare){ if(eShare && eShare.name!=='AbortError'){ _descargarRpt(); } }
+    } else {
+      _descargarRpt();
     }
   }catch(e){
     if(e && e.name !== 'AbortError'){ console.error(e); alert('Error al generar las imágenes: '+(e.message||e)); }
