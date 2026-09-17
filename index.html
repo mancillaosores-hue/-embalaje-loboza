@@ -5603,6 +5603,13 @@ async function loadEquipo(){
       if(r.tipo!=='insumo') g[r.usuario].total+=r.cantidad;
       g[r.usuario][r.tipo]=(g[r.usuario][r.tipo]||0)+r.cantidad;
     });
+    // Ranking en unidades convertidas (equivalencia), mismo criterio que
+    // usa el resto de la app (calcEquivDesglose): línea 1:1, maleta ×4 o
+    // línea ÷4 según el mix propio de cada operaria, insumo ÷20.
+    Object.entries(g).forEach(([uid,d])=>{
+      const eq=calcEquivDesglose(uid, d.linea, d.maleta, d.insumo);
+      if(eq) d.total=eq.total;
+    });
     const sorted=Object.entries(g).filter(([,d])=>d.total>0).sort((a,b)=>b[1].total-a[1].total);
     const soloInsumos=Object.entries(g).filter(([,d])=>d.total===0&&d.insumo>0);
     const DOTACION_ESPERADA      = 12;
@@ -6217,6 +6224,13 @@ async function loadSupMes(){
     gu[r.usuario].total+=r.cantidad;
     gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
   });
+  // Ranking en unidades convertidas (equivalencia), mismo criterio que
+  // usa el resto de la app (calcEquivDesglose): línea 1:1, maleta ×4 o
+  // línea ÷4 según el mix propio de cada operaria, insumo ÷20.
+  Object.entries(gu).forEach(([uid,d])=>{
+    const eq=calcEquivDesglose(uid, d.linea, d.maleta, d.insumo);
+    if(eq) d.total=eq.total;
+  });
   // Ranking acumulado mes — mismo criterio que Semana: ordenado por %
   // de cumplimiento de la meta MENSUAL completa (no por cantidad
   // absoluta), con Meta/Llevas/Falta/Ritmo por día según los días
@@ -6709,8 +6723,16 @@ async function loadSupSemana(){
   // Falta/Ritmo por día según los días hábiles que quedan en la semana.
   const gu={};
   rows.forEach(r=>{
-    if(!gu[r.usuario])gu[r.usuario]={total:0};
+    if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
     gu[r.usuario].total+=r.cantidad;
+    gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
+  });
+  // Ranking en unidades convertidas (equivalencia), mismo criterio que
+  // usa el resto de la app (calcEquivDesglose): línea 1:1, maleta ×4 o
+  // línea ÷4 según el mix propio de cada operaria, insumo ÷20.
+  Object.entries(gu).forEach(([uid,d])=>{
+    const eq=calcEquivDesglose(uid, d.linea, d.maleta, d.insumo);
+    if(eq) d.total=eq.total;
   });
   // Meta semanal = meta diaria × 5 (fija, NO depende de los días hábiles
   // reales que tenga esa semana calendario). El "ritmo/día" sí usa los
