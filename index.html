@@ -7109,7 +7109,7 @@ function cerrarModalReporte(){
 
 function buildBloqueSemanalemail(p){
   if(!p||!p.totalMeta) return '';
-  const {pctAv,pctEsp,totalMeta,totalProd,totalCarg,metaDia,dR,canalesPlan,semMin,semMax} = p;
+  const {pctAv,pctEsp,totalMeta,totalProd,totalCarg,metaDia,dR,canalesPlan,semMin,semMax,arrastreError} = p;
   const carg = totalCarg || 0;
   const gap = Math.round(totalMeta - totalProd);
   const sc = pctAv>=95?'#16A34A':pctAv>=75?'#D97706':'#DC2626';
@@ -7185,8 +7185,8 @@ function buildBloqueSemanalemail(p){
     </td><td width="2%">&nbsp;</td>
     <td width="32%" bgcolor="#F8FAFC" style="background:#F8FAFC;padding:10px 12px">
       <div style="font-size:9px;color:#94A3B8">Arrastre</div>
-      <div style="font-size:16px;font-weight:900;color:${hayArrastre?'#D97706':'#94A3B8'}">${hayArrastre?arrastreInicial.toLocaleString('es-CL'):'—'}</div>
-      <div style="font-size:8px;color:#94A3B8">${hayArrastre?'pendiente sem. anterior':'sin arrastre'}</div>
+      <div style="font-size:16px;font-weight:900;color:${arrastreError?'#DC2626':hayArrastre?'#D97706':'#94A3B8'}">${arrastreError?'⚠':hayArrastre?arrastreInicial.toLocaleString('es-CL'):'—'}</div>
+      <div style="font-size:8px;color:#94A3B8">${arrastreError?'error de cálculo':hayArrastre?'pendiente sem. anterior':'sin arrastre'}</div>
     </td>
   </tr></table>
 
@@ -9875,7 +9875,7 @@ async function fetchRptDatos(fechaParam) {
       }catch(e){ console.warn('cargado email error:',e.message); }
 
       // ── Arrastre S-1: cálculo propio y autosuficiente (no depende de _planCache/otra pantalla) ──
-      let arrastreInicialW = 0, arrastreConsumidoW = 0;
+      let arrastreInicialW = 0, arrastreConsumidoW = 0, arrastreErrorW = false;
       try{
         const FECHA_INICIO_CARGA_EMAIL = '2026-06-01';
         if(fIniW > FECHA_INICIO_CARGA_EMAIL){
@@ -9937,7 +9937,7 @@ async function fetchRptDatos(fechaParam) {
             arrastreConsumidoW += embalEsta;
           });
         }
-      }catch(e){ console.warn('arrastre email error:',e.message); }
+      }catch(e){ console.warn('arrastre email error:',e.message); arrastreErrorW = true; }
 
       planEmail={
                  pctAv:pctAvW, pctEsp:pctEspW,
@@ -9946,6 +9946,7 @@ async function fetchRptDatos(fechaParam) {
                  totalCarg:totalCargW,
                  arrastreInicial:Math.round(arrastreInicialW),
                  arrastreConsumido:Math.round(arrastreConsumidoW),
+                 arrastreError:arrastreErrorW,
                  ritmo:ritmoW, metaDia:metaDiaW,
                  dT:dTW, dR:dRW, dTot:dTotW,
                  semMin:semRpt, semMax:semRpt,
