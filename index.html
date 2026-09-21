@@ -5031,22 +5031,27 @@ async function handleFile(file){
     const rows=[];
     const errUsers=new Set();
     json.forEach(r=>{
-      const usuario=(r['_Usuario']||'').toString().trim().padStart(6,'0');
-      const nombre=(r['Nombre Usuario']||'').toString().trim();
-      const fechaRaw=(r['FechaEmbalaje']||r['ConfFecha']||'').toString().trim();
-      const desc=(r['DescripcionArticulo']||'').toString().trim();
-      const cant=parseInt(r['CantidadEmbalada'])||0;
-      const hora=(r['HoraEmbalaje']||r['ConfHora']||'').toString().trim().slice(0,8);
+      // Soporta tanto el formato viejo (FechaEmbalaje/_Usuario/CantidadEmbalada...)
+      // como el nuevo formato ConsultaSQL (Fecha/Usuario/UnidadesEmbaladas/Meson...)
+      const usuario=(r['Usuario']||r['_Usuario']||'').toString().trim().padStart(6,'0');
+      const nombre=(r['Nombre']||r['Nombre Usuario']||'').toString().trim();
+      const fechaRaw=(r['Fecha']||r['FechaEmbalaje']||r['ConfFecha']||'').toString().trim();
+      const desc=(r['Descripcion']||r['DescripcionArticulo']||'').toString().trim();
+      const cant=parseInt(r['UnidadesEmbaladas'])||parseInt(r['CantidadEmbalada'])||0;
+      // 'Hora' en ConsultaSQL viene como número entero de hora (ej. 8), no HH:MM:SS
+      const horaRaw=(r['Hora']!==undefined&&r['Hora']!==null&&r['Hora']!=='')?r['Hora']:(r['HoraEmbalaje']||r['ConfHora']||'');
+      const horaStr=horaRaw.toString().trim();
+      const hora=/^\d{1,2}$/.test(horaStr) ? horaStr.padStart(2,'0')+':00:00' : horaStr.slice(0,8);
       const canal=(r['Canal']||'').toString().trim();
       const ruta=(r['Ruta']||'').toString().trim();
-      const mesa=(r['MesaEmbalaje']||'').toString().trim();
+      const mesa=(r['Meson']||r['MesaEmbalaje']||'').toString().trim();
       const entrega=(r['Entrega']||r['entrega']||'').toString().trim();
-      const tipoRaw=(r['Tipo_Producto']||'').toString().trim();
-      const clientenombre=(r['ClienteNombre']||r['clientenombre']||r['Cliente']||'').toString().trim();
+      const tipoRaw=(r['TipoProducto']||r['Tipo_Producto']||'').toString().trim();
+      const clientenombre=(r['Cliente']||r['ClienteNombre']||r['clientenombre']||'').toString().trim();
 
       if(!usuario||!cant) return;
       // Parse fecha robusta: serial Excel, "2026/04/21", "20260421", "2026-04-21"
-      const fechaOrig = r['FechaEmbalaje']||r['ConfFecha']||'';
+      const fechaOrig = r['Fecha']||r['FechaEmbalaje']||r['ConfFecha']||'';
       let fecha='';
       if(typeof fechaOrig === 'number'){
         const d=new Date(Math.round((fechaOrig-25569)*86400*1000));
