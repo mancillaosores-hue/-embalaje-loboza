@@ -7863,10 +7863,26 @@ function renderEstadoOperacional(opts){
     var f = (r.fecha||'').toString().slice(0,10);
     if(f) embalTotalPorFecha[f] = (embalTotalPorFecha[f]||0) + (Number(r.cantidad)||0);
   });
+  var idsEstaSemana = opts.idEntregasEstaSemana || null;
   var embalCargaPorFecha = {};
-  Object.keys(embalTotalPorFecha).forEach(function(f){
-    embalCargaPorFecha[f] = Math.max((embalTotalPorFecha[f]||0) - (embalBackPorFecha[f]||0), 0);
-  });
+  if(idsEstaSemana){
+    // Match real contra las entregas efectivamente cargadas ESTA semana.
+    // Lo que no matchea con esta semana ni con el arrastre S-1 (backlog de
+    // 2+ semanas atrás) queda fuera del desglose — no se sigue arrastrando
+    // semana a semana, se deja atrás (así lo pidió Diego).
+    prodRawSem.forEach(function(r){
+      var f   = (r.fecha||'').toString().slice(0,10);
+      var ent = (r.entrega||'').toString().trim();
+      if(f && ent && idsEstaSemana.has(ent)){
+        embalCargaPorFecha[f] = (embalCargaPorFecha[f]||0) + (Number(r.cantidad)||0);
+      }
+    });
+  } else {
+    // Fallback de compatibilidad si no viene el set (no debería pasar)
+    Object.keys(embalTotalPorFecha).forEach(function(f){
+      embalCargaPorFecha[f] = Math.max((embalTotalPorFecha[f]||0) - (embalBackPorFecha[f]||0), 0);
+    });
+  }
   var embalPorFecha = embalTotalPorFecha;
 
   // ── Ajuste para vista de día: arrastreConsumido acumulado hasta planDiaActual ──
@@ -7878,9 +7894,15 @@ function renderEstadoOperacional(opts){
     }, 0);
     arrastreConsumidoVista = Math.min(arrastreConsumidoVista, arrastreInicial);
   }
-  // embDeCargaActual = totalProd del período - arrastre absorbido en ese mismo período
-  var embDeCargaActual = Math.max(totalProd - arrastreConsumidoVista, 0);
-  var totalEmbalado    = arrastreConsumidoVista + embDeCargaActual; // debe == totalProd
+  // embDeCargaActual = suma de embalCargaPorFecha (matching real por id_entrega),
+  // respetando el corte de día si hay uno seleccionado
+  var embDeCargaActual = planDiaActual
+    ? Object.keys(embalCargaPorFecha).reduce(function(s,f){ return f<=planDiaActual ? s+embalCargaPorFecha[f] : s; }, 0)
+    : Object.keys(embalCargaPorFecha).reduce(function(s,f){ return s+embalCargaPorFecha[f]; }, 0);
+  // Total embalado = arrastre S-1 absorbido + carga de esta semana embalada (autoconsistente
+  // con las dos cajas de arriba). Si hubo producción de backlog +antiguo (2+ semanas), esa
+  // parte queda fuera de este total — no se sigue arrastrando semana a semana.
+  var totalEmbalado    = arrastreConsumidoVista + embDeCargaActual;
   // Recalcular pendiente y % absorción para la vista del día
   var arrastrePendienteVista = Math.max(arrastreInicial - arrastreConsumidoVista, 0);
   var pctAbsorcionVista = arrastreInicial > 0 ? Math.round(arrastreConsumidoVista / arrastreInicial * 100) : 0;
@@ -8123,10 +8145,10 @@ function renderEstadoOperacional(opts){
 
   // Fila totales — usa arrastreConsumido como fuente única para Emb.Back
   var totalCargSem  = diasSem.reduce(function(s,d){ return s+(cargPorFecha[d.fecha]||0); }, 0);
-  var totalEmbCarga = Math.max(totalProd - arrastreConsumido, 0);
+  var totalEmbCarga = Object.keys(embalCargaPorFecha).reduce(function(s,f){ return s+embalCargaPorFecha[f]; }, 0);
   var totalEmbBack  = arrastreConsumido;   // fuente = backlogPorCanal (consistente con tarjeta)
   var totalPendBack = arrastrePendiente;
-  var totalEmbTotal = totalProd;
+  var totalEmbTotal = totalEmbBack + totalEmbCarga;
   filasDiarioV2 += '<div style="display:grid;grid-template-columns:' + cols + ';gap:2px 3px;align-items:center;padding:7px 2px;background:rgba(255,255,255,.03);border-radius:6px;margin-top:4px">'
     + '<span style="font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase">Total</span>'
     + '<div></div>'
@@ -8329,6 +8351,7 @@ function _renderFromCache(){
     entregasPorFecha: entregasPorFecha,
     planDiaActual: planDiaActual,
     idEntregasSAnt: _planCache.idEntregasSAnt || new Set(),
+    idEntregasEstaSemana: _planCache.idEntregasEstaSemana || null,
     embalBackPorFecha: _planCache.embalBackPorFecha || {},
     arrastreInicialFijo: _planCache.arrastreInicial
   });
@@ -9282,7 +9305,7 @@ async function cargarPlanSemanal(){
   const [resPlan, resProd0, resEntregas0] = await Promise.all([
     fetch(`${SUPA_URL}/rest/v1/plan_carga?select=canal,tipo,unidades_plan&semana_iso=eq.${planSemActual}&anio=eq.${anio}`, hdr),
     fetch(`${SUPA_URL}/rest/v1/produccion?select=usuario,canal,tipo,cantidad,fecha,entrega&fecha=gte.${fLun}&fecha=lte.${fHasta}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc&limit=1000&offset=0`, hdr),
-    fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=0`, hdr)
+    fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=0`, hdr)
   ]);
   const planRaw = await resPlan.json();
   if(!resPlan.ok) throw new Error(`plan_carga HTTP ${resPlan.status}: ${JSON.stringify(planRaw)}`);
@@ -9293,7 +9316,7 @@ async function cargarPlanSemanal(){
   if(Array.isArray(entregasRaw) && entregasRaw.length === 1000){
     let offE = 1000;
     while(true){
-      const re = await fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=${offE}`, hdr);
+      const re = await fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=${offE}`, hdr);
       const pe = re.ok ? await re.json() : [];
       if(!Array.isArray(pe)||!pe.length) break;
       entregasRaw = entregasRaw.concat(pe);
@@ -9517,6 +9540,11 @@ async function cargarPlanSemanal(){
   _planCache.vieObj         = vieObj;
   _planCache.domObj         = vie;
   _planCache.idEntregasSAnt = _idsSAnt;
+  _planCache.idEntregasEstaSemana = new Set(
+    (Array.isArray(entregasRawSemana)?entregasRawSemana:[])
+      .map(function(r){ return (r.id_entrega||'').toString().trim(); })
+      .filter(Boolean)
+  );
   _renderFromCache();
 
   } catch(e) {
