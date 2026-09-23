@@ -3604,19 +3604,30 @@ async function sbFetch(path, opts={}){
   return ct.includes('json') ? res.json() : null;
 }
 
-// Fetch ALL rows paginando de a 1000
+// Fetch ALL rows paginando de a 1000. Reintenta cada página hasta 3 veces (con
+// backoff) antes de rendirse — el proyecto de Supabase tiene statement_timeout
+// bajo (8s en el rol authenticated) y bajo carga concurrente algunas páginas
+// pueden cancelarse (error 57014); casi siempre un reintento simple resuelve.
 async function sbFetchAll(path){
   let all=[], from=0, size=1000;
   while(true){
-    const res = await fetch(SUPA_URL+'/rest/v1/'+path,{
-      headers:{
-        'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'count=none',
-        'Range':`${from}-${from+size-1}`
-      }
-    });
-    if(!res.ok) throw new Error(await res.text());
+    let res, lastErr;
+    for(let intento=0; intento<3; intento++){
+      try{
+        res = await fetch(SUPA_URL+'/rest/v1/'+path,{
+          headers:{
+            'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+            'Content-Type':'application/json',
+            'Prefer':'count=none',
+            'Range':`${from}-${from+size-1}`
+          }
+        });
+        if(res.ok){ lastErr=null; break; }
+        lastErr = new Error(await res.text());
+      }catch(e){ lastErr = e; }
+      if(intento<2) await new Promise(r=>setTimeout(r, 700*(intento+1)));
+    }
+    if(lastErr) throw lastErr;
     const batch = await res.json();
     if(!batch||!batch.length) break;
     all = all.concat(batch);
