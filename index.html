@@ -7822,6 +7822,7 @@ function renderEstadoOperacional(opts){
   var prodRawSem   = opts.prodFiltradaSemana || [];
   var entregasPorFecha = opts.entregasPorFecha || {};
   var planDiaActual    = opts.planDiaActual || null;
+  var backlogError     = !!opts.backlogError;
 
   // Arrastre inicial S-1 — usar valor fijo guardado en caché/localStorage para estabilidad
   // Si no viene fijo, calcular desde backlog (primer render)
@@ -7979,8 +7980,13 @@ function renderEstadoOperacional(opts){
         + '</div>'
       : '')
 
-    // Bloque Arrastre S-1 (solo si hay arrastre)
-    + (arrastreInicial > 0
+    // Bloque Arrastre S-1 (si hay arrastre real, o si falló el cálculo — para no confundirlo con "sin arrastre")
+    + (backlogError
+      ? '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:10px;padding:10px 12px;margin-bottom:8px;text-align:center">'
+          + '<div style="font-size:9px;font-weight:700;color:#EF4444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">⚠ Error al calcular arrastre S-1</div>'
+          + '<div style="font-size:10px;color:var(--txt3)">No se pudo traer/calcular el arrastre de la semana anterior. Reintenta recargando la página.</div>'
+        + '</div>'
+      : (arrastreInicial > 0
       ? '<div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 12px;margin-bottom:8px">'
           + '<div style="font-size:9px;font-weight:700;color:#EF4444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">⚠ Avance Arrastre S-1</div>'
           + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">'
@@ -8002,7 +8008,7 @@ function renderEstadoOperacional(opts){
             + '<span>0%</span><span style="color:#2ECC8A;font-weight:700">' + pctAbsorcionVista + '%</span><span>100%</span>'
           + '</div>'
         + '</div>'
-      : '')
+      : ''))
 
     // Fila 3: 3 tiles embalado — con % de contexto
     + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
@@ -8013,8 +8019,8 @@ function renderEstadoOperacional(opts){
       + '</div>'
       + '<div style="background:rgba(154,136,255,.07);border:1px solid rgba(154,136,255,.2);border-radius:10px;padding:10px 8px;text-align:center">'
         + '<div style="font-size:8px;font-weight:700;color:#9A88FF;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Embalado<br>Arrastre S-1</div>'
-        + '<div style="font-size:20px;font-weight:900;color:#9A88FF;line-height:1">' + (arrastreInicial > 0 ? fmtN(arrastreConsumidoVista) : '—') + '</div>'
-        + (arrastreInicial > 0 ? '<div style="font-size:9px;color:rgba(154,136,255,.55);margin-top:2px;font-weight:700">' + pctAbsorcionVista + '% abs.</div>' : '')
+        + '<div style="font-size:20px;font-weight:900;color:' + (backlogError?'#EF4444':'var(--txt)') + ';line-height:1">' + (backlogError ? '⚠' : (arrastreInicial > 0 ? fmtN(arrastreConsumidoVista) : '—')) + '</div>'
+        + (backlogError ? '<div style="font-size:9px;color:rgba(239,68,68,.6);margin-top:2px;font-weight:700">error de cálculo</div>' : (arrastreInicial > 0 ? '<div style="font-size:9px;color:rgba(154,136,255,.55);margin-top:2px;font-weight:700">' + pctAbsorcionVista + '% abs.</div>' : ''))
       + '</div>'
       + '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 8px;text-align:center">'
         + '<div style="font-size:8px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Total<br>Embalado</div>'
@@ -8353,7 +8359,8 @@ function _renderFromCache(){
     idEntregasSAnt: _planCache.idEntregasSAnt || new Set(),
     idEntregasEstaSemana: _planCache.idEntregasEstaSemana || null,
     embalBackPorFecha: _planCache.embalBackPorFecha || {},
-    arrastreInicialFijo: _planCache.arrastreInicial
+    arrastreInicialFijo: _planCache.arrastreInicial,
+    backlogError: _planCache.backlogError || false
   });
 
   // ── arrConsumido por canal filtrado por planDiaActual ──
@@ -9373,6 +9380,7 @@ async function cargarPlanSemanal(){
   var totalBacklog = 0;
   var semAntLabel  = '';
   var _idsSAnt     = new Set();
+  var backlogErrorFlag = false;
   try{
     if(fLun > FECHA_INICIO_CARGA){
 
@@ -9505,7 +9513,7 @@ async function cargarPlanSemanal(){
       _planCache._arrConsumidoParaBack   = _arrCons;
       _planCache.tablaAuditoria       = tablaAuditoria;
     }
-  }catch(e){ console.warn('backlog error:',e.message); }
+  }catch(e){ console.warn('backlog error:',e.message); backlogErrorFlag = true; }
   let prodRaw   = Array.isArray(pg0) ? [...pg0] : [];
   if(prodRaw.length === 1000){
     let offset = 1000;
@@ -9534,6 +9542,7 @@ async function cargarPlanSemanal(){
   _planCache.prodRawSemana  = prodRaw;
   _planCache.entregasRawSemana = entregasRawSemana;
   _planCache.backlogPorCanal= backlogPorCanal;
+  _planCache.backlogError   = backlogErrorFlag;
   _planCache.semAntLabel    = semAntLabel;
   _planCache.diasSem        = diasSem;
   _planCache.lunObj         = lun;
