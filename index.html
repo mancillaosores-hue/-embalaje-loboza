@@ -7120,11 +7120,8 @@ function cerrarModalReporte(){
 
 function buildBloqueSemanalemail(p){
   if(!p||!p.totalMeta) return '';
-  const {pctAv,pctEsp,totalMeta,totalProd,totalCarg,metaDia,dR,canalesPlan,semMin,semMax,arrastreError} = p;
+  const {pctEsp,totalMeta,totalProd,totalCarg,dR,canalesPlan,semMin,semMax,arrastreError} = p;
   const carg = totalCarg || 0;
-  const gap = Math.round(totalMeta - totalProd);
-  const sc = pctAv>=95?'#16A34A':pctAv>=75?'#D97706':'#DC2626';
-  const bw = Math.min(Math.round(pctAv),100);
   const bwE = Math.min(Math.round(pctEsp),100);
 
   // Arrastre S-1 / consumido esta semana — calculado por fetchRptDatos, propio y autosuficiente
@@ -7134,6 +7131,15 @@ function buildBloqueSemanalemail(p){
   const pctAbsorcion = arrastreInicial>0 ? Math.round(arrastreConsumido/arrastreInicial*100) : 0;
   const pctEmbCarg = carg>0 ? Math.round(embDeCargaActual/carg*100) : 0;
   const hayArrastre = arrastreInicial > 0;
+
+  // Total embalado = arrastre absorbido + carga sem. embalada (mismo criterio que Vista Plan;
+  // el backlog +antiguo que ya no se desglosa queda fuera también acá, para que ambas vistas calcen)
+  const totalEmbalado = arrastreConsumido + embDeCargaActual;
+  const gap = Math.round(totalMeta - totalEmbalado);
+  const pctAv = totalMeta>0 ? Math.round(totalEmbalado/totalMeta*100) : 0;
+  const metaDia = dR>0 ? Math.max(Math.round((totalMeta-totalEmbalado)/dR),0) : 0;
+  const sc = pctAv>=95?'#16A34A':pctAv>=75?'#D97706':'#DC2626';
+  const bw = Math.min(Math.round(pctAv),100);
 
   // Filas de canales compactas
   const OFFLINE=['Locales','Concesiones','Grandes Tiendas','Distribuidor'];
@@ -7207,7 +7213,7 @@ function buildBloqueSemanalemail(p){
     <td style="padding:13px 14px">
       <div style="font-size:9px;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Total embalado${hayArrastre?' (arrastre + cargado)':''}</div>
       <table cellpadding="0" cellspacing="0"><tr>
-        <td valign="bottom"><span style="font-size:19px;font-weight:900;color:#0F172A">${totalProd.toLocaleString('es-CL')}</span></td>
+        <td valign="bottom"><span style="font-size:19px;font-weight:900;color:#0F172A">${totalEmbalado.toLocaleString('es-CL')}</span></td>
         <td valign="bottom" style="padding:0 8px 2px"><span style="font-size:10.5px;color:#94A3B8">de ${totalMeta.toLocaleString('es-CL')} plan</span></td>
       </tr></table>
       <table cellpadding="0" cellspacing="0" width="100%" style="margin-top:8px"><tr>
