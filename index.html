@@ -7134,7 +7134,8 @@ function buildBloqueSemanalemail(p){
 
   // Total embalado = arrastre absorbido + carga sem. embalada (mismo criterio que Vista Plan;
   // el backlog +antiguo que ya no se desglosa queda fuera también acá, para que ambas vistas calcen)
-  const totalEmbalado = arrastreConsumido + embDeCargaActual;
+  // Si el cálculo de arrastre falló, se usa la producción real de la semana (igual a la suma de canales) en vez de mostrar 0
+  const totalEmbalado = arrastreError ? totalProd : arrastreConsumido + embDeCargaActual;
   const gap = Math.round(totalMeta - totalEmbalado);
   const pctAv = totalMeta>0 ? Math.round(totalEmbalado/totalMeta*100) : 0;
   const metaDia = dR>0 ? Math.max(Math.round((totalMeta-totalEmbalado)/dR),0) : 0;
@@ -9883,7 +9884,7 @@ async function fetchRptDatos(fechaParam) {
 
       // Producción acumulada de ESA semana via sbFetchAll
       const prodPlan = await sbFetchAll(
-        `produccion?select=usuario,canal,tipo,cantidad&fecha=gte.${fIniW}&fecha=lte.${fHastaW}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`
+        `produccion?select=usuario,canal,tipo,cantidad,entrega&fecha=gte.${fIniW}&fecha=lte.${fHastaW}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`
       );
 
       // Días hábiles de la semana
@@ -9912,6 +9913,7 @@ async function fetchRptDatos(fechaParam) {
 
       // Cargado acumulado de la semana desde entregas_carga
       let totalCargW = 0;
+      let embDeCargaActualW = 0; // se calcula fuera del bloque de arrastre: no debe depender de que ese cálculo no falle
       let idsEstaSemanaW = new Set();
       try{
         const domCarg = new Date(lunRpt); domCarg.setDate(lunRpt.getDate()+6);
@@ -9939,8 +9941,15 @@ async function fetchRptDatos(fechaParam) {
         );
       }catch(e){ console.warn('cargado email error:',e.message); }
 
+      // Embalado de lo cargado esta semana (producción cuya entrega fue cargada esta semana)
+      prodPlan.forEach(r=>{
+        if(DB[r.usuario]===undefined) return;
+        const id=(r.entrega||'').toString().trim(), qty=Number(r.cantidad)||0;
+        if(id && qty && idsEstaSemanaW.has(id)) embDeCargaActualW += qty;
+      });
+
       // ── Arrastre S-1: cálculo propio y autosuficiente (no depende de _planCache/otra pantalla) ──
-      let arrastreInicialW = 0, arrastreConsumidoW = 0, arrastreErrorW = false, embDeCargaActualW = 0;
+      let arrastreInicialW = 0, arrastreConsumidoW = 0, arrastreErrorW = false;
       try{
         const FECHA_INICIO_CARGA_EMAIL = '2026-06-01';
         if(fIniW > FECHA_INICIO_CARGA_EMAIL){
@@ -9949,14 +9958,11 @@ async function fetchRptDatos(fechaParam) {
           const fLunAntW = fechaLocalStr(_lunAntW);
           const fDomAntW = fechaLocalStr(_domAntW);
 
-          const _bkResW = await Promise.all([
-            sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAntW+'&fecha_creada=lte.'+fDomAntW+'&order=id_entrega.asc'),
-            sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAntW+'&fecha=lte.'+fDomAntW+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc'),
-            sbFetchAll('produccion?select=entrega,cantidad,usuario,fecha,canal&fecha=gte.'+fIniW+'&fecha=lte.'+fFinW+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')
-          ]);
-          const entregasAntW = _bkResW[0]||[];
-          const prodSemAntW  = _bkResW[1]||[];
-          const prodEstaSemW = _bkResW[2]||[];
+          // En secuencia (no Promise.all) para no gatillar el statement_timeout de 8s de Supabase.
+          // La producción de esta semana ya viene en prodPlan (no se vuelve a consultar).
+          const entregasAntW = await sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAntW+'&fecha_creada=lte.'+fDomAntW+'&order=id_entrega.asc')||[];
+          const prodSemAntW  = await sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAntW+'&fecha=lte.'+fDomAntW+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')||[];
+          const prodEstaSemW = prodPlan;
 
           const _excCanalW = {anulada:1, regula:1, bts:1};
           // 'Cerrada' y 'Enviado a SAP' son estados normales de entrega completada, no se excluyen.
@@ -9990,7 +9996,6 @@ async function fetchRptDatos(fechaParam) {
             const qty = Number(r.cantidad)||0;
             if(!id || !qty) return;
             embalEstaSemXEntW[id] = (embalEstaSemXEntW[id]||0) + qty;
-            if(idsEstaSemanaW.has(id)) embDeCargaActualW += qty;
           });
 
           Object.keys(mapEntregasW).forEach(id=>{
