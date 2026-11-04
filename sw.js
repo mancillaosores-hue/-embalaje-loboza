@@ -1,6 +1,6 @@
 // Service Worker - Productividad Embaladoras
 // CD Lo Boza - Samsonite Chile
-const CACHE_NAME = 'productividad-embaladoras-v2-38b';
+const CACHE_NAME = 'productividad-embaladoras-v2-39';
 const ASSETS = [
   './',
   './index.html',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (event) => {
 
   if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' }) // revalida con el servidor: evita servir un index.html viejo desde la caché HTTP
         .then((res) => {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((c) => c.put(req, clone));
