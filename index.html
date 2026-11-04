@@ -795,6 +795,22 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:220px;margin-top:8px"><canvas id="ger-cap-chart-historico"></canvas></div>
       <div id="ger-cap-tabla-historico" style="margin-top:10px"></div>
     </details>
+
+    <details id="ger-cap-serie-card" class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">Embalaje diario · evolución del volumen</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button type="button" id="ger-cap-serie-b-vas" onclick="capSerieModo('vas')" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">Con / Sin VAS</button>
+        <button type="button" id="ger-cap-serie-b-local" onclick="capSerieModo('local')" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">Local / No local</button>
+        <button type="button" onclick="capSerieCompartir(this)" style="margin-left:auto;padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">📤 Compartir</button>
+      </div>
+      <div style="position:relative;height:220px;margin-top:8px"><canvas id="ger-cap-serie-chart"></canvas></div>
+      <div id="ger-cap-serie-tabla" style="margin-top:10px"></div>
+      <div id="ger-cap-serie-nota" style="margin-top:6px;font-size:10px;color:#5D7396"></div>
+    </details>
+
   </div>
 
   <div id="ger-view-ritmo" style="display:none;padding:8px 0 24px">
@@ -1380,6 +1396,22 @@ input[type="month"], input[type="week"]{
       <div style="position:relative;height:220px;margin-top:8px"><canvas id="cap-chart-historico"></canvas></div>
       <div id="cap-tabla-historico" style="margin-top:10px"></div>
     </details>
+
+    <details id="cap-serie-card" class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">Embalaje diario · evolución del volumen</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button type="button" id="cap-serie-b-vas" onclick="capSerieModo('vas')" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">Con / Sin VAS</button>
+        <button type="button" id="cap-serie-b-local" onclick="capSerieModo('local')" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">Local / No local</button>
+        <button type="button" onclick="capSerieCompartir(this)" style="margin-left:auto;padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">📤 Compartir</button>
+      </div>
+      <div style="position:relative;height:220px;margin-top:8px"><canvas id="cap-serie-chart"></canvas></div>
+      <div id="cap-serie-tabla" style="margin-top:10px"></div>
+      <div id="cap-serie-nota" style="margin-top:6px;font-size:10px;color:#5D7396"></div>
+    </details>
+
 
   </div>
 
@@ -2782,6 +2814,9 @@ async function _capCargarHistorico(fechaFin){
       }
     }
 
+    // Serie diaria Total / Sin VAS / Con VAS (y Local / No local) — aislada: si falla no afecta lo demás
+    try{ _capRenderSerie(porFecha); }catch(e){ console.warn('serie embalaje:', e.message); }
+
     // Tabla
     const filas = dias.map(d=>`
       <tr>
@@ -2857,6 +2892,114 @@ async function _capCargarHistorico(fechaFin){
   }
 }
 
+
+// ============================================================
+// SERIE DIARIA DE EMBALAJE — Total / Sin VAS / Con VAS  (+ Local / No local)
+// Regla VAS = la misma de capClassify (Grandes Tiendas y Concesiones = VAS;
+// Distribuidor = VAS solo Mercado Libre; Locales = sin VAS). ONLINE = SIN VAS.
+// Total = mismas exclusiones que el resto de la app (sin insumos, Anulada, BTS, Regula).
+// Incluye TODA la producción, esté o no el usuario en DB.
+// ============================================================
+let _capSerieChart = null, _capSerieModo = 'vas', _capSerieCache = [];
+
+function capSerieDia(rows){
+  const em = capClassifyOnlineMap(rows);
+  let tot = 0, vas = 0, loc = 0;
+  rows.forEach(r=>{
+    const k = capClassifyFull(r, em);
+    if(!k) return;
+    const c = Number(r.cantidad)||0;
+    tot += c;
+    if(k==='mv' || k==='lv') vas += c;            // único caso con VAS
+    if((r.canal||'').trim()==='Locales') loc += c;
+  });
+  return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc };
+}
+
+function _capRenderSerie(porFecha){
+  _capSerieCache = Object.keys(porFecha).sort()
+    .filter(f=>porFecha[f] && porFecha[f].length)
+    .map(f=>({fecha:f, ...capSerieDia(porFecha[f])}))
+    .filter(d=>d.tot>0);
+  _capDibujarSerie();
+}
+
+function capSerieModo(m){ _capSerieModo = m; _capDibujarSerie(); }
+
+function _capSerieFmtFecha(f){ return f.slice(8)+'/'+f.slice(5,7); }
+
+function _capDibujarSerie(){
+  const dias = _capSerieCache;
+  const elTabla = _getCapEl('cap-serie-tabla');
+  const elNota  = _getCapEl('cap-serie-nota');
+  const cv      = _getCapEl('cap-serie-chart');
+  const bVas = _getCapEl('cap-serie-b-vas'), bLoc = _getCapEl('cap-serie-b-local');
+  [[bVas,'vas'],[bLoc,'local']].forEach(([b,m])=>{ if(b) b.style.background = (_capSerieModo===m)?'#3B8FFF':'transparent'; });
+  if(!elTabla) return;
+  if(!dias.length){ elTabla.innerHTML = '<div class="loading">Sin datos en los últimos 14 días.</div>'; return; }
+
+  const esVas = _capSerieModo==='vas';
+  const lbls = dias.map(d=>_capSerieFmtFecha(d.fecha));
+  const serie = esVas
+    ? [{label:'Total embalado',   data:dias.map(d=>d.tot),    color:'#3B8FFF'},
+       {label:'Sin VAS',          data:dias.map(d=>d.sinVas), color:'#22C55E'},
+       {label:'Con VAS',          data:dias.map(d=>d.vas),    color:'#F5A524'}]
+    : [{label:'Total embalado',   data:dias.map(d=>d.tot),    color:'#3B8FFF'},
+       {label:'Local',            data:dias.map(d=>d.loc),    color:'#22C55E'},
+       {label:'No local',         data:dias.map(d=>d.noLoc),  color:'#F5A524'}];
+
+  if(cv && window.Chart){
+    if(_capSerieChart) _capSerieChart.destroy();
+    _capSerieChart = new Chart(cv.getContext('2d'), {
+      type:'line',
+      data:{ labels:lbls, datasets: serie.map(x=>({label:x.label, data:x.data, borderColor:x.color, backgroundColor:x.color, tension:.3, pointRadius:3})) },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{ legend:{labels:{color:'#8FA3C4',boxWidth:10,font:{size:10}}} },
+        scales:{
+          x:{ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+          y:{beginAtZero:true,ticks:{color:'#8FA3C4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'Unidades',color:'#5D7396',font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  const th = 'text-align:right;padding-bottom:4px';
+  const td = 'padding:6px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px';
+  const fm = n=>Math.round(n).toLocaleString('es-CL');
+  const filas = dias.map(d=>{
+    const a = esVas ? d.sinVas : d.loc, b = esVas ? d.vas : d.noLoc;
+    const pct = d.tot ? Math.round(b/d.tot*100) : 0;
+    return `<tr>
+      <td style="${td};text-align:left">${_capSerieFmtFecha(d.fecha)}</td>
+      <td style="${td};font-weight:700">${fm(d.tot)}</td>
+      <td style="${td}">${fm(a)}</td>
+      <td style="${td}">${fm(b)}</td>
+      <td style="${td}">${pct}%</td>
+    </tr>`;
+  }).join('');
+  elTabla.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase">
+        <th style="text-align:left;padding-bottom:4px">Fecha</th>
+        <th style="${th}">Total</th>
+        <th style="${th}">${esVas?'Sin VAS':'Local'}</th>
+        <th style="${th}">${esVas?'Con VAS':'No local'}</th>
+        <th style="${th}">${esVas?'% VAS':'% No local'}</th>
+      </tr>
+      ${filas}
+    </table>`;
+  if(elNota) elNota.textContent = esVas
+    ? 'VAS según regla por canal/cliente (Grandes Tiendas, Concesiones y Distribuidor Mercado Libre). Online cuenta como sin VAS. Excluye insumos, Anulada, BTS y Regula.'
+    : 'Local = canal Locales; No local = Distribuidor, Grandes Tiendas, Concesiones y online. Excluye insumos, Anulada, BTS y Regula.';
+}
+
+function capSerieCompartir(btn){
+  const ids = ['cap-serie-card','ger-cap-serie-card'];
+  const ult = _capSerieCache.length ? _capSerieCache[_capSerieCache.length-1].fecha : 'hoy';
+  compartirComoImagen(ids, 'embalaje-serie-'+ult+(_capSerieModo==='vas'?'-vas':'-local'), btn);
+}
 
 // ============================================================
 // RITMO OPERACIONAL — comportamiento de la producción durante el día
@@ -4191,11 +4334,18 @@ async function getHistorialCache(){
 
 function invalidarCache(){ _cache.uid = null; _cache.rows = null; _cache.gfAll = null; }
 
-async function fetchProdAll(desde, hasta){
+async function fetchProdAll(desde, hasta, soloMapeadas){
   const rows = await sbFetchAll(
     `produccion?fecha=gte.${desde}&fecha=lte.${hasta}&order=fecha.asc,usuario.asc,id.asc`
   );
-  return filtrarUsuariosValidos(rows.map(normalizarRow));
+  const norm = rows.map(normalizarRow);
+  // REGLA: el total embalado debe incluir TODA la producción, sin importar a qué
+  // usuario se atribuya (aunque no esté en el mapa DB). Las únicas exclusiones son
+  // las de negocio (insumo, Anulada, etc.), que se aplican aguas abajo.
+  // Antes se filtraba por DB y se perdían unidades de usuarios no mapeados
+  // (ej. 3-nov-2026: usuario 1671 = 50 uds → correo 18.666 vs Excel 18.716).
+  // Para obtener solo usuarios mapeados: fetchProdAll(desde, hasta, true).
+  return soloMapeadas ? filtrarUsuariosValidos(norm) : norm;
 }
 async function insertBatch(rows){
   return sbFetch('produccion',{method:'POST',body:JSON.stringify(rows),prefer:'return=minimal'});
@@ -5615,7 +5765,7 @@ async function loadEquipo(){
     // ── Agrupar por usuario ──
     const g={};
     rows.forEach(r=>{
-      if(!g[r.usuario])g[r.usuario]={total:0,maleta:0,linea:0,insumo:0,otro:0};
+      if(!DB[r.usuario]) return; /* por persona: solo mapeadas */ if(!g[r.usuario])g[r.usuario]={total:0,maleta:0,linea:0,insumo:0,otro:0};
       if(r.tipo!=='insumo') g[r.usuario].total+=r.cantidad;
       g[r.usuario][r.tipo]=(g[r.usuario][r.tipo]||0)+r.cantidad;
     });
@@ -6171,7 +6321,7 @@ async function loadSupMes(){
   const gf=groupByFecha(rows);
   const dias=Object.keys(gf).length;
   const tot=rows.filter(r=>r.tipo!=='insumo').reduce((s,r)=>s+r.cantidad,0);
-  const gu0m={}; rows.forEach(r=>{if(r.tipo!=='insumo')gu0m[r.usuario]=(gu0m[r.usuario]||0)+r.cantidad;});
+  const gu0m={}; rows.forEach(r=>{if(r.tipo!=='insumo'&&DB[r.usuario])gu0m[r.usuario]=(gu0m[r.usuario]||0)+r.cantidad;});
   const nopMes=Object.keys(gu0m).length;
   const promOpMes=nopMes>0?Math.round(tot/nopMes):0;
   const diasValsMes=Object.values(gf).map(d=>d.total);
@@ -6236,7 +6386,7 @@ async function loadSupMes(){
   // Ranking acumulado mes
   const gu={};
   rows.forEach(r=>{
-    if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
+    if(!DB[r.usuario]) return; /* por persona: solo mapeadas */ if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
     gu[r.usuario].total+=r.cantidad;
     gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
   });
@@ -6273,7 +6423,7 @@ function exportRankingMesPDF(){
   const dias=Object.keys(gf).length;
   const gu={};
   supMesCache.forEach(r=>{
-    if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
+    if(!DB[r.usuario]) return; /* por persona: solo mapeadas */ if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
     gu[r.usuario].total+=r.cantidad;
     gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
   });
@@ -6663,7 +6813,7 @@ async function loadSupSemana(){
   const gf=groupByFecha(rows);
   const dias=Object.keys(gf).length;
   const tot=rows.filter(r=>r.tipo!=='insumo').reduce((s,r)=>s+r.cantidad,0);
-  const gu0={}; rows.forEach(r=>{if(r.tipo!=='insumo')gu0[r.usuario]=(gu0[r.usuario]||0)+r.cantidad;});
+  const gu0={}; rows.forEach(r=>{if(r.tipo!=='insumo'&&DB[r.usuario])gu0[r.usuario]=(gu0[r.usuario]||0)+r.cantidad;});
   const nopSem=Object.keys(gu0).length;
   const promOpSem=nopSem>0?Math.round(tot/nopSem):0;
   const diasVals=Object.values(gf).map(d=>d.total);
@@ -6739,7 +6889,7 @@ async function loadSupSemana(){
   // Falta/Ritmo por día según los días hábiles que quedan en la semana.
   const gu={};
   rows.forEach(r=>{
-    if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
+    if(!DB[r.usuario]) return; /* por persona: solo mapeadas */ if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
     gu[r.usuario].total+=r.cantidad;
     gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
   });
@@ -6866,7 +7016,7 @@ function exportRankingPDF(){
   const fecha=document.getElementById('eq-fecha').value;
   const g={};
   eqCache.forEach(r=>{
-    if(!g[r.usuario])g[r.usuario]={total:0,maleta:0,linea:0,insumo:0,otro:0};
+    if(!DB[r.usuario]) return; /* por persona: solo mapeadas */ if(!g[r.usuario])g[r.usuario]={total:0,maleta:0,linea:0,insumo:0,otro:0};
     g[r.usuario].total+=r.cantidad;
     g[r.usuario][r.tipo]=(g[r.usuario][r.tipo]||0)+r.cantidad;
   });
@@ -6898,7 +7048,7 @@ function exportRankingSemanaPDF(){
   const [desde,hasta]=weekRange(ws);
   const gu={};
   supSemCache.forEach(r=>{
-    if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
+    if(!DB[r.usuario]) return; /* por persona: solo mapeadas */ if(!gu[r.usuario])gu[r.usuario]={total:0,maleta:0,linea:0,insumo:0};
     gu[r.usuario].total+=r.cantidad;
     gu[r.usuario][r.tipo]=(gu[r.usuario][r.tipo]||0)+r.cantidad;
   });
@@ -7616,7 +7766,7 @@ async function cargarPlanCompacto(){
     const prodRaw = await sbFetchAll(
       `produccion?select=usuario,canal,tipo,cantidad&fecha=gte.${fLun}&fecha=lte.${fHasta}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc`
     );
-    const prodFilt = (prodRaw||[]).filter(r=>DB[r.usuario]!==undefined);
+    const prodFilt = (prodRaw||[]); // total: incluye usuarios no mapeados en DB
 
     // Días hábiles
     const diasSem   = diasHabileSem(lun,vie,null);
@@ -8307,7 +8457,7 @@ function _renderFromCache(){
   const diasRestNombres = diasSem.slice(nDiasTransc).map(d=>d.nombre).join(', ');
 
   // Filtrar usuarios desvinculados (no están en DB)
-  const prodFiltradaSemana = prodRaw.filter(r => DB[r.usuario] !== undefined);
+  const prodFiltradaSemana = prodRaw.slice(); // total: incluye usuarios no mapeados en DB
   // Si hay un día específico filtrado, usar el ACUMULADO desde el lunes hasta ese día (corte acumulado, no día aislado)
   const prodFiltrada = planDiaActual
     ? prodFiltradaSemana.filter(r => r.fecha <= planDiaActual)
@@ -8371,7 +8521,7 @@ function _renderFromCache(){
     totalProd: totalProd,
     backlogPorCanal: backlogPorCanal,
     diasSem: diasSem,
-    prodFiltradaSemana: prodRaw.filter(r=>DB[r.usuario]!==undefined),
+    prodFiltradaSemana: prodRaw.slice(),
     entregasPorFecha: entregasPorFecha,
     planDiaActual: planDiaActual,
     idEntregasSAnt: _planCache.idEntregasSAnt || new Set(),
@@ -9045,7 +9195,7 @@ async function cargarAnalisisGerUI(){
       sbFetchAll(`plan_carga?select=canal,tipo,unidades_plan&semana_iso=eq.${semActual}&anio=eq.${anio}`),
       sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,fecha&fecha=gte.${fLunSem}&fecha=lte.${fHastaSem}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`)
     ]);
-    const rowsSemDB = (rowsSem||[]).filter(r=>DB[r.usuario]!==undefined);
+    const rowsSemDB = (rowsSem||[]); // total: incluye usuarios no mapeados en DB
 
     // ── Serie de tiempo (14 días hábiles lun-vie, ya calculados arriba) ──
     const porFecha={};
@@ -9451,7 +9601,7 @@ async function cargarPlanSemanal(){
       // Embalado EN S-1 por entrega (para calcular arrastre real)
       var embalEnSAnt = {};
       prodSemAnt.forEach(function(r){
-        if(DB[r.usuario]===undefined) return;
+        /* total: incluye usuarios no mapeados en DB */
         var id = (r.entrega||'').toString().trim();
         if(!id) return;
         embalEnSAnt[id] = (embalEnSAnt[id]||0) + (Number(r.cantidad)||0);
@@ -9465,7 +9615,7 @@ async function cargarPlanSemanal(){
       var embalBackXFechaXCanal = {}; // { fecha: { canal: qty } } — para filtro por día por canal
 
       prodEstaSem.forEach(function(r){
-        if(DB[r.usuario]===undefined) return;
+        /* total: incluye usuarios no mapeados en DB */
         var id  = (r.entrega||'').toString().trim();
         var qty = Number(r.cantidad)||0;
         var f   = (r.fecha||'').slice(0,10);
@@ -9897,7 +10047,7 @@ async function fetchRptDatos(fechaParam) {
       // Totales por canal
       const metaMapW={}, prodMapW={};
       planRawW.forEach(r=>{metaMapW[r.canal]=(metaMapW[r.canal]||0)+Number(r.unidades_plan);});
-      prodPlan.filter(r=>DB[r.usuario]!==undefined).forEach(r=>{prodMapW[r.canal]=(prodMapW[r.canal]||0)+Number(r.cantidad);});
+      prodPlan.forEach(r=>{prodMapW[r.canal]=(prodMapW[r.canal]||0)+Number(r.cantidad);});
       const totalMetaW=Object.values(metaMapW).reduce((s,v)=>s+v,0);
       const totalProdW=Object.values(prodMapW).reduce((s,v)=>s+v,0);
       const pctAvW=totalMetaW>0?Math.round(totalProdW/totalMetaW*100):0;
@@ -9943,7 +10093,7 @@ async function fetchRptDatos(fechaParam) {
 
       // Embalado de lo cargado esta semana (producción cuya entrega fue cargada esta semana)
       prodPlan.forEach(r=>{
-        if(DB[r.usuario]===undefined) return;
+        /* total: incluye usuarios no mapeados en DB */
         const id=(r.entrega||'').toString().trim(), qty=Number(r.cantidad)||0;
         if(id && qty && idsEstaSemanaW.has(id)) embDeCargaActualW += qty;
       });
@@ -9983,7 +10133,7 @@ async function fetchRptDatos(fechaParam) {
 
           const embalEnSAntW = {};
           prodSemAntW.forEach(r=>{
-            if(DB[r.usuario]===undefined) return;
+            /* total: incluye usuarios no mapeados en DB */
             const id = (r.entrega||'').toString().trim();
             if(!id) return;
             embalEnSAntW[id] = (embalEnSAntW[id]||0) + (Number(r.cantidad)||0);
@@ -9991,7 +10141,7 @@ async function fetchRptDatos(fechaParam) {
 
           const embalEstaSemXEntW = {};
           prodEstaSemW.forEach(r=>{
-            if(DB[r.usuario]===undefined) return;
+            /* total: incluye usuarios no mapeados en DB */
             const id  = (r.entrega||'').toString().trim();
             const qty = Number(r.cantidad)||0;
             if(!id || !qty) return;
@@ -11331,7 +11481,7 @@ async function cargarTendenciasGerente(semHoy, anio, lineChart){
       const dias = new Set(rows.map(r=>r.fecha)).size;
       const off  = rows.filter(r=>CANALES_OFF.includes(r.canal)).reduce((s,r)=>s+r.cantidad,0);
       const on   = rows.filter(r=>CANALES_ON.includes(r.canal)).reduce((s,r)=>s+r.cantidad,0);
-      const gu   = rows.reduce((m,r)=>{m[r.usuario]=(m[r.usuario]||0)+r.cantidad;return m;},{});
+      const gu   = rows.reduce((m,r)=>{if(!DB[r.usuario]) return m; m[r.usuario]=(m[r.usuario]||0)+r.cantidad;return m;},{});
       const lider= Object.entries(gu).sort((a,b)=>b[1]-a[1])[0]||null;
       return {sn,tot,dias,off,on,lider,esActual};
     });
