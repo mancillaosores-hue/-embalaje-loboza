@@ -784,6 +784,7 @@ input[type="month"], input[type="week"]{
     <div class="share-block">
       <div id="ger-cap-complejidad" style="margin-top:8px"></div>
       <div id="ger-cap-kpis" style="margin-top:8px"></div>
+      <div id="ger-cap-externas" style="margin-top:8px"></div>
     </div>
     <div id="ger-cap-matriz" class="share-block" style="margin-top:8px"></div>
 
@@ -1407,6 +1408,7 @@ input[type="month"], input[type="week"]{
     <div class="share-block">
       <div id="cap-complejidad" style="margin-top:8px"></div>
       <div id="cap-kpis" style="margin-top:8px"></div>
+      <div id="cap-externas" style="margin-top:8px"></div>
     </div>
     <div id="cap-matriz" class="share-block" style="margin-top:8px"></div>
 
@@ -2706,6 +2708,45 @@ function calcularCapacidadDinamica(rowsDia, fechaISO){
 }
 
 // ============================================================
+// GRUPOS DE PRODUCCIÓN: equipo base vs EXTERNAS
+// Equipo base = usuarios registrados en DB. Externas = cualquier usuario con producción que NO
+// esté en DB (embaladoras externas de temporada). Las externas suman al TOTAL embalado, pero no
+// entran en dotación, capacidad, accuracy, promedios, rankings ni bonos.
+// ============================================================
+function capSplitGrupos(rows){
+  const base = [], ext = [];
+  (rows||[]).forEach(r=>{ (DB[r.usuario]!==undefined ? base : ext).push(r); });
+  const em = capClassifyOnlineMap(ext);
+  const porUsuario = {}; let uds = 0;
+  ext.forEach(r=>{
+    const k = capClassifyFull(r, em); if(!k) return;       // mismas exclusiones que Capacidad Dinámica
+    const c = Number(r.cantidad)||0; if(!c) return;
+    uds += c; porUsuario[r.usuario] = (porUsuario[r.usuario]||0) + c;
+  });
+  const codigos = Object.keys(porUsuario).sort();
+  const personas = codigos.length;
+  return { base, ext, externas:{ personas, uds, ppp: personas ? uds/personas : 0, codigos, porUsuario } };
+}
+
+function _capRenderExternas(g){
+  const el = _getCapEl('cap-externas');
+  if(!el) return;
+  const x = g.externas;
+  if(!x.personas){ el.innerHTML=''; return; }
+  const cods = x.codigos.map(c=>String(c).replace(/^0+/,'')||c).join(', ');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:6px">Externas · fuera del equipo base</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+        <div><div style="font-size:18px;font-weight:800">${x.personas}</div><div style="font-size:10px;color:var(--txt3,#5D7396)">personas</div></div>
+        <div><div style="font-size:18px;font-weight:800">${Math.round(x.uds).toLocaleString('es-CL')}</div><div style="font-size:10px;color:var(--txt3,#5D7396)">unidades</div></div>
+        <div><div style="font-size:18px;font-weight:800">${Math.round(x.ppp).toLocaleString('es-CL')}</div><div style="font-size:10px;color:var(--txt3,#5D7396)">uds/persona</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--txt3,#5D7396);margin-top:8px;line-height:1.4">Suman al total embalado, pero no entran en dotación, capacidad ni accuracy. Códigos: ${cods}. Si alguna es del equipo, regístrala en el mapa de operadoras.</div>
+    </div>`;
+}
+
+// ============================================================
 // CAPACIDAD DINÁMICA — UI (fetch, navegación, render)
 // ============================================================
 let capFechaActual = null; // 'YYYY-MM-DD', null = hoy
@@ -2742,7 +2783,9 @@ async function cargarCapacidadDinamicaUI(forzar){
 
   try{
     const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,entrega&fecha=eq.${fechaISO}&order=id.asc`);
-    const r = calcularCapacidadDinamica(rows, fechaISO);
+    const grupos = capSplitGrupos(rows);                     // equipo base vs externas
+    const r = calcularCapacidadDinamica(grupos.base, fechaISO);
+    _capRenderExternas(grupos);
     _capRenderComplejidad(r);
     _capRenderKpis(r);
     _capRenderMatriz(r);
@@ -2855,7 +2898,7 @@ async function _capCargarHistorico(fechaFin){
       const d = new Date(inicio); d.setDate(d.getDate()+i);
       const iso = _capFechaLocalISO(d);
       if(porFecha[iso] && porFecha[iso].length){
-        dias.push({fecha:iso, ...calcularCapacidadDinamica(porFecha[iso], iso)});
+        dias.push({fecha:iso, ...calcularCapacidadDinamica(capSplitGrupos(porFecha[iso]).base, iso)});
       }
     }
 
@@ -3063,7 +3106,7 @@ const _capVasR = r => (Math.abs(r)<0.005?'0,00':(r<0?'-':'')+Math.abs(r).toFixed
 const _capVasSigno = n => (Math.round(n)>0?'+':'')+_capVasN0(n);
 
 function capVasPuntoDia(rows, fechaISO){
-  const rm = rows.filter(r=>META[r.usuario]!==undefined);
+  const rm = capSplitGrupos(rows).base;                  // equipo base (sin externas), igual que Capacidad Dinámica
   if(!rm.length) return null;
   const r = calcularCapacidadDinamica(rm, fechaISO);
   if(!r.dotacion || !r.totalOffline) return null;       // día sin producción válida
@@ -3199,7 +3242,7 @@ function _capVasRender(puntos){
       ${kpi('Correlación', rgR?_capVasR(rgR.r):'—', rgR?`Real · ${capVasFuerza(rgR.r)} · ${capVasDir(rgR.r)}`:'Datos insuficientes', rgE?`Esperada: ${_capVasR(rgE.r)} · ${capVasFuerza(rgE.r)} · ${capVasDir(rgE.r)}`:'')}
     </div>`;
 
-  if(elN) elN.textContent = 'Cada punto = un día, solo equipo base (META). Uds/persona equivalentes a jornada de 9 h (el viernes se ajusta con el factor de jornada de la app). La serie azul sale de los estándares por categoría (VAS tiene estándares menores), por lo que tiende a bajar con el VAS por construcción; la verde es la productividad medida.';
+  if(elN) elN.textContent = 'Cada punto = un día, solo equipo base (sin externas). Uds/persona equivalentes a jornada de 9 h (el viernes se ajusta con el factor de jornada de la app). La serie azul sale de los estándares por categoría (VAS tiene estándares menores), por lo que tiende a bajar con el VAS por construcción; la verde es la productividad medida.';
   if(elC) elC.innerHTML = `<div class="card"><div class="card-title" style="margin-bottom:6px">Conclusión</div><div style="font-size:12px;line-height:1.5">${_capVasConclusion(puntos, rgR, rgE, vasProm)}</div></div>`;
 
   _capVasGrafico1(puntos, rgR, rgE);
@@ -4021,16 +4064,21 @@ function calcularCapacidadEquipo(usuariosActivos){
 
 // Calcula KPIs gerenciales a partir de rawData de un día
 function calcularKpisGerenciales(rowsDia, fechaISO){
-  const usuariosActivos=[...new Set(rowsDia.map(r=>r.usuario).filter(u=>DB[u]))];
-  const produccionTotal=rowsDia.filter(r=>r.canal!=='Anulada'&&r.tipo!=='insumo').reduce((s,r)=>s+r.cantidad,0);
+  const g = capSplitGrupos(rowsDia);                       // equipo base (DB) vs externas
+  const usuariosActivos=[...new Set(g.base.map(r=>r.usuario))];
+  const prodFiltro = r=>r.canal!=='Anulada'&&r.tipo!=='insumo';
+  const produccionTotal=rowsDia.filter(prodFiltro).reduce((s,r)=>s+r.cantidad,0);   // TOTAL embalado (incluye externas)
+  const produccionBase=g.base.filter(prodFiltro).reduce((s,r)=>s+r.cantidad,0);     // solo equipo base
+  const produccionExternas=produccionTotal-produccionBase;
   // Capacidad = capacidad esperada según la Matriz del Mix (método tiempo / media armónica),
   // igual que usa el módulo "Capacidad Dinámica" — no la suma estática de META por operaria.
-  const capDin = calcularCapacidadDinamica(rowsDia, fechaISO);
+  const capDin = calcularCapacidadDinamica(g.base, fechaISO);
   const capacidadTotal = Math.round(capDin.capacidadEsperada);
   const dotacion=usuariosActivos.length;
-  const cumplimiento=capacidadTotal>0?Math.round((produccionTotal/capacidadTotal)*100):0;
-  const brecha=produccionTotal-capacidadTotal;
-  return {usuariosActivos,produccionTotal,capacidadTotal,dotacion,cumplimiento,brecha};
+  // Cumplimiento y brecha comparan equipo base vs capacidad del equipo base (las externas no inflan el uso de capacidad)
+  const cumplimiento=capacidadTotal>0?Math.round((produccionBase/capacidadTotal)*100):0;
+  const brecha=produccionBase-capacidadTotal;
+  return {usuariosActivos,produccionTotal,produccionBase,produccionExternas,externas:g.externas,capacidadTotal,dotacion,cumplimiento,brecha};
 }
 
 const TIPO_COLORS = {maleta:'#378ADD', linea:'#639922', insumo:'#7F77DD', otro:'#BA7517'};
@@ -7833,7 +7881,10 @@ async function buildEmailHTML(d, compact){
 
   // ── KPIs gerenciales ──
   const kg = kpisGer || {produccionTotal:totalHoy, capacidadTotal:0, dotacion:0, cumplimiento:0, brecha:0};
-  const prodReal   = kg.produccionTotal;
+  const prodReal   = kg.produccionTotal;                                  // TOTAL embalado (incluye externas)
+  const prodBase   = (kg.produccionBase!==undefined) ? kg.produccionBase : kg.produccionTotal;   // equipo base
+  const extUds     = kg.produccionExternas || 0;
+  const extKpi     = kg.externas || {personas:0};
   const capTotal   = kg.capacidadTotal;
   const dotacionKpi = kg.dotacion;
   const cumplPct   = kg.cumplimiento;
@@ -7908,7 +7959,7 @@ async function buildEmailHTML(d, compact){
         <span style="font-size:11px;font-weight:700;color:${semCol==='#16A34A'?'#4FE3A6':semCol==='#D97706'?'#FFCB7A':'#FF9B9B'};background:#0F2138;padding:5px 10px">${semLbl} &middot; ${cumplPct}%</span>
       </td>
     </tr></table>
-    <div style="font-size:11px;color:#8AAED4;margin-top:8px">Offline ${offline.toLocaleString('es-CL')} &middot; Online ${online.toLocaleString('es-CL')} &middot; ${dotacionKpi} operarias activas</div>
+    <div style="font-size:11px;color:#8AAED4;margin-top:8px">Offline ${offline.toLocaleString('es-CL')} &middot; Online ${online.toLocaleString('es-CL')} &middot; ${dotacionKpi} operarias activas${extUds>0?` &middot; + ${extKpi.personas} externa${extKpi.personas===1?'':'s'} (${extUds.toLocaleString('es-CL')} uds)`:''}</div>
     <table cellpadding="0" cellspacing="0" width="100%" style="margin-top:14px"><tr>
       <td width="${barW}%" bgcolor="#3B8FFF" height="5" style="line-height:5px;font-size:1px">&nbsp;</td>
       <td width="${100-barW}%" bgcolor="#16283F" height="5" style="line-height:5px;font-size:1px">&nbsp;</td>
@@ -7989,13 +8040,13 @@ async function buildEmailHTML(d, compact){
       </td><td width="1%">&nbsp;</td>
       <td width="19%" align="center" bgcolor="#F1F5F9" style="border:1px solid #E2E8F0;padding:10px 3px">
         <div style="font-size:14px">&#128230;</div>
-        <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">Producci&oacute;n</div>
-        <div style="font-size:15px;font-weight:700;color:#0F172A">${prodReal.toLocaleString('es-CL')}</div>
+        <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">${extUds>0?'Prod. equipo':'Producci&oacute;n'}</div>
+        <div style="font-size:15px;font-weight:700;color:#0F172A">${prodBase.toLocaleString('es-CL')}</div>
       </td><td width="1%">&nbsp;</td>
       <td width="19%" align="center" bgcolor="#F1F5F9" style="border:1px solid #E2E8F0;padding:10px 3px">
         <div style="font-size:14px">&#129489;</div>
         <div style="font-size:7.5px;font-weight:700;color:#64748B;text-transform:uppercase;margin:4px 0 3px">Prom/persona</div>
-        <div style="font-size:15px;font-weight:700;color:#0F172A">${dotacionKpi>0?Math.round(prodReal/dotacionKpi).toLocaleString('es-CL'):0}</div>
+        <div style="font-size:15px;font-weight:700;color:#0F172A">${dotacionKpi>0?Math.round(prodBase/dotacionKpi).toLocaleString('es-CL'):0}</div>
       </td><td width="1%">&nbsp;</td>
       <td width="19%" align="center" bgcolor="${semBg}" style="border:1px solid ${semCol};padding:10px 3px">
         <div style="font-size:14px">&#9201;</div>
@@ -8003,6 +8054,7 @@ async function buildEmailHTML(d, compact){
         <div style="font-size:15px;font-weight:700;color:${semCol}">${cumplPct}%</div>
       </td>
     </tr></table>
+    ${extUds>0?`<div style="font-size:10px;color:#64748B;margin-top:10px">Externas: ${extKpi.personas} persona${extKpi.personas===1?'':'s'} &middot; ${extUds.toLocaleString('es-CL')} uds &middot; ${extKpi.personas?Math.round(extUds/extKpi.personas).toLocaleString('es-CL'):0} uds/persona. No entran en la capacidad ni en el promedio por persona.</div>`:''}
   </td></tr>
 
   <!-- TENDENCIA EQUIPO -->
@@ -10516,7 +10568,7 @@ async function fetchRptDatos(fechaParam) {
   const metaPromDot  = metaActivasArr.length ? Math.round(metaActivasArr.reduce((a,b)=>a+b,0)/metaActivasArr.length) : 1215;
   const capPerdidaDot= dotAusentes * metaPromDot;
   const capDispDot   = metaActivasArr.reduce((a,b)=>a+b,0);
-  const cumplAjDot   = capDispDot>0 ? Math.round(kpisGer.produccionTotal/capDispDot*100) : 0;
+  const cumplAjDot   = capDispDot>0 ? Math.round((kpisGer.produccionBase!==undefined?kpisGer.produccionBase:kpisGer.produccionTotal)/capDispDot*100) : 0;
   const dotacionEmail = {presentes:dotPresentes, ausentes:dotAusentes, capPerdida:capPerdidaDot,
                          capDisponible:capDispDot, cumplAjustado:cumplAjDot, metaProm:metaPromDot};
 
