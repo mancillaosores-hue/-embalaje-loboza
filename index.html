@@ -812,17 +812,50 @@ input[type="month"], input[type="week"]{
       <div id="ger-cap-serie-nota" style="margin-top:6px;font-size:10px;color:#5D7396"></div>
     </details>
 
-        <details id="ger-cap-simdot-card" class="plan-acc card share-block" open>
-      <summary><span class="card-title">👥 Simulador de Dotación · VAS / Sin VAS</span><svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></summary>
-      <div style="font-size:11px;color:var(--txt2);margin:7px 0 10px">Ingresa la carga planificada. El cálculo usa los estándares vigentes de Capacidad Dinámica y ajusta automáticamente la jornada del día.</div>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-        <div><label style="font-size:10px;color:var(--txt2);font-weight:700">Maleta SIN VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-ms"></span> uds/persona</div><input id="ger-simdot-ms" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Maleta CON VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-mv"></span> uds/persona</div><input id="ger-simdot-mv" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Línea SIN VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-ls"></span> uds/persona</div><input id="ger-simdot-ls" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Línea CON VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-lv"></span> uds/persona</div><input id="ger-simdot-lv" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Online línea</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-ol"></span> uds/persona</div><input id="ger-simdot-ol" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Online maleta</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-om"></span> uds/persona</div><input id="ger-simdot-om" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Online mixto</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="ger-simdot-std-ox"></span> uds/persona</div><input id="ger-simdot-ox" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div>
+    <details id="ger-cap-simdot-card" class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">👥 Simulador de Dotación · VAS / Sin VAS</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa la carga por tipo y calcula cuántas personas necesitas para terminarla a la hora objetivo. Usa los mismos estándares de Capacidad Dinámica (CAP_STANDARDS) y la jornada del día.</div>
+      <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" class="btn-ghost" onclick="simDotCopiarDia('ger-')">📥 Copiar mix del día mostrado</button>
+        <button type="button" class="btn-ghost" onclick="simDotLimpiar('ger-')">🧹 Limpiar</button>
       </div>
-      <div style="margin-top:9px"><label style="font-size:10px;color:var(--txt2);font-weight:700">FECHA DE PROCESO</label><input id="ger-simdot-fecha" type="date" onchange="simDotCalcular('ger-')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta SIN VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-ms"></span></span></label><input id="ger-simdot-ms" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta CON VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-mv"></span></span></label><input id="ger-simdot-mv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea SIN VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-ls"></span></span></label><input id="ger-simdot-ls" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea CON VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-lv"></span></span></label><input id="ger-simdot-lv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Línea <span style="color:var(--txt3)">· <span id="ger-simdot-std-ol"></span></span></label><input id="ger-simdot-ol" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Maleta <span style="color:var(--txt3)">· <span id="ger-simdot-std-om"></span></span></label><input id="ger-simdot-om" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Mixto <span style="color:var(--txt3)">· <span id="ger-simdot-std-ox"></span></span></label><input id="ger-simdot-ox" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Fecha (define jornada)</label><input id="ger-simdot-fecha" type="date" onchange="simDotFechaCambio('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Personas disponibles</label><input id="ger-simdot-disp" type="number" min="0" step="1" placeholder="opcional" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Hora inicio</label><input id="ger-simdot-ini" type="time" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Hora objetivo término</label><input id="ger-simdot-fin" type="time" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+      </div>
       <div id="ger-simdot-res" style="margin-top:12px"></div>
+      <div class="card-title" style="margin-top:14px;font-size:12px">Personas requeridas según % VAS <span style="font-weight:500;color:var(--txt3)">(misma carga total)</span></div>
+      <div style="position:relative;height:220px;margin-top:6px"><canvas id="ger-simdot-chart"></canvas></div>
+      <div id="ger-simdot-nota" style="margin-top:6px;font-size:10px;color:var(--txt3,#5D7396);line-height:1.4"></div>
     </details>
 
-
+    <details id="ger-cap-vas-card" class="plan-acc card share-block" ontoggle="capVasToggle(this)">
+      <summary>
+        <span class="card-title">Impacto VAS en Productividad</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="no-share" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <span style="font-size:11px;color:var(--txt2,#8FA3C4);font-weight:700">Últimos</span>
+        <select id="ger-cap-vas-periodo" onchange="capVasCambiarPeriodo(this.value)" style="padding:5px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card,#152A47);color:inherit;font-size:12px;font-weight:700">
+          <option value="7">7 días</option><option value="15">15 días</option><option value="30" selected>30 días</option><option value="60">60 días</option><option value="90">90 días</option>
+        </select>
+        <button type="button" onclick="capVasCompartir(this)" style="margin-left:auto;padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">📤 Compartir</button>
+      </div>
+      <div id="ger-cap-vas-estado" style="margin-top:6px;font-size:10.5px;color:var(--txt3,#5D7396)"></div>
+      <div id="ger-cap-vas-kpis" style="margin-top:8px"></div>
+      <div class="card-title" style="margin-top:12px;font-size:12px">% VAS vs Productividad</div>
+      <div style="position:relative;height:300px;margin-top:6px"><canvas id="ger-cap-vas-ch1"></canvas></div>
+      <div id="ger-cap-vas-nota" style="margin-top:6px;font-size:10px;color:var(--txt3,#5D7396);line-height:1.4"></div>
+      <div id="ger-cap-vas-conclusion" style="margin-top:10px"></div>
+      <div class="card-title" style="margin-top:14px;font-size:12px">Productividad por Nivel de VAS</div>
+      <div style="position:relative;height:230px;margin-top:6px"><canvas id="ger-cap-vas-ch2"></canvas></div>
+    </details>
 
   </div>
 
@@ -1426,17 +1459,50 @@ input[type="month"], input[type="week"]{
       <div id="cap-serie-nota" style="margin-top:6px;font-size:10px;color:#5D7396"></div>
     </details>
 
-        <details id="cap-simdot-card" class="plan-acc card share-block" open>
-      <summary><span class="card-title">👥 Simulador de Dotación · VAS / Sin VAS</span><svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></summary>
-      <div style="font-size:11px;color:var(--txt2);margin:7px 0 10px">Ingresa la carga planificada. El cálculo usa los estándares vigentes de Capacidad Dinámica y ajusta automáticamente la jornada del día.</div>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-        <div><label style="font-size:10px;color:var(--txt2);font-weight:700">Maleta SIN VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-ms"></span> uds/persona</div><input id="simdot-ms" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Maleta CON VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-mv"></span> uds/persona</div><input id="simdot-mv" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Línea SIN VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-ls"></span> uds/persona</div><input id="simdot-ls" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Línea CON VAS</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-lv"></span> uds/persona</div><input id="simdot-lv" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Online línea</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-ol"></span> uds/persona</div><input id="simdot-ol" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Online maleta</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-om"></span> uds/persona</div><input id="simdot-om" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div><div><label style="font-size:10px;color:var(--txt2);font-weight:700">Online mixto</label><div style="font-size:9px;color:var(--txt3);margin:2px 0">Estándar <span id="simdot-std-ox"></span> uds/persona</div><input id="simdot-ox" type="number" min="0" step="1" placeholder="0" oninput="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div>
+    <details id="cap-simdot-card" class="plan-acc card share-block" open>
+      <summary>
+        <span class="card-title">👥 Simulador de Dotación · VAS / Sin VAS</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa la carga por tipo y calcula cuántas personas necesitas para terminarla a la hora objetivo. Usa los mismos estándares de Capacidad Dinámica (CAP_STANDARDS) y la jornada del día.</div>
+      <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" class="btn-ghost" onclick="simDotCopiarDia('')">📥 Copiar mix del día mostrado</button>
+        <button type="button" class="btn-ghost" onclick="simDotLimpiar('')">🧹 Limpiar</button>
       </div>
-      <div style="margin-top:9px"><label style="font-size:10px;color:var(--txt2);font-weight:700">FECHA DE PROCESO</label><input id="simdot-fecha" type="date" onchange="simDotCalcular('')" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-weight:700"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta SIN VAS <span style="color:var(--txt3)">· <span id="simdot-std-ms"></span></span></label><input id="simdot-ms" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta CON VAS <span style="color:var(--txt3)">· <span id="simdot-std-mv"></span></span></label><input id="simdot-mv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea SIN VAS <span style="color:var(--txt3)">· <span id="simdot-std-ls"></span></span></label><input id="simdot-ls" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea CON VAS <span style="color:var(--txt3)">· <span id="simdot-std-lv"></span></span></label><input id="simdot-lv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Línea <span style="color:var(--txt3)">· <span id="simdot-std-ol"></span></span></label><input id="simdot-ol" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Maleta <span style="color:var(--txt3)">· <span id="simdot-std-om"></span></span></label><input id="simdot-om" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Mixto <span style="color:var(--txt3)">· <span id="simdot-std-ox"></span></span></label><input id="simdot-ox" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Fecha (define jornada)</label><input id="simdot-fecha" type="date" onchange="simDotFechaCambio('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Personas disponibles</label><input id="simdot-disp" type="number" min="0" step="1" placeholder="opcional" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Hora inicio</label><input id="simdot-ini" type="time" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Hora objetivo término</label><input id="simdot-fin" type="time" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+      </div>
       <div id="simdot-res" style="margin-top:12px"></div>
+      <div class="card-title" style="margin-top:14px;font-size:12px">Personas requeridas según % VAS <span style="font-weight:500;color:var(--txt3)">(misma carga total)</span></div>
+      <div style="position:relative;height:220px;margin-top:6px"><canvas id="simdot-chart"></canvas></div>
+      <div id="simdot-nota" style="margin-top:6px;font-size:10px;color:var(--txt3,#5D7396);line-height:1.4"></div>
     </details>
 
-
+    <details id="cap-vas-card" class="plan-acc card share-block" ontoggle="capVasToggle(this)">
+      <summary>
+        <span class="card-title">Impacto VAS en Productividad</span>
+        <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="no-share" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <span style="font-size:11px;color:var(--txt2,#8FA3C4);font-weight:700">Últimos</span>
+        <select id="cap-vas-periodo" onchange="capVasCambiarPeriodo(this.value)" style="padding:5px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card,#152A47);color:inherit;font-size:12px;font-weight:700">
+          <option value="7">7 días</option><option value="15">15 días</option><option value="30" selected>30 días</option><option value="60">60 días</option><option value="90">90 días</option>
+        </select>
+        <button type="button" onclick="capVasCompartir(this)" style="margin-left:auto;padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:700;color:#fff;background:transparent;cursor:pointer">📤 Compartir</button>
+      </div>
+      <div id="cap-vas-estado" style="margin-top:6px;font-size:10.5px;color:var(--txt3,#5D7396)"></div>
+      <div id="cap-vas-kpis" style="margin-top:8px"></div>
+      <div class="card-title" style="margin-top:12px;font-size:12px">% VAS vs Productividad</div>
+      <div style="position:relative;height:300px;margin-top:6px"><canvas id="cap-vas-ch1"></canvas></div>
+      <div id="cap-vas-nota" style="margin-top:6px;font-size:10px;color:var(--txt3,#5D7396);line-height:1.4"></div>
+      <div id="cap-vas-conclusion" style="margin-top:10px"></div>
+      <div class="card-title" style="margin-top:14px;font-size:12px">Productividad por Nivel de VAS</div>
+      <div style="position:relative;height:230px;margin-top:6px"><canvas id="cap-vas-ch2"></canvas></div>
+    </details>
 
 
   </div>
@@ -2769,7 +2835,10 @@ async function cargarCapacidadDinamicaUI(forzar){
     _capRenderComplejidad(r);
     _capRenderKpis(r);
     _capRenderMatriz(r);
+    window._capUltimoR = {r, fechaISO};
+    try{ simDotInitAll(); }catch(e3){ console.warn('simulador dotación:', e3.message); }
     _capCargarHistorico(fechaISO);
+    try{ _capVasRecargarSiAbierto(); }catch(e2){ console.warn('impacto VAS:', e2.message); }
   }catch(e){
     const el = _getCapEl('cap-kpis');
     if(el) el.innerHTML = `<div class="card"><div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">Error: ${e.message}</div></div>`;
@@ -3068,21 +3137,482 @@ function capSerieCompartir(btn){
   compartirComoImagen(ids, 'embalaje-serie-'+ult+(_capSerieModo==='vas'?'-vas':'-local'), btn);
 }
 
+// ============================================================
+// IMPACTO VAS EN PRODUCTIVIDAD — "% VAS vs Productividad"
+// Un punto por día. Reutiliza la MISMA clasificación y exclusiones de Capacidad Dinámica:
+//   calcularCapacidadDinamica() → matriz (mv + lv = VAS), productividadEsperadaMix, productividadReal.
+// - Solo equipo base (META): igual que la dotación; las embaladoras adicionales no inflan uds/persona.
+// - Ambas productividades se llevan a jornada completa (÷ jornadaFactor) para que el viernes sea comparable.
+// - Una sola consulta paginada en paralelo; días ya calculados quedan en memoria (_capVasCache).
+// ============================================================
+let _capVasDias = 30, _capVasTok = 0, _capVasCh1 = null, _capVasCh2 = null;
+const _capVasCache = {};   // fecha → punto | null (solo días anteriores a ayer)
 
-// SIMULADOR DE DOTACIÓN VAS / SIN VAS
-const SIMDOT_KEYS=['ms','mv','ls','lv','ol','om','ox'];
-function simDotInit(){ ['','ger-'].forEach(p=>{ const f=document.getElementById(p+'simdot-fecha'); if(!f)return; if(!f.value) f.value=new Date().toLocaleDateString('en-CA'); SIMDOT_KEYS.forEach(k=>{ const e=document.getElementById(p+'simdot-std-'+k); if(e)e.textContent=CAP_STANDARDS[k]; }); simDotCalcular(p); }); }
-function simDotCalcular(p){
-  const out=document.getElementById(p+'simdot-res'); if(!out)return;
-  const fecha=document.getElementById(p+'simdot-fecha')?.value||new Date().toLocaleDateString('en-CA');
-  const std=capStandardsDelDia(fecha), vals={}; let total=0, exact=0;
-  SIMDOT_KEYS.forEach(k=>{ vals[k]=Math.max(0,Number(document.getElementById(p+'simdot-'+k)?.value)||0); total+=vals[k]; exact+=std[k]?vals[k]/std[k]:0; });
-  if(!total){ out.innerHTML='<div style="padding:14px;text-align:center;border:1px dashed var(--border);border-radius:12px;color:var(--txt3);font-size:12px">Ingresa la cantidad de unidades para calcular la dotación.</div>'; return; }
-  const req=Math.ceil(exact-1e-9), vas=vals.mv+vals.lv, sin=vals.ms+vals.ls, online=vals.ol+vals.om+vals.ox;
-  const filas=SIMDOT_KEYS.filter(k=>vals[k]>0).map(k=>`<tr><td style="padding:5px">${CAP_LABELS[k]||k.toUpperCase()}</td><td style="padding:5px;text-align:right">${vals[k].toLocaleString('es-CL')}</td><td style="padding:5px;text-align:right">${std[k].toLocaleString('es-CL')}</td><td style="padding:5px;text-align:right;font-weight:800">${(vals[k]/std[k]).toLocaleString('es-CL',{maximumFractionDigits:2})}</td></tr>`).join('');
-  out.innerHTML=`<div style="text-align:center;padding:15px;border:1px solid rgba(59,143,255,.4);border-radius:14px;background:rgba(59,143,255,.1)"><div style="font-size:10px;color:var(--txt2);font-weight:800">DOTACIÓN REQUERIDA</div><div style="font-size:38px;font-weight:900">👥 ${req}</div><div style="font-size:11px;color:var(--txt2)">${total.toLocaleString('es-CL')} unidades · cálculo exacto ${exact.toLocaleString('es-CL',{maximumFractionDigits:2})} personas</div></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px"><div class="mini-kpi"><b>${sin.toLocaleString('es-CL')}</b><small>SIN VAS</small></div><div class="mini-kpi"><b>${vas.toLocaleString('es-CL')}</b><small>CON VAS</small></div><div class="mini-kpi"><b>${online.toLocaleString('es-CL')}</b><small>ONLINE</small></div></div><table style="width:100%;border-collapse:collapse;margin-top:9px;font-size:11px"><thead style="color:var(--txt2)"><tr><th style="text-align:left;padding:5px">Categoría</th><th style="text-align:right">Uds</th><th style="text-align:right">Estándar día</th><th style="text-align:right">Personas</th></tr></thead><tbody>${filas}</tbody></table>`;
+const _capVasN0 = n => Math.round(n).toLocaleString('es-CL');
+const _capVasFechaFmt = iso => iso.slice(8)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4);
+const _capVasR = r => (Math.abs(r)<0.005?'0,00':(r<0?'-':'')+Math.abs(r).toFixed(2).replace('.',','));
+const _capVasSigno = n => (Math.round(n)>0?'+':'')+_capVasN0(n);
+
+function capVasPuntoDia(rows, fechaISO){
+  const rm = capSplitGrupos(rows).base;                  // equipo base (sin externas), igual que Capacidad Dinámica
+  if(!rm.length) return null;
+  const r = calcularCapacidadDinamica(rm, fechaISO);
+  if(!r.dotacion || !r.totalOffline) return null;       // día sin producción válida
+  let uVas = 0;
+  r.matriz.forEach(m=>{ if(m.key==='mv' || m.key==='lv') uVas += m.unidades; });
+  const total = r.totalOffline;
+  const f = jornadaFactor(fechaISO) || 1;
+  return {
+    fecha:fechaISO, factor:f, total, uVas, uSin: total-uVas,
+    vasPct: total ? uVas/total*100 : 0,
+    dot:r.dotacion,
+    real: r.productividadReal/f, esp: r.productividadEsperadaMix/f,   // equivalente a jornada completa
+    realDia:r.productividadReal, espDia:r.productividadEsperadaMix,
+    capEsp:r.capacidadEsperada, capReal:r.capacidadReal
+  };
 }
-window.addEventListener('load',simDotInit);
+
+// Regresión lineal simple (mínimos cuadrados) + correlación de Pearson. Sin librerías externas.
+function capVasRegresion(xs, ys){
+  const n = xs.length;
+  if(n<3) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  let sxx=0, syy=0, sxy=0;
+  for(let i=0;i<n;i++){ const dx=xs[i]-mx, dy=ys[i]-my; sxx+=dx*dx; syy+=dy*dy; sxy+=dx*dy; }
+  if(sxx<1e-9) return null;                               // todos los días con el mismo % VAS
+  const slope = sxy/sxx, intercept = my-slope*mx;
+  const r = syy>1e-9 ? sxy/Math.sqrt(sxx*syy) : 0;
+  return { n, slope, intercept, r, r2:r*r };
+}
+function capVasFuerza(r){ const a=Math.abs(r); return a>=0.7?'Muy fuerte':a>=0.5?'Fuerte':a>=0.3?'Moderada':'Débil'; }
+function capVasDir(r){ return r<0 ? 'Negativa' : 'Positiva'; }
+
+// Una consulta (paginada en paralelo) para todo el rango → luego se agrupa por fecha en JS
+async function _capVasFetch(desdeISO, hastaISO, onProg){
+  const path = `produccion?select=fecha,usuario,canal,tipo,cantidad,clientenombre,entrega&fecha=gte.${desdeISO}&fecha=lte.${hastaISO}&order=id.asc`;
+  const size = 1000;
+  const pedir = async (from, contar)=>{
+    let lastErr;
+    for(let i=0;i<3;i++){
+      try{
+        const res = await fetch(SUPA_URL+'/rest/v1/'+path,{ headers:{
+          'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+          'Prefer': contar?'count=exact':'count=none', 'Range':`${from}-${from+size-1}` }});
+        if(res.ok) return res;
+        lastErr = new Error(await res.text());
+      }catch(e){ lastErr = e; }
+      await new Promise(r=>setTimeout(r, 700*(i+1)));
+    }
+    throw lastErr;
+  };
+  const r0 = await pedir(0,true);
+  const first = await r0.json();
+  if(!first.length) return [];
+  const total = parseInt((r0.headers.get('content-range')||'').split('/')[1],10);
+  if(isNaN(total)) return sbFetchAll(path);               // sin conteo → paginación secuencial existente
+  if(total<=size || first.length>=total) return first;
+  const pages = []; for(let f=size; f<total; f+=size) pages.push(f);
+  const out = new Array(pages.length); let idx=0, hechas=1;
+  await Promise.all(Array.from({length:Math.min(6,pages.length)}, async ()=>{
+    while(true){
+      const i = idx++; if(i>=pages.length) break;
+      out[i] = await (await pedir(pages[i],false)).json();
+      hechas++; if(onProg) onProg(Math.min(99, Math.round(hechas/(pages.length+1)*100)));
+    }
+  }));
+  return first.concat(...out);
+}
+
+function _capVasEstado(txt){ const el=_getCapEl('cap-vas-estado'); if(el) el.textContent = txt; }
+
+async function _capVasCargar(){
+  const tok = ++_capVasTok;
+  const sel = _getCapEl('cap-vas-periodo'); if(sel) sel.value = String(_capVasDias);
+  const hastaISO = _capFechaLocalISO(_capFechaObj());
+  const desde = new Date(hastaISO+'T12:00:00'); desde.setDate(desde.getDate()-(_capVasDias-1));
+  const hoy = new Date(); const ay = new Date(hoy); ay.setDate(ay.getDate()-1);
+  const ayISO = _capFechaLocalISO(ay);
+  const fechas = [];
+  for(const d=new Date(desde); _capFechaLocalISO(d)<=hastaISO; d.setDate(d.getDate()+1)) fechas.push(_capFechaLocalISO(d));
+  try{
+    const faltante = fechas.find(f=> !(f in _capVasCache) || f>=ayISO);
+    const pts = {};
+    if(faltante){
+      _capVasEstado('Cargando datos…'+(_capVasDias>=60?' (puede tardar la primera vez)':''));
+      const rows = await _capVasFetch(faltante, hastaISO, p=>{ if(tok===_capVasTok) _capVasEstado('Cargando datos… '+p+'%'); });
+      if(tok!==_capVasTok) return;
+      const porFecha = {}; rows.forEach(r=>{ (porFecha[r.fecha]=porFecha[r.fecha]||[]).push(r); });
+      fechas.forEach(f=>{
+        if(f>=faltante){
+          const pt = porFecha[f] ? capVasPuntoDia(porFecha[f], f) : null;
+          pts[f] = pt;
+          if(f<ayISO) _capVasCache[f] = pt;
+        } else pts[f] = _capVasCache[f];
+      });
+    } else fechas.forEach(f=>{ pts[f] = _capVasCache[f]; });
+    if(tok!==_capVasTok) return;
+    const puntos = fechas.map(f=>pts[f]).filter(Boolean);
+    _capVasEstado(`${_capVasFechaFmt(fechas[0])} al ${_capVasFechaFmt(hastaISO)} · ${puntos.length} día${puntos.length===1?'':'s'} con producción`);
+    _capVasRender(puntos);
+  }catch(e){
+    if(tok===_capVasTok) _capVasEstado('Error al cargar: '+e.message);
+  }
+}
+
+function _capVasRender(puntos){
+  const elK = _getCapEl('cap-vas-kpis'), elC = _getCapEl('cap-vas-conclusion'), elN = _getCapEl('cap-vas-nota');
+  if(!elK) return;
+  if(!puntos.length){
+    elK.innerHTML = '<div class="loading">Sin días con producción válida en el período.</div>';
+    if(elC) elC.innerHTML=''; if(elN) elN.textContent='';
+    _capVasDestruir(); return;
+  }
+  const xs = puntos.map(p=>p.vasPct);
+  const rgR = capVasRegresion(xs, puntos.map(p=>p.real));
+  const rgE = capVasRegresion(xs, puntos.map(p=>p.esp));
+  const vasProm = xs.reduce((a,b)=>a+b,0)/xs.length;
+
+  // KPI
+  const kpi = (lbl,val,sub,sub2,color)=>`
+    <div class="combo" style="background:var(--card,#152A47);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;letter-spacing:.04em;text-transform:uppercase">${lbl}</div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px;color:${color||'inherit'}">${val}</div>
+      ${sub?`<div style="font-size:10px;color:var(--txt3,#5D7396);margin-top:2px">${sub}</div>`:''}
+      ${sub2?`<div style="font-size:10px;color:var(--txt3,#5D7396);margin-top:2px">${sub2}</div>`:''}
+    </div>`;
+  const imp = rgR ? rgR.slope*10 : null;
+  const impE = rgE ? rgE.slope*10 : null;
+  const impColor = (rgR && rgR.slope<0 && Math.abs(rgR.r)>=0.3) ? '#EF4444' : 'inherit';
+  elK.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      ${kpi('VAS promedio', vasProm.toFixed(1).replace('.',',')+'%', `${puntos.length} días analizados`)}
+      ${kpi('Impacto VAS', imp===null?'—':_capVasSigno(imp)+' <span style="font-size:11px;font-weight:600">uds/persona</span>', 'real · por +10 pp VAS', impE===null?'':`Esperada (estándares): ${_capVasSigno(impE)}`, impColor)}
+      ${kpi('Correlación', rgR?_capVasR(rgR.r):'—', rgR?`Real · ${capVasFuerza(rgR.r)} · ${capVasDir(rgR.r)}`:'Datos insuficientes', rgE?`Esperada: ${_capVasR(rgE.r)} · ${capVasFuerza(rgE.r)} · ${capVasDir(rgE.r)}`:'')}
+    </div>`;
+
+  if(elN) elN.textContent = 'Cada punto = un día, solo equipo base (sin externas). Uds/persona equivalentes a jornada de 9 h (el viernes se ajusta con el factor de jornada de la app). La serie azul sale de los estándares por categoría (VAS tiene estándares menores), por lo que tiende a bajar con el VAS por construcción; la verde es la productividad medida.';
+  if(elC) elC.innerHTML = `<div class="card"><div class="card-title" style="margin-bottom:6px">Conclusión</div><div style="font-size:12px;line-height:1.5">${_capVasConclusion(puntos, rgR, rgE, vasProm)}</div></div>`;
+
+  _capVasGrafico1(puntos, rgR, rgE);
+  _capVasGrafico2(puntos);
+}
+
+function _capVasConclusion(puntos, rgR, rgE, vasProm){
+  const n = puntos.length;
+  const xs = puntos.map(p=>p.vasPct), mn = Math.min(...xs), mxv = Math.max(...xs);
+  const pct = v=>v.toFixed(1).replace('.',',')+'%';
+  if(!rgR) return `En el período hay ${n} día${n===1?'':'s'} con producción válida y no alcanzan para estimar la relación entre VAS y productividad (se necesitan al menos 3 días con distinto % VAS).`;
+  const per10 = Math.abs(rgR.slope*10);
+  let t = `Durante los últimos ${_capVasDias} días analizados (${n} con producción), la participación promedio de VAS fue ${pct(vasProm)}. `;
+  if(rgR.r<=-0.5){
+    t += `Los datos muestran una relación negativa ${capVasFuerza(rgR.r).toLowerCase()} entre la participación de VAS y la productividad real (r = ${_capVasR(rgR.r)}; R² = ${rgR.r2.toFixed(2).replace('.',',')}): por cada aumento de 10 puntos porcentuales de VAS, la productividad real disminuye aproximadamente ${_capVasN0(per10)} unidades por persona.`;
+  }else if(rgR.r<=-0.3){
+    t += `Se observa una tendencia negativa moderada (r = ${_capVasR(rgR.r)}): por cada +10 pp de VAS la productividad real baja aproximadamente ${_capVasN0(per10)} unidades por persona, pero la relación no es lo bastante fuerte como para darla por demostrada.`;
+  }else if(rgR.r>=0.3){
+    t += `La relación observada es positiva (r = ${_capVasR(rgR.r)}): en este período los días con más VAS no tuvieron menor productividad real, por lo que los datos no respaldan que el VAS la disminuya.`;
+  }else{
+    t += `En el período analizado no se observa una relación negativa suficientemente clara entre la participación de VAS y la productividad (r = ${_capVasR(rgR.r)}).`;
+  }
+  if(rgE){
+    t += rgE.slope<0
+      ? ` La productividad esperada por mix baja aproximadamente ${_capVasN0(Math.abs(rgE.slope*10))} uds/persona por cada +10 pp de VAS; es consecuencia de los estándares por categoría (VAS tiene estándares menores), no una medición de campo.`
+      : ` La productividad esperada por mix no baja con el VAS en este período.`;
+  }
+  if(mxv-mn<5) t += ` Ojo: el % VAS solo varió entre ${pct(mn)} y ${pct(mxv)}, por lo que la estimación es poco confiable.`;
+  else if(n<8) t += ` Hay pocos días (${n}); interpretar con cautela.`;
+  t += ` Una correlación no prueba causalidad: la dotación y el mix maleta/línea también influyen.`;
+  return t;
+}
+
+function _capVasDestruir(){
+  if(_capVasCh1){ _capVasCh1.destroy(); _capVasCh1=null; }
+  if(_capVasCh2){ _capVasCh2.destroy(); _capVasCh2=null; }
+}
+function _capVasPrepararCanvas(id){
+  const cv = _getCapEl(id);
+  if(!cv || !window.Chart) return null;
+  const prev = Chart.getChart(cv); if(prev) prev.destroy();   // nunca dos charts sobre el mismo canvas
+  return cv;
+}
+
+function _capVasGrafico1(puntos, rgR, rgE){
+  if(_capVasCh1){ _capVasCh1.destroy(); _capVasCh1=null; }
+  const cv = _capVasPrepararCanvas('cap-vas-ch1'); if(!cv) return;
+  const AZ='#3B8FFF', VE='#22C55E';
+  const xs = puntos.map(p=>p.vasPct), xmin=Math.min(...xs), xmax=Math.max(...xs);
+  const trend = (rg,color,label)=> (rg && xmax>xmin) ? [{
+    type:'line', label, data:[{x:xmin,y:rg.intercept+rg.slope*xmin},{x:xmax,y:rg.intercept+rg.slope*xmax}],
+    borderColor:color, borderDash:[6,4], borderWidth:2, pointRadius:0, pointHoverRadius:0, fill:false, isTrend:true
+  }] : [];
+  const pts = (key,color,label)=>({ label, data:puntos.map(p=>({x:p.vasPct,y:p[key],p})), backgroundColor:color, borderColor:color, pointRadius:5, pointHoverRadius:7, isPoint:true });
+  const tick = {color:'#8FA3C4',font:{size:10}}, grid = {color:'rgba(255,255,255,.05)'};
+  _capVasCh1 = new Chart(cv.getContext('2d'), {
+    type:'scatter',
+    data:{ datasets:[ pts('esp',AZ,'Productividad esperada (mix)'), pts('real',VE,'Productividad real'),
+                      ...trend(rgE,AZ,'Tendencia esperada'), ...trend(rgR,VE,'Tendencia real') ] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'nearest',intersect:true},
+      plugins:{
+        legend:{labels:{color:'#8FA3C4',boxWidth:10,font:{size:10}}},
+        tooltip:{
+          filter:i=>!!i.dataset.isPoint,
+          callbacks:{
+            title:i=>_capVasFechaFmt(i[0].raw.p.fecha),
+            label:ctx=>{
+              const p = ctx.raw.p;
+              const l = [
+                `VAS: ${p.vasPct.toFixed(1).replace('.',',')}%`,
+                `Con VAS: ${_capVasN0(p.uVas)} uds`,
+                `Sin VAS: ${_capVasN0(p.uSin)} uds`,
+                `Total: ${_capVasN0(p.total)} uds`,
+                `Dotación: ${p.dot}`,
+                `Prod. real: ${_capVasN0(p.real)} uds/persona`,
+                `Prod. esperada: ${_capVasN0(p.esp)} uds/persona`,
+                `Cap. esperada: ${_capVasN0(p.capEsp)} uds`
+              ];
+              if(Math.abs(p.factor-1)>0.001) l.push(`Jornada ${Math.round(p.factor*9)} h · valores ajustados a 9 h`);
+              return l;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{type:'linear',ticks:{...tick,callback:v=>v+'%'},grid,title:{display:true,text:'% VAS del día',color:'#5D7396',font:{size:10}}},
+        y:{ticks:tick,grid,title:{display:true,text:'Uds/persona (jornada 9 h)',color:'#5D7396',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function _capVasGrafico2(puntos){
+  if(_capVasCh2){ _capVasCh2.destroy(); _capVasCh2=null; }
+  const cv = _capVasPrepararCanvas('cap-vas-ch2'); if(!cv) return;
+  const rangos = ['0-10%','10-20%','20-30%','30-40%','40-50%','>50%'];
+  const idx = v=> v<10?0 : v<20?1 : v<30?2 : v<40?3 : v<=50?4 : 5;
+  const g = rangos.map(()=>({n:0,esp:0,real:0}));
+  puntos.forEach(p=>{ const b=g[idx(p.vasPct)]; b.n++; b.esp+=p.esp; b.real+=p.real; });
+  const prom = (b,k)=> b.n ? b[k]/b.n : null;
+  const tick = {color:'#8FA3C4',font:{size:10}}, grid = {color:'rgba(255,255,255,.05)'};
+  _capVasCh2 = new Chart(cv.getContext('2d'), {
+    type:'bar',
+    data:{
+      labels: rangos.map((r,i)=>[r, 'n='+g[i].n]),
+      datasets:[
+        {label:'Esperada promedio', data:g.map(b=>prom(b,'esp')),  backgroundColor:'#3B8FFF', borderRadius:4},
+        {label:'Real promedio',     data:g.map(b=>prom(b,'real')), backgroundColor:'#22C55E', borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#8FA3C4',boxWidth:10,font:{size:10}}},
+        tooltip:{callbacks:{ label:ctx=>`${ctx.dataset.label}: ${_capVasN0(ctx.parsed.y)} uds/persona`, footer:i=>`${g[i[0].dataIndex].n} día(s) en este rango` }}
+      },
+      scales:{
+        x:{ticks:tick,grid:{display:false},title:{display:true,text:'% VAS del día',color:'#5D7396',font:{size:10}}},
+        y:{beginAtZero:true,ticks:tick,grid,title:{display:true,text:'Uds/persona (jornada 9 h)',color:'#5D7396',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function capVasToggle(det){ if(det.open) _capVasCargar(); }
+function capVasCambiarPeriodo(v){ _capVasDias = parseInt(v,10)||30; _capVasCargar(); }
+function _capVasRecargarSiAbierto(){ const c=_getCapEl('cap-vas-card'); if(c && c.open) _capVasCargar(); }
+function capVasCompartir(btn){
+  compartirComoImagen(['cap-vas-card','ger-cap-vas-card'], 'impacto-vas-'+_capFechaLocalISO(_capFechaObj()), btn);
+}
+
+// ============================================================
+// SIMULADOR DE DOTACIÓN — ¿cuántas personas necesito para la carga?
+// Reutiliza CAP_STANDARDS, CAP_LABELS, JORNADA_CONFIG y JORNADA_BASE_HORAS.
+// Estándar = uds/persona en jornada base (9 h) → tasa horaria = estándar / 9.
+// Horas disponibles = horas efectivas oficiales del día × (objetivo−inicio)/(término−inicio jornada).
+// ============================================================
+const SIMDOT_KEYS = ['ms','mv','ls','lv','ol','om','ox'];
+const SIMDOT_VAS  = { mv:'ms', lv:'ls' }; // categoría VAS → su equivalente sin VAS
+const _simDotCharts = {};
+const _simDotInit = {};
+
+function _simDotEl(p,id){ return document.getElementById(p+id); }
+function _simDotMin(hhmm){ if(!hhmm) return null; const [h,m]=hhmm.split(':').map(Number); return h*60+(m||0); }
+function _simDotHHMM(min){ min=Math.round(min); const d=Math.floor(min/1440); min=((min%1440)+1440)%1440; return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0')+(d>0?` (+${d}d)`:''); }
+function _simDotCfg(fechaISO){ const d=new Date((fechaISO||_capFechaLocalISO(new Date()))+'T12:00:00'); return JORNADA_CONFIG[d.getDay()]||JORNADA_CONFIG[1]; }
+function _simDotFmt(n,dec){ return Number(n||0).toLocaleString('es-CL',{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0}); }
+
+function simDotInitAll(){ ['','ger-'].forEach(p=>{ if(_simDotEl(p,'simdot-res')) simDotInit(p); }); }
+function simDotInit(p){
+  SIMDOT_KEYS.forEach(k=>{ const e=_simDotEl(p,'simdot-std-'+k); if(e) e.textContent = CAP_STANDARDS[k]+'/día'; });
+  if(!_simDotInit[p]){
+    const f=_simDotEl(p,'simdot-fecha');
+    if(f) f.value = (window._capUltimoR && window._capUltimoR.fechaISO) || _capFechaLocalISO(new Date());
+    _simDotSetHorasJornada(p);
+    _simDotInit[p]=true;
+  }
+  simDotCalcular(p);
+}
+function _simDotSetHorasJornada(p){
+  const cfg=_simDotCfg(_simDotEl(p,'simdot-fecha')?.value);
+  const i=_simDotEl(p,'simdot-ini'), f=_simDotEl(p,'simdot-fin');
+  if(i) i.value=cfg.horaInicio; if(f) f.value=cfg.horaTermino;
+}
+function simDotFechaCambio(p){ _simDotSetHorasJornada(p); simDotCalcular(p); }
+function simDotLimpiar(p){
+  SIMDOT_KEYS.forEach(k=>{ const e=_simDotEl(p,'simdot-'+k); if(e) e.value=''; });
+  const d=_simDotEl(p,'simdot-disp'); if(d) d.value='';
+  simDotCalcular(p);
+}
+function simDotCopiarDia(p){
+  const u=window._capUltimoR; if(!u||!u.r){ alert('Primero carga un día en Capacidad Dinámica.'); return; }
+  u.r.matriz.forEach(m=>{ const e=_simDotEl(p,'simdot-'+m.key); if(e) e.value = m.unidades? Math.round(m.unidades):''; });
+  const f=_simDotEl(p,'simdot-fecha'); if(f){ f.value=u.fechaISO; _simDotSetHorasJornada(p); }
+  const d=_simDotEl(p,'simdot-disp'); if(d && u.r.dotacion) d.value=u.r.dotacion;
+  simDotCalcular(p);
+}
+
+// Horas-hombre necesarias para una carga {k:uds}
+function _simDotHH(carga){
+  const det={}; let hh=0;
+  SIMDOT_KEYS.forEach(k=>{
+    const uds=Math.max(0,Number(carga[k])||0);
+    const tasaH = CAP_STANDARDS[k]/JORNADA_BASE_HORAS; // uds por persona-hora
+    const h = tasaH? uds/tasaH : 0;
+    det[k]={uds,h}; hh+=h;
+  });
+  return {det,hh};
+}
+
+function simDotCalcular(p){
+  const res=_simDotEl(p,'simdot-res'); if(!res) return;
+  const carga={}; SIMDOT_KEYS.forEach(k=> carga[k]=Math.max(0,Number(_simDotEl(p,'simdot-'+k)?.value)||0));
+  const fechaISO=_simDotEl(p,'simdot-fecha')?.value || _capFechaLocalISO(new Date());
+  const cfg=_simDotCfg(fechaISO);
+  const jIni=_simDotMin(cfg.horaInicio), jFin=_simDotMin(cfg.horaTermino);
+  const ini=_simDotMin(_simDotEl(p,'simdot-ini')?.value)??jIni;
+  const fin=_simDotMin(_simDotEl(p,'simdot-fin')?.value)??jFin;
+  const ratio = cfg.horasEfectivas/((jFin-jIni)/60);               // horas efectivas por hora reloj
+  const horasDisp = Math.max(0,(fin-ini)/60*ratio);
+  const disp = Math.max(0,parseInt(_simDotEl(p,'simdot-disp')?.value,10)||0);
+
+  const total = SIMDOT_KEYS.reduce((s,k)=>s+carga[k],0);
+  const {det,hh} = _simDotHH(carga);
+  if(!total){
+    res.innerHTML=`<div style="text-align:center;color:var(--txt3);font-size:12px;padding:14px;border:1px dashed rgba(255,255,255,.12);border-radius:12px">Ingresa unidades o usa “Copiar mix del día mostrado”.</div>`;
+    _simDotChart(p,carga,0); return;
+  }
+  if(horasDisp<=0){
+    res.innerHTML=`<div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">La hora objetivo debe ser posterior a la hora de inicio.</div>`; return;
+  }
+  const personasExactas = hh/horasDisp;
+  const personas = Math.ceil(personasExactas-1e-9);
+  const personasDia = hh/cfg.horasEfectivas;
+
+  // Impacto VAS: personas que se necesitarían si la carga VAS fuera sin VAS
+  const cargaSinVas={...carga};
+  Object.entries(SIMDOT_VAS).forEach(([v,sv])=>{ cargaSinVas[sv]+=cargaSinVas[v]; cargaSinVas[v]=0; });
+  const hhSinVas=_simDotHH(cargaSinVas).hh;
+  const personasExtraVas = (hh-hhSinVas)/horasDisp;
+  const udsVas = carga.mv+carga.lv, udsOffline = carga.ms+carga.mv+carga.ls+carga.lv;
+  const pctVas = udsOffline? udsVas/udsOffline*100 : 0;
+  const hhVas = det.mv.h+det.lv.h, hhSV = det.ms.h+det.ls.h, hhOn = det.ol.h+det.om.h+det.ox.h;
+
+  // Término estimado con N personas
+  const termino = n => n>0 ? ini + (hh/n)/ratio*60 : null;
+  let estado='';
+  if(disp>0){
+    const t=termino(disp), ok = disp>=personas, def = personas-disp;
+    const c = ok?'#22C55E':'#EF4444';
+    estado = `<div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:${c}18;border:1px solid ${c}55;font-size:12.5px;line-height:1.45">
+      ${ok?'🟢':'🔴'} Con <b>${disp}</b> persona${disp===1?'':'s'} terminas aprox. a las <b>${_simDotHHMM(t)}</b>
+      ${ok? (disp>personas?` · holgura de <b>${disp-personas}</b> persona${disp-personas===1?'':'s'}`:' · justo en la hora objetivo')
+          : ` · <b style="color:#EF4444">déficit de ${def} persona${def===1?'':'s'}</b> para cumplir a las ${_simDotHHMM(fin)}`}
+    </div>`;
+  }
+  const rangos=[]; for(let n=Math.max(1,personas-2); n<=personas+2; n++) rangos.push(n);
+  const filasEsc = rangos.map(n=>{ const t=termino(n), ok=t<=fin+0.5; const c= ok?(n===personas?'#22C55E':'#8BC34A'):(t-fin<=60?'#F5A524':'#EF4444');
+    return `<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:8px;${n===personas?'background:rgba(34,197,94,.10);':''}font-size:12px">
+      <span>${n} persona${n===1?'':'s'}${n===personas?' <b style="color:#22C55E">· mínimo</b>':''}</span><b style="color:${c}">${ok?'🟢':(t-fin<=60?'🟡':'🔴')} ${_simDotHHMM(t)}</b></div>`; }).join('');
+
+  const fila=(k)=> det[k].uds? `<tr><td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px">${CAP_LABELS[k]}</td>
+      <td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px">${_simDotFmt(det[k].uds)}</td>
+      <td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px;color:var(--txt3)">${CAP_STANDARDS[k]}</td>
+      <td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px;font-weight:700">${_simDotFmt(det[k].h/horasDisp,2)}</td></tr>` : '';
+  const sub=(lbl,h,c)=> h? `<tr><td colspan="3" style="padding:5px 4px;font-size:11px;font-weight:800;color:${c}">${lbl}</td><td style="padding:5px 4px;text-align:right;font-size:11px;font-weight:800;color:${c}">${_simDotFmt(h/horasDisp,2)}</td></tr>`:'';
+
+  const kpi=(l,v,sb,c)=>`<div style="background:var(--card,#152A47);border-radius:12px;padding:10px;border:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:9.5px;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">${l}</div>
+      <div style="font-size:18px;font-weight:800;margin-top:3px;color:${c||'inherit'}">${v}</div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">${sb}</div></div>`;
+
+  res.innerHTML = `
+    <div style="text-align:center;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(59,143,255,.18),rgba(46,204,138,.10));border:1px solid rgba(59,143,255,.35)">
+      <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.06em;text-transform:uppercase">Dotación requerida</div>
+      <div style="font-size:40px;font-weight:900;line-height:1.1;margin-top:2px">👥 ${personas}</div>
+      <div style="font-size:11px;color:var(--txt2)">personas para ${_simDotFmt(total)} uds · ${_simDotHHMM(ini)} → ${_simDotHHMM(fin)} (${_simDotFmt(horasDisp,1)} h efectivas)</div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">Exacto: ${_simDotFmt(personasExactas,2)} · Personas-día (jornada ${cfg.nombre} ${cfg.horasEfectivas} h): ${_simDotFmt(personasDia,2)}</div>
+    </div>
+    ${estado}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+      ${kpi('% VAS offline', _simDotFmt(pctVas,1)+'%', `${_simDotFmt(udsVas)} uds VAS`, '#9A88FF')}
+      ${kpi('Personas por VAS', '+'+_simDotFmt(personasExtraVas,2), 'extra vs hacerlo sin VAS', personasExtraVas>0?'#FF7A45':'#22C55E')}
+      ${kpi('Prod. esperada', _simDotFmt(hh? total/(hh/JORNADA_BASE_HORAS):0), 'uds/persona-día (mix)', '#60B0FF')}
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-top:10px">
+      <thead><tr style="font-size:9.5px;color:var(--txt2);text-transform:uppercase">
+        <th style="text-align:left;padding:4px">Categoría</th><th style="text-align:right;padding:4px">Uds</th><th style="text-align:right;padding:4px">Estándar</th><th style="text-align:right;padding:4px">Personas</th></tr></thead>
+      <tbody>
+        ${fila('ms')}${fila('ls')}${sub('Subtotal SIN VAS',hhSV,'#2ECC8A')}
+        ${fila('mv')}${fila('lv')}${sub('Subtotal CON VAS',hhVas,'#9A88FF')}
+        ${fila('ol')}${fila('om')}${fila('ox')}${sub('Subtotal Online',hhOn,'#60B0FF')}
+        <tr><td colspan="3" style="padding:7px 4px;border-top:2px solid rgba(255,255,255,.2);font-size:12px;font-weight:900">TOTAL</td>
+            <td style="padding:7px 4px;border-top:2px solid rgba(255,255,255,.2);text-align:right;font-size:12px;font-weight:900">${_simDotFmt(personasExactas,2)} → ${personas}</td></tr>
+      </tbody>
+    </table>
+    <div class="card-title" style="margin-top:12px;font-size:12px">Hora estimada de término según dotación</div>
+    <div style="margin-top:4px">${filasEsc}</div>`;
+
+  _simDotChart(p,carga,pctVas);
+  const nota=_simDotEl(p,'simdot-nota');
+  if(nota) nota.textContent = `Se mantiene el total offline (${_simDotFmt(udsOffline)} uds), la proporción maleta/línea y la carga online; solo cambia el % que lleva VAS. Personas calculadas para ${_simDotFmt(horasDisp,1)} h efectivas. Estándares: tasa horaria = estándar diario / ${JORNADA_BASE_HORAS} h.`;
+}
+
+function _simDotChart(p,carga,pctActual){
+  const cv=_simDotEl(p,'simdot-chart'); if(!cv || typeof Chart==='undefined') return;
+  if(_simDotCharts[p]){ try{_simDotCharts[p].destroy();}catch(e){} _simDotCharts[p]=null; }
+  const off = carga.ms+carga.mv+carga.ls+carga.lv;
+  if(!off) return;
+  const fechaISO=_simDotEl(p,'simdot-fecha')?.value; const cfg=_simDotCfg(fechaISO);
+  const jIni=_simDotMin(cfg.horaInicio), jFin=_simDotMin(cfg.horaTermino);
+  const ini=_simDotMin(_simDotEl(p,'simdot-ini')?.value)??jIni, fin=_simDotMin(_simDotEl(p,'simdot-fin')?.value)??jFin;
+  const horasDisp=Math.max(0.01,(fin-ini)/60*cfg.horasEfectivas/((jFin-jIni)/60));
+  const mal=(carga.ms+carga.mv)/off, lin=1-mal;
+  const labels=[], exact=[], req=[];
+  for(let v=0; v<=100; v+=10){
+    const f=v/100;
+    const c={ms:off*mal*(1-f), mv:off*mal*f, ls:off*lin*(1-f), lv:off*lin*f, ol:carga.ol, om:carga.om, ox:carga.ox};
+    const pe=_simDotHH(c).hh/horasDisp;
+    labels.push(v+'%'); exact.push(+pe.toFixed(2)); req.push(Math.ceil(pe-1e-9));
+  }
+  const actual=_simDotHH(carga).hh/horasDisp;
+  _simDotCharts[p]=new Chart(cv.getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Personas requeridas',data:req,stepped:true,borderColor:'#FF7A45',backgroundColor:'rgba(255,122,69,.12)',fill:true,pointRadius:3},
+      {label:'Personas exactas',data:exact,borderColor:'#3B8FFF',borderDash:[5,4],pointRadius:0,tension:.2},
+      {type:'scatter',label:`Tu carga (${pctActual.toFixed(0)}% VAS)`,data:[{x:pctActual/10,y:+actual.toFixed(2)}],backgroundColor:'#22C55E',borderColor:'#fff',pointRadius:7,pointHoverRadius:9}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8FA3C4',font:{size:10},boxWidth:10}},
+        tooltip:{callbacks:{label:ctx=> ctx.dataset.type==='scatter'?` Tu carga: ${ctx.parsed.y.toLocaleString('es-CL')} personas`:` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('es-CL')}`}}},
+      scales:{x:{type:'linear',min:0,max:10,ticks:{stepSize:1,color:'#8FA3C4',callback:v=>(v*10)+'%'},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'% VAS de la carga offline',color:'#8FA3C4',font:{size:10}}},
+              y:{beginAtZero:true,ticks:{color:'#8FA3C4',precision:0},grid:{color:'rgba(255,255,255,.06)'},title:{display:true,text:'Personas',color:'#8FA3C4',font:{size:10}}}}},
+  });
+  // los datasets de línea usan índice como x (0..10)
+  _simDotCharts[p].data.datasets[0].data = req.map((y,i)=>({x:i,y}));
+  _simDotCharts[p].data.datasets[1].data = exact.map((y,i)=>({x:i,y}));
+  _simDotCharts[p].update();
+}
 
 // ============================================================
 // RITMO OPERACIONAL — comportamiento de la producción durante el día
