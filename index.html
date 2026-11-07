@@ -817,7 +817,7 @@ input[type="month"], input[type="week"]{
         <span class="card-title">👥 Simulador de Dotación · Con VAS / Sin VAS</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
-      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa las unidades <b>embaladas</b> (el resultado operativo; la carga real suele ser mayor) separadas en sin VAS y con VAS, y calcula cuántas personas se necesitan. Cada grupo usa un estándar equilibrado: el promedio de los estándares de Capacidad Dinámica.</div>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa las unidades <b>embaladas</b> (el resultado operativo; la carga real suele ser mayor) separadas en sin VAS y con VAS, y calcula cuántas personas se necesitan. Cada grupo usa un estándar equilibrado: el promedio de los estándares de Capacidad Dinámica. Al copiar el día se incluye todo lo embalado, también por externas (tu dotación disponible las incluye).</div>
       <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
         <button type="button" class="btn-ghost" onclick="simDotCopiarDia('ger-')">📥 Copiar embalado del día mostrado</button>
         <button type="button" class="btn-ghost" onclick="simDotLimpiar('ger-')">🧹 Limpiar</button>
@@ -1457,7 +1457,7 @@ input[type="month"], input[type="week"]{
         <span class="card-title">👥 Simulador de Dotación · Con VAS / Sin VAS</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
-      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa las unidades <b>embaladas</b> (el resultado operativo; la carga real suele ser mayor) separadas en sin VAS y con VAS, y calcula cuántas personas se necesitan. Cada grupo usa un estándar equilibrado: el promedio de los estándares de Capacidad Dinámica.</div>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa las unidades <b>embaladas</b> (el resultado operativo; la carga real suele ser mayor) separadas en sin VAS y con VAS, y calcula cuántas personas se necesitan. Cada grupo usa un estándar equilibrado: el promedio de los estándares de Capacidad Dinámica. Al copiar el día se incluye todo lo embalado, también por externas (tu dotación disponible las incluye).</div>
       <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
         <button type="button" class="btn-ghost" onclick="simDotCopiarDia('')">📥 Copiar embalado del día mostrado</button>
         <button type="button" class="btn-ghost" onclick="simDotLimpiar('')">🧹 Limpiar</button>
@@ -2821,7 +2821,8 @@ async function cargarCapacidadDinamicaUI(forzar){
     _capRenderComplejidad(r);
     _capRenderKpis(r);
     _capRenderMatriz(r);
-    window._capUltimoR = {r, fechaISO};
+    // rAll = todo lo embalado (equipo base + externas): el simulador lo usa porque la dotación disponible también incluye a las externas
+    window._capUltimoR = {r, rAll: calcularCapacidadDinamica(rows, fechaISO), fechaISO};
     try{ simDotInitAll(); }catch(e3){ console.warn('simulador dotación:', e3.message); }
     _capCargarHistorico(fechaISO);
   }catch(e){
@@ -3201,7 +3202,7 @@ function simDotLimpiar(p){
 function simDotCopiarDia(p){
   const u=window._capUltimoR; if(!u||!u.r){ alert('Primero carga un día en Capacidad Dinámica.'); return; }
   let tot=0, vas=0;
-  u.r.matriz.forEach(m=>{ tot+=m.unidades; if(m.key==='mv'||m.key==='lv') vas+=m.unidades; });   // online va en SIN VAS
+  (u.rAll||u.r).matriz.forEach(m=>{ tot+=m.unidades; if(m.key==='mv'||m.key==='lv') vas+=m.unidades; });   // todo lo embalado (incluye externas); online va en SIN VAS
   const a=_simDotEl(p,'simdot-sv'), b=_simDotEl(p,'simdot-cv');
   if(a) a.value = Math.round(tot-vas)||''; if(b) b.value = Math.round(vas)||'';
   const f=_simDotEl(p,'simdot-fecha'); if(f){ f.value=u.fechaISO; _simDotSetHorasJornada(p); }
