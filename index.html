@@ -814,15 +814,18 @@ input[type="month"], input[type="week"]{
 
     <details id="ger-cap-simdot-card" class="plan-acc card share-block" open>
       <summary>
-        <span class="card-title">👥 Simulador de Dotación · VAS / Sin VAS</span>
+        <span class="card-title">👥 Simulador de Dotación · Con VAS / Sin VAS</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
-      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa la carga por tipo y calcula cuántas personas necesitas para terminarla a la hora objetivo. Base: estándares de Capacidad Dinámica (CAP_STANDARDS) con la carga sin VAS; el efecto del VAS se suma con la regla operacional (personas extra por cada +10 pp de VAS).</div>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa las unidades <b>embaladas</b> (el resultado operativo; la carga real suele ser mayor) separadas en sin VAS y con VAS, y calcula cuántas personas se necesitan. Cada grupo usa un estándar equilibrado: el promedio de los estándares de Capacidad Dinámica.</div>
       <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <button type="button" class="btn-ghost" onclick="simDotCopiarDia('ger-')">📥 Copiar mix del día mostrado</button>
+        <button type="button" class="btn-ghost" onclick="simDotCopiarDia('ger-')">📥 Copiar embalado del día mostrado</button>
         <button type="button" class="btn-ghost" onclick="simDotLimpiar('ger-')">🧹 Limpiar</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta SIN VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-ms"></span></span></label><input id="ger-simdot-ms" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta CON VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-mv"></span></span></label><input id="ger-simdot-mv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea SIN VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-ls"></span></span></label><input id="ger-simdot-ls" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea CON VAS <span style="color:var(--txt3)">· <span id="ger-simdot-std-lv"></span></span></label><input id="ger-simdot-lv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Línea <span style="color:var(--txt3)">· <span id="ger-simdot-std-ol"></span></span></label><input id="ger-simdot-ol" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Maleta <span style="color:var(--txt3)">· <span id="ger-simdot-std-om"></span></span></label><input id="ger-simdot-om" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Mixto <span style="color:var(--txt3)">· <span id="ger-simdot-std-ox"></span></span></label><input id="ger-simdot-ox" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Unidades SIN VAS <span style="color:var(--txt3)">· maleta, línea y online</span></label><input id="ger-simdot-sv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Unidades CON VAS</label><input id="ger-simdot-cv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
         <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Fecha (define jornada)</label><input id="ger-simdot-fecha" type="date" onchange="simDotFechaCambio('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
         <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Personas disponibles</label><input id="ger-simdot-disp" type="number" min="0" step="1" placeholder="dotación real" oninput="simDotDisp('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
@@ -830,15 +833,18 @@ input[type="month"], input[type="week"]{
         <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Hora objetivo término</label><input id="ger-simdot-fin" type="time" oninput="simDotCalcular('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
       </div>
       <div class="no-share" style="margin-top:10px;padding:10px;border-radius:10px;border:1px dashed rgba(255,255,255,.18)">
-        <div style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:800;letter-spacing:.05em;text-transform:uppercase">Regla operacional VAS · personas extra por cada +10 pp de VAS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
-          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Mínimo</label><input id="ger-simdot-kmin" type="number" min="0" step="0.1" inputmode="decimal" oninput="simDotPrefs('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
-          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Con margen</label><input id="ger-simdot-kmax" type="number" min="0" step="0.1" inputmode="decimal" oninput="simDotPrefs('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
-          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Carga ref. uds/día</label><input id="ger-simdot-ref" type="number" min="1" step="500" inputmode="numeric" oninput="simDotPrefs('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:800;letter-spacing:.05em;text-transform:uppercase">Estándar por grupo · uds por persona al día (9 h)</div>
+          <button type="button" class="btn-ghost" onclick="simDotRestablecer('ger-')" style="padding:3px 8px;font-size:11px">↺ Promedio</button>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Sin VAS</label><input id="ger-simdot-std-sv" type="number" min="1" step="1" inputmode="numeric" oninput="simDotStd('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Con VAS</label><input id="ger-simdot-std-cv" type="number" min="1" step="1" inputmode="numeric" oninput="simDotStd('ger-')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        </div>
+        <div style="font-size:10px;color:var(--txt3,#5D7396);margin-top:6px;line-height:1.4">Por defecto: promedio simple de CAP_STANDARDS (sin VAS = maleta y línea; con VAS = maleta y línea con VAS).</div>
       </div>
       <div id="ger-simdot-res" style="margin-top:12px"></div>
-      <div class="card-title" style="margin-top:14px;font-size:12px">Personas requeridas según % VAS <span style="font-weight:500;color:var(--txt3)">(misma carga total)</span></div>
+      <div class="card-title" style="margin-top:14px;font-size:12px">Personas requeridas según % VAS <span style="font-weight:500;color:var(--txt3)">(mismas unidades)</span></div>
       <div style="position:relative;height:220px;margin-top:6px"><canvas id="ger-simdot-chart"></canvas></div>
       <div id="ger-simdot-nota" style="margin-top:6px;font-size:10px;color:var(--txt3,#5D7396);line-height:1.4"></div>
     </details>
@@ -1448,15 +1454,18 @@ input[type="month"], input[type="week"]{
 
     <details id="cap-simdot-card" class="plan-acc card share-block" open>
       <summary>
-        <span class="card-title">👥 Simulador de Dotación · VAS / Sin VAS</span>
+        <span class="card-title">👥 Simulador de Dotación · Con VAS / Sin VAS</span>
         <svg class="plan-acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </summary>
-      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa la carga por tipo y calcula cuántas personas necesitas para terminarla a la hora objetivo. Base: estándares de Capacidad Dinámica (CAP_STANDARDS) con la carga sin VAS; el efecto del VAS se suma con la regla operacional (personas extra por cada +10 pp de VAS).</div>
+      <div style="font-size:11px;color:var(--txt2,#8FA3C4);margin-top:6px;line-height:1.4">Ingresa las unidades <b>embaladas</b> (el resultado operativo; la carga real suele ser mayor) separadas en sin VAS y con VAS, y calcula cuántas personas se necesitan. Cada grupo usa un estándar equilibrado: el promedio de los estándares de Capacidad Dinámica.</div>
       <div class="no-share" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <button type="button" class="btn-ghost" onclick="simDotCopiarDia('')">📥 Copiar mix del día mostrado</button>
+        <button type="button" class="btn-ghost" onclick="simDotCopiarDia('')">📥 Copiar embalado del día mostrado</button>
         <button type="button" class="btn-ghost" onclick="simDotLimpiar('')">🧹 Limpiar</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta SIN VAS <span style="color:var(--txt3)">· <span id="simdot-std-ms"></span></span></label><input id="simdot-ms" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Maleta CON VAS <span style="color:var(--txt3)">· <span id="simdot-std-mv"></span></span></label><input id="simdot-mv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea SIN VAS <span style="color:var(--txt3)">· <span id="simdot-std-ls"></span></span></label><input id="simdot-ls" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Línea CON VAS <span style="color:var(--txt3)">· <span id="simdot-std-lv"></span></span></label><input id="simdot-lv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Línea <span style="color:var(--txt3)">· <span id="simdot-std-ol"></span></span></label><input id="simdot-ol" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Solo Maleta <span style="color:var(--txt3)">· <span id="simdot-std-om"></span></span></label><input id="simdot-om" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div><div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Online · Mixto <span style="color:var(--txt3)">· <span id="simdot-std-ox"></span></span></label><input id="simdot-ox" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Unidades SIN VAS <span style="color:var(--txt3)">· maleta, línea y online</span></label><input id="simdot-sv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Unidades CON VAS</label><input id="simdot-cv" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
         <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Fecha (define jornada)</label><input id="simdot-fecha" type="date" onchange="simDotFechaCambio('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
         <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Personas disponibles</label><input id="simdot-disp" type="number" min="0" step="1" placeholder="dotación real" oninput="simDotDisp('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
@@ -1464,15 +1473,18 @@ input[type="month"], input[type="week"]{
         <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Hora objetivo término</label><input id="simdot-fin" type="time" oninput="simDotCalcular('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
       </div>
       <div class="no-share" style="margin-top:10px;padding:10px;border-radius:10px;border:1px dashed rgba(255,255,255,.18)">
-        <div style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:800;letter-spacing:.05em;text-transform:uppercase">Regla operacional VAS · personas extra por cada +10 pp de VAS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
-          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Mínimo</label><input id="simdot-kmin" type="number" min="0" step="0.1" inputmode="decimal" oninput="simDotPrefs('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
-          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Con margen</label><input id="simdot-kmax" type="number" min="0" step="0.1" inputmode="decimal" oninput="simDotPrefs('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
-          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Carga ref. uds/día</label><input id="simdot-ref" type="number" min="1" step="500" inputmode="numeric" oninput="simDotPrefs('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:800;letter-spacing:.05em;text-transform:uppercase">Estándar por grupo · uds por persona al día (9 h)</div>
+          <button type="button" class="btn-ghost" onclick="simDotRestablecer('')" style="padding:3px 8px;font-size:11px">↺ Promedio</button>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Sin VAS</label><input id="simdot-std-sv" type="number" min="1" step="1" inputmode="numeric" oninput="simDotStd('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+          <div><label style="font-size:10px;color:var(--txt2,#8FA3C4);font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px">Con VAS</label><input id="simdot-std-cv" type="number" min="1" step="1" inputmode="numeric" oninput="simDotStd('')" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--card2,#132040);color:var(--txt,#EEF4FF);font-size:13px;font-weight:700;width:100%;box-sizing:border-box"></div>
+        </div>
+        <div style="font-size:10px;color:var(--txt3,#5D7396);margin-top:6px;line-height:1.4">Por defecto: promedio simple de CAP_STANDARDS (sin VAS = maleta y línea; con VAS = maleta y línea con VAS).</div>
       </div>
       <div id="simdot-res" style="margin-top:12px"></div>
-      <div class="card-title" style="margin-top:14px;font-size:12px">Personas requeridas según % VAS <span style="font-weight:500;color:var(--txt3)">(misma carga total)</span></div>
+      <div class="card-title" style="margin-top:14px;font-size:12px">Personas requeridas según % VAS <span style="font-weight:500;color:var(--txt3)">(mismas unidades)</span></div>
       <div style="position:relative;height:220px;margin-top:6px"><canvas id="simdot-chart"></canvas></div>
       <div id="simdot-nota" style="margin-top:6px;font-size:10px;color:var(--txt3,#5D7396);line-height:1.4"></div>
     </details>
@@ -3111,13 +3123,19 @@ function capSerieCompartir(btn){
 }
 
 // ============================================================
-// SIMULADOR DE DOTACIÓN — ¿cuántas personas necesito para la carga?
-// Reutiliza CAP_STANDARDS, CAP_LABELS, JORNADA_CONFIG y JORNADA_BASE_HORAS.
-// Estándar = uds/persona en jornada base (9 h) → tasa horaria = estándar / 9.
-// Horas disponibles = horas efectivas oficiales del día × (objetivo−inicio)/(término−inicio jornada).
+// SIMULADOR DE DOTACIÓN — dos grupos: SIN VAS / CON VAS
+// - Unidades = lo EMBALADO (resultado operativo). La carga real pendiente suele ser mayor.
+// - Estándar de cada grupo = promedio simple de CAP_STANDARDS:
+//     SIN VAS = (maleta sin VAS + línea sin VAS) / 2      CON VAS = (maleta con VAS + línea con VAS) / 2
+//   El online va dentro de SIN VAS y no entra en el promedio.
+// - Estándar = uds por persona en jornada base (JORNADA_BASE_HORAS = 9 h).
+// - Personas = (uds sin VAS / est. sin VAS + uds con VAS / est. con VAS) × 9 h / horas disponibles.
+// - Horas disponibles = horas efectivas oficiales del día × (objetivo − inicio) / (término − inicio de jornada).
 // ============================================================
-const SIMDOT_KEYS = ['ms','mv','ls','lv','ol','om','ox'];
-const SIMDOT_VAS  = { mv:'ms', lv:'ls' }; // categoría VAS → su equivalente sin VAS
+const SIMDOT_STD_DEF = {
+  sv: Math.round((CAP_STANDARDS.ms + CAP_STANDARDS.ls)/2),   // 783
+  cv: Math.round((CAP_STANDARDS.mv + CAP_STANDARDS.lv)/2)    // 360
+};
 const _simDotCharts = {};
 const _simDotInit = {};
 
@@ -3127,9 +3145,40 @@ function _simDotHHMM(min){ min=Math.round(min); const d=Math.floor(min/1440); mi
 function _simDotCfg(fechaISO){ const d=new Date((fechaISO||_capFechaLocalISO(new Date()))+'T12:00:00'); return JORNADA_CONFIG[d.getDay()]||JORNADA_CONFIG[1]; }
 function _simDotFmt(n,dec){ return Number(n||0).toLocaleString('es-CL',{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0}); }
 
+// Estándares editables (se guardan en el dispositivo) y dotación real disponible
+function _simDotStdLeer(){
+  const o = {...SIMDOT_STD_DEF};
+  try{ const j=JSON.parse(localStorage.getItem('simdot_std')||'null');
+       if(j) ['sv','cv'].forEach(k=>{ if(isFinite(j[k]) && j[k]>0) o[k]=+j[k]; }); }catch(e){}
+  return o;
+}
+function _simDotStd(p){
+  const d=_simDotStdLeer();
+  const num=k=>{ const v=parseFloat(_simDotEl(p,'simdot-std-'+k)?.value); return (isFinite(v) && v>0) ? v : d[k]; };
+  return {sv:num('sv'), cv:num('cv')};
+}
+function simDotStd(p){
+  const o={..._simDotStdLeer()};
+  ['sv','cv'].forEach(k=>{ const v=parseFloat(_simDotEl(p,'simdot-std-'+k)?.value); if(isFinite(v) && v>0) o[k]=v; });
+  try{ localStorage.setItem('simdot_std', JSON.stringify(o)); }catch(e){}
+  simDotCalcular(p);
+}
+function simDotRestablecer(p){
+  try{ localStorage.removeItem('simdot_std'); }catch(e){}
+  _simDotPrefAplicar(p); simDotCalcular(p);
+}
+function _simDotPrefAplicar(p){
+  const o=_simDotStdLeer();
+  ['sv','cv'].forEach(k=>{ const e=_simDotEl(p,'simdot-std-'+k); if(e) e.value=o[k]; });
+  try{ const d=localStorage.getItem('simdot_disp'); const e=_simDotEl(p,'simdot-disp'); if(e && !e.value && d) e.value=d; }catch(e){}
+}
+function simDotDisp(p){
+  try{ const v=parseInt(_simDotEl(p,'simdot-disp')?.value,10); if(v>0) localStorage.setItem('simdot_disp', String(v)); }catch(e){}
+  simDotCalcular(p);
+}
+
 function simDotInitAll(){ ['','ger-'].forEach(p=>{ if(_simDotEl(p,'simdot-res')) simDotInit(p); }); }
 function simDotInit(p){
-  SIMDOT_KEYS.forEach(k=>{ const e=_simDotEl(p,'simdot-std-'+k); if(e) e.textContent = CAP_STANDARDS[k]+'/día'; });
   if(!_simDotInit[p]){
     const f=_simDotEl(p,'simdot-fecha');
     if(f) f.value = (window._capUltimoR && window._capUltimoR.fechaISO) || _capFechaLocalISO(new Date());
@@ -3146,71 +3195,25 @@ function _simDotSetHorasJornada(p){
 }
 function simDotFechaCambio(p){ _simDotSetHorasJornada(p); simDotCalcular(p); }
 function simDotLimpiar(p){
-  SIMDOT_KEYS.forEach(k=>{ const e=_simDotEl(p,'simdot-'+k); if(e) e.value=''; });
-  simDotCalcular(p);   // la dotación real disponible se conserva
-
+  ['sv','cv'].forEach(k=>{ const e=_simDotEl(p,'simdot-'+k); if(e) e.value=''; });
+  simDotCalcular(p);   // la dotación real disponible y los estándares se conservan
 }
 function simDotCopiarDia(p){
   const u=window._capUltimoR; if(!u||!u.r){ alert('Primero carga un día en Capacidad Dinámica.'); return; }
-  u.r.matriz.forEach(m=>{ const e=_simDotEl(p,'simdot-'+m.key); if(e) e.value = m.unidades? Math.round(m.unidades):''; });
+  let tot=0, vas=0;
+  u.r.matriz.forEach(m=>{ tot+=m.unidades; if(m.key==='mv'||m.key==='lv') vas+=m.unidades; });   // online va en SIN VAS
+  const a=_simDotEl(p,'simdot-sv'), b=_simDotEl(p,'simdot-cv');
+  if(a) a.value = Math.round(tot-vas)||''; if(b) b.value = Math.round(vas)||'';
   const f=_simDotEl(p,'simdot-fecha'); if(f){ f.value=u.fechaISO; _simDotSetHorasJornada(p); }
   // La dotación real (incluye sensado/etiquetado VAS y apoyo) no se pisa con las que registran unidades.
   simDotCalcular(p);
 }
 
-// Horas-hombre necesarias para una carga {k:uds}
-function _simDotHH(carga){
-  const det={}; let hh=0;
-  SIMDOT_KEYS.forEach(k=>{
-    const uds=Math.max(0,Number(carga[k])||0);
-    const tasaH = CAP_STANDARDS[k]/JORNADA_BASE_HORAS; // uds por persona-hora
-    const h = tasaH? uds/tasaH : 0;
-    det[k]={uds,h}; hh+=h;
-  });
-  return {det,hh};
-}
-
-// ---- Regla operacional VAS (preferencias persistentes en el dispositivo) ----
-const SIMDOT_PREF_DEF = {kmin:1.5, kmax:2, ref:15000};
-function _simDotPrefLeer(){
-  const o = {...SIMDOT_PREF_DEF};
-  try{ const j = JSON.parse(localStorage.getItem('simdot_prefs')||'null');
-       if(j) ['kmin','kmax','ref'].forEach(k=>{ if(isFinite(j[k]) && j[k]>0) o[k] = +j[k]; }); }catch(e){}
-  return o;
-}
-function _simDotPrefAplicar(p){
-  const o = _simDotPrefLeer();
-  ['kmin','kmax','ref'].forEach(k=>{ const e=_simDotEl(p,'simdot-'+k); if(e) e.value = o[k]; });
-  try{ const d=localStorage.getItem('simdot_disp'); const e=_simDotEl(p,'simdot-disp'); if(e && !e.value && d) e.value = d; }catch(e){}
-}
-function simDotPrefs(p){
-  const o = {..._simDotPrefLeer()};
-  ['kmin','kmax','ref'].forEach(k=>{ const v=parseFloat(_simDotEl(p,'simdot-'+k)?.value); if(isFinite(v) && v>0) o[k]=v; });
-  try{ localStorage.setItem('simdot_prefs', JSON.stringify(o)); }catch(e){}
-  simDotCalcular(p);
-}
-function simDotDisp(p){
-  try{ const v=parseInt(_simDotEl(p,'simdot-disp')?.value,10); if(v>0) localStorage.setItem('simdot_disp', String(v)); }catch(e){}
-  simDotCalcular(p);
-}
-function _simDotParams(p){
-  const d = _simDotPrefLeer();
-  const num = k=>{ const v=parseFloat(_simDotEl(p,'simdot-'+k)?.value); return (isFinite(v) && v>0) ? v : d[k]; };
-  let kmin=num('kmin'), kmax=num('kmax');
-  if(kmax<kmin){ const t=kmin; kmin=kmax; kmax=t; }
-  return {kmin, kmax, ref:num('ref')};
-}
-// Modelo: personas = P0 (carga SIN VAS por estándares) + k × (%VAS/10) × (uds/ref) × (9 h / horas disponibles)
-// k = personas extra por cada +10 pp de VAS para `ref` uds/día en jornada completa.
-function _simDotModelo(prm, hhSinVas, horasDisp, total){
-  const p0 = hhSinVas/horasDisp;
-  const escala = (total/prm.ref) * (JORNADA_BASE_HORAS/horasDisp);
-  return { p0, escala, at:(k,pctVas)=> p0 + k*(pctVas/10)*escala };
-}
-
 function simDotCalcular(p){
   const res=_simDotEl(p,'simdot-res'); if(!res) return;
-  const carga={}; SIMDOT_KEYS.forEach(k=> carga[k]=Math.max(0,Number(_simDotEl(p,'simdot-'+k)?.value)||0));
+  const usv=Math.max(0,Number(_simDotEl(p,'simdot-sv')?.value)||0);
+  const ucv=Math.max(0,Number(_simDotEl(p,'simdot-cv')?.value)||0);
+  const std=_simDotStd(p);
   const fechaISO=_simDotEl(p,'simdot-fecha')?.value || _capFechaLocalISO(new Date());
   const cfg=_simDotCfg(fechaISO);
   const jIni=_simDotMin(cfg.horaInicio), jFin=_simDotMin(cfg.horaTermino);
@@ -3219,167 +3222,141 @@ function simDotCalcular(p){
   const ratio = cfg.horasEfectivas/((jFin-jIni)/60);               // horas efectivas por hora reloj
   const horasDisp = Math.max(0,(fin-ini)/60*ratio);
   const disp = Math.max(0,parseInt(_simDotEl(p,'simdot-disp')?.value,10)||0);
-
-  const total = SIMDOT_KEYS.reduce((s,k)=>s+carga[k],0);
-  const {det,hh} = _simDotHH(carga);
+  const total = usv+ucv;
+  const nota=_simDotEl(p,'simdot-nota');
   if(!total){
-    res.innerHTML=`<div style="text-align:center;color:var(--txt3);font-size:12px;padding:14px;border:1px dashed rgba(255,255,255,.12);border-radius:12px">Ingresa unidades o usa “Copiar mix del día mostrado”.</div>`;
-    _simDotChart(p,carga,0); return;
+    res.innerHTML=`<div style="text-align:center;color:var(--txt3);font-size:12px;padding:14px;border:1px dashed rgba(255,255,255,.12);border-radius:12px">Ingresa unidades o usa “Copiar embalado del día mostrado”.</div>`;
+    _simDotChart(p,null); if(nota) nota.textContent=''; return;
   }
   if(horasDisp<=0){
     res.innerHTML=`<div style="color:#EF4444;font-size:12px;text-align:center;padding:10px">La hora objetivo debe ser posterior a la hora de inicio.</div>`; return;
   }
-  // --- por estándares (referencia) ---
-  const personasExactas = hh/horasDisp;
-  const personasStd = Math.ceil(personasExactas-1e-9);
-  const personasDia = hh/cfg.horasEfectivas;
+  const a=1/std.sv, b=1/std.cv;                                   // personas-día por unidad
+  const pdSv=usv*a, pdCv=ucv*b, pd=pdSv+pdCv;                     // personas-día (jornada de 9 h)
+  const hh=pd*JORNADA_BASE_HORAS;                                 // horas-persona
+  const personasExactas=hh/horasDisp, personas=Math.ceil(personasExactas-1e-9);
+  const f=ucv/total, pctVas=f*100;
+  const peso=std.sv/std.cv;                                       // 1 ud CON VAS = peso uds SIN VAS
+  const extra10=total*0.1*(b-a)*JORNADA_BASE_HORAS/horasDisp;     // personas extra por +10 pp de VAS con este volumen
+  const termino=n=> n>0 ? ini + (hh/n)/ratio*60 : null;
 
-  // --- carga sin VAS (todo lo VAS pasa a su equivalente sin VAS) ---
-  const cargaSinVas={...carga};
-  Object.entries(SIMDOT_VAS).forEach(([v,sv])=>{ cargaSinVas[sv]+=cargaSinVas[v]; cargaSinVas[v]=0; });
-  const hhSinVas=_simDotHH(cargaSinVas).hh;
-  const udsVas = carga.mv+carga.lv, udsOffline = carga.ms+carga.mv+carga.ls+carga.lv;
-  const pctVas = udsOffline? udsVas/udsOffline*100 : 0;
-  const hhVas = det.mv.h+det.lv.h, hhSV = det.ms.h+det.ls.h, hhOn = det.ol.h+det.om.h+det.ox.h;
-
-  // --- MODELO OPERACIONAL (regla VAS) ---
-  const prm = _simDotParams(p);
-  const mod = _simDotModelo(prm, hhSinVas, horasDisp, total);
-  const pMin = mod.at(prm.kmin,pctVas), pMax = mod.at(prm.kmax,pctVas);
-  const personasMin = Math.ceil(pMin-1e-9), personas = Math.ceil(pMax-1e-9);   // personas = con margen
-  const hhEf = pMax*horasDisp;                                                 // horas-persona del modelo (con margen)
-
-  // Término estimado con N personas (según el modelo con margen)
-  const termino = n => n>0 ? ini + (hhEf/n)/ratio*60 : null;
   let estado='';
   if(disp>0){
-    const t=termino(disp), ok = disp>=personas, def = personas-disp;
-    const c = ok?'#22C55E':'#EF4444';
-    estado = `<div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:${c}18;border:1px solid ${c}55;font-size:12.5px;line-height:1.45">
+    const t=termino(disp), ok=disp>=personas, def=personas-disp, c=ok?'#22C55E':'#EF4444';
+    estado=`<div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:${c}18;border:1px solid ${c}55;font-size:12.5px;line-height:1.45">
       ${ok?'🟢':'🔴'} Con <b>${disp}</b> persona${disp===1?'':'s'} terminas aprox. a las <b>${_simDotHHMM(t)}</b>
-      ${ok? (disp>personas?` · holgura de <b>${disp-personas}</b> persona${disp-personas===1?'':'s'}`:' · justo en la hora objetivo')
-          : ` · <b style="color:#EF4444">déficit de ${def} persona${def===1?'':'s'}</b> para cumplir a las ${_simDotHHMM(fin)}`}
+      ${ok?(disp>personas?` · holgura de <b>${disp-personas}</b> persona${disp-personas===1?'':'s'}`:' · justo en la hora objetivo')
+          :` · <b style="color:#EF4444">déficit de ${def} persona${def===1?'':'s'}</b> para cumplir a las ${_simDotHHMM(fin)}`}
     </div>`;
   }
-  // --- PUNTO DE EQUILIBRIO: hasta dónde llegas con las personas disponibles ---
-  // personas(v) = P0 + k·(v/10)·escala  →  v* = (disp − P0) / (k·escala/10)
-  // personas(U) = U · [P0/total + k·(v/10)·(9 h/horasDisp)/ref]  →  U* = disp / [...]
-  let equilibrio = '';
+
+  // --- EQUILIBRIO POR ESTÁNDARES: hasta dónde llegas con las personas disponibles ---
+  let equilibrio='';
   if(disp>0){
-    const vEq = k => (disp-mod.p0)/(k*mod.escala/10);
-    const uEq = k => disp/(mod.p0/total + k*(pctVas/10)*(JORNADA_BASE_HORAS/horasDisp)/prm.ref);
-    const pc = v => v>=100 ? '100%' : '~'+_simDotFmt(Math.max(0,v),0)+'%';
-    let cuerpo, c;
-    if(disp<mod.p0){
+    const pcap=disp*horasDisp/JORNADA_BASE_HORAS;                  // personas-día que puedes pagar en esta ventana
+    const uCap=pcap/((1-f)*a+f*b);                                 // uds que aguantas a este % de VAS
+    const T=pcap/total;                                            // personas-día por unidad que puedes pagar
+    let vTxt, c;
+    if(T<a-1e-12){
       c='#EF4444';
-      cuerpo=`Con <b>${disp}</b> personas no alcanzas ni sin VAS: solo la carga sin VAS necesita <b>${_simDotFmt(mod.p0,1)}</b>.`;
+      vTxt=`Con <b>${disp}</b> personas no alcanzas ni con 0% de VAS: estas unidades necesitan <b>${_simDotFmt(total*a*JORNADA_BASE_HORAS/horasDisp,1)}</b> personas solo con estándar sin VAS.`;
     }else{
-      const vCon=vEq(prm.kmax), vMin=vEq(prm.kmin), uCon=uEq(prm.kmax), uMin=uEq(prm.kmin);
-      c = pctVas<=vCon ? '#22C55E' : '#EF4444';
-      cuerpo=`<div>Con esta carga (${_simDotFmt(total)} uds) aguantas hasta <b>${pc(vCon)}</b> de VAS con margen (<b>${pc(vMin)}</b> con la regla mínima). Hoy: <b>${_simDotFmt(pctVas,1)}%</b>.</div>
-        <div style="margin-top:4px">Con este % de VAS aguantas hasta <b>${_simDotFmt(uCon)}</b> uds/día con margen (<b>${_simDotFmt(uMin)}</b> con la mínima). Hoy: <b>${_simDotFmt(total)}</b>.</div>`;
+      const v = T>=b ? 100 : (T-a)/(b-a)*100;
+      c = total<=uCap+0.5 ? '#22C55E' : '#EF4444';
+      vTxt=`<div>Con tus <b>${_simDotFmt(total)}</b> uds aguantas hasta <b>${v>=100?'100%':'~'+_simDotFmt(v,0)+'%'}</b> de VAS. Hoy: <b>${_simDotFmt(pctVas,1)}%</b>.</div>
+        <div style="margin-top:4px">Con este % de VAS aguantas hasta <b>${_simDotFmt(uCap)}</b> uds. Hoy: <b>${_simDotFmt(total)}</b>.</div>`;
     }
-    equilibrio = `<div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:${c}14;border:1px solid ${c}55;font-size:12px;line-height:1.45">
-      <div style="font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--txt2,#8FA3C4);margin-bottom:4px">⚖️ Punto de equilibrio con ${disp} personas</div>${cuerpo}</div>`;
+    equilibrio=`<div style="margin-top:8px;padding:10px 12px;border-radius:12px;background:${c}14;border:1px solid ${c}55;font-size:12px;line-height:1.45">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--txt2,#8FA3C4);margin-bottom:4px">⚖️ Equilibrio con ${disp} personas</div>${vTxt}</div>`;
   }
+
+  // Tabla de equilibrio por % de VAS (mismas unidades)
+  const niveles=[0,10,20,30,40,50,60];
+  const cercano=niveles.reduce((m,v)=>Math.abs(v-pctVas)<Math.abs(m-pctVas)?v:m,0);
+  const tdE='padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;text-align:right';
+  const filasEq=niveles.map(v=>{
+    const ff=v/100, pers=total*((1-ff)*a+ff*b)*JORNADA_BASE_HORAS/horasDisp;
+    const cap=disp>0 ? (disp*horasDisp/JORNADA_BASE_HORAS)/((1-ff)*a+ff*b) : null;
+    const hoy = v===cercano;
+    return `<tr style="${hoy?'background:rgba(59,143,255,.10);':''}">
+      <td style="${tdE};text-align:left;font-weight:${hoy?800:600}">${v}% VAS${hoy?' · hoy':''}</td>
+      <td style="${tdE};font-weight:700">${_simDotFmt(pers,1)}</td>
+      <td style="${tdE}">${cap===null?'—':_simDotFmt(cap)}</td></tr>`;
+  }).join('');
+
   const rangos=[]; for(let n=Math.max(1,personas-2); n<=personas+2; n++) rangos.push(n);
-  const filasEsc = rangos.map(n=>{ const t=termino(n), ok=t<=fin+0.5; const c= ok?(n===personas?'#22C55E':'#8BC34A'):(t-fin<=60?'#F5A524':'#EF4444');
+  const filasEsc=rangos.map(n=>{ const t=termino(n), ok=t<=fin+0.5; const c= ok?(n===personas?'#22C55E':'#8BC34A'):(t-fin<=60?'#F5A524':'#EF4444');
     return `<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:8px;${n===personas?'background:rgba(34,197,94,.10);':''}font-size:12px">
       <span>${n} persona${n===1?'':'s'}${n===personas?' <b style="color:#22C55E">· mínimo</b>':''}</span><b style="color:${c}">${ok?'🟢':(t-fin<=60?'🟡':'🔴')} ${_simDotHHMM(t)}</b></div>`; }).join('');
-
-  const fila=(k)=> det[k].uds? `<tr><td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px">${CAP_LABELS[k]}</td>
-      <td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px">${_simDotFmt(det[k].uds)}</td>
-      <td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px;color:var(--txt3)">${CAP_STANDARDS[k]}</td>
-      <td style="padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px;font-weight:700">${_simDotFmt(det[k].h/horasDisp,2)}</td></tr>` : '';
-  const sub=(lbl,h,c)=> h? `<tr><td colspan="3" style="padding:5px 4px;font-size:11px;font-weight:800;color:${c}">${lbl}</td><td style="padding:5px 4px;text-align:right;font-size:11px;font-weight:800;color:${c}">${_simDotFmt(h/horasDisp,2)}</td></tr>`:'';
 
   const kpi=(l,v,sb,c)=>`<div style="background:var(--card,#152A47);border-radius:12px;padding:10px;border:1px solid rgba(255,255,255,.07)">
       <div style="font-size:9.5px;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">${l}</div>
       <div style="font-size:18px;font-weight:800;margin-top:3px;color:${c||'inherit'}">${v}</div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">${sb}</div></div>`;
-  const rangoTxt = personasMin===personas ? `${personas}` : `${personasMin} – ${personas}`;
-  const tdT='padding:7px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px';
+  const tdT='padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px';
+  const filaG=(lbl,uds,st,pdv)=>`<tr><td style="${tdT}">${lbl}</td><td style="${tdT};text-align:right">${_simDotFmt(uds)}</td><td style="${tdT};text-align:right;color:var(--txt3)">${_simDotFmt(st)}</td><td style="${tdT};text-align:right;font-weight:700">${_simDotFmt(pdv*JORNADA_BASE_HORAS/horasDisp,2)}</td></tr>`;
 
-  res.innerHTML = `
+  res.innerHTML=`
     <div style="text-align:center;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(59,143,255,.18),rgba(46,204,138,.10));border:1px solid rgba(59,143,255,.35)">
-      <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.06em;text-transform:uppercase">Dotación requerida (con margen)</div>
+      <div style="font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.06em;text-transform:uppercase">Dotación requerida</div>
       <div style="font-size:40px;font-weight:900;line-height:1.1;margin-top:2px">👥 ${personas}</div>
       <div style="font-size:11px;color:var(--txt2)">personas para ${_simDotFmt(total)} uds · ${_simDotHHMM(ini)} → ${_simDotHHMM(fin)} (${_simDotFmt(horasDisp,1)} h efectivas)</div>
-      <div style="font-size:10.5px;color:var(--txt2);margin-top:4px">Modelo VAS: <b>${rangoTxt}</b> personas (+${_simDotFmt(prm.kmin,1)} a +${_simDotFmt(prm.kmax,1)} por cada +10 pp de VAS)</div>
-      <div style="font-size:10px;color:var(--txt3);margin-top:2px">Solo por estándares: ${_simDotFmt(personasExactas,2)} → ${personasStd} · Personas-día (jornada ${cfg.nombre} ${cfg.horasEfectivas} h): ${_simDotFmt(personasDia,2)}</div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:4px">Exacto: ${_simDotFmt(personasExactas,2)} · Personas-día (jornada ${cfg.nombre} de ${cfg.horasEfectivas} h): ${_simDotFmt(pd,2)}</div>
     </div>
     ${estado}
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
-      ${kpi('% VAS offline', _simDotFmt(pctVas,1)+'%', `${_simDotFmt(udsVas)} uds VAS`, '#9A88FF')}
-      ${kpi('Personas por VAS', '+'+_simDotFmt(pMax-mod.p0,1), `extra vs sin VAS (mín +${_simDotFmt(pMin-mod.p0,1)})`, (pMax-mod.p0)>0.05?'#FF7A45':'#22C55E')}
-      ${kpi('Prod. esperada', _simDotFmt(hh? total/(hh/JORNADA_BASE_HORAS):0), 'uds/persona-día (estándares)', '#60B0FF')}
+      ${kpi('% VAS', _simDotFmt(pctVas,1)+'%', `${_simDotFmt(ucv)} uds con VAS`, '#9A88FF')}
+      ${kpi('Peso del VAS', _simDotFmt(peso,1)+'×', `1 ud con VAS = ${_simDotFmt(peso,1)} sin VAS`, '#FF7A45')}
+      ${kpi('+10 pp de VAS', '+'+_simDotFmt(extra10,1), 'personas extra con este volumen', '#60B0FF')}
     </div>
     ${equilibrio}
     <table style="width:100%;border-collapse:collapse;margin-top:10px">
       <thead><tr style="font-size:9.5px;color:var(--txt2);text-transform:uppercase">
-        <th style="text-align:left;padding:4px">Categoría</th><th style="text-align:right;padding:4px">Uds</th><th style="text-align:right;padding:4px">Estándar</th><th style="text-align:right;padding:4px">Personas</th></tr></thead>
+        <th style="text-align:left;padding:4px">Grupo</th><th style="text-align:right;padding:4px">Uds</th><th style="text-align:right;padding:4px">Estándar</th><th style="text-align:right;padding:4px">Personas</th></tr></thead>
       <tbody>
-        ${fila('ms')}${fila('ls')}${sub('Subtotal SIN VAS',hhSV,'#2ECC8A')}
-        ${fila('mv')}${fila('lv')}${sub('Subtotal CON VAS',hhVas,'#9A88FF')}
-        ${fila('ol')}${fila('om')}${fila('ox')}${sub('Subtotal Online',hhOn,'#60B0FF')}
-        <tr><td colspan="3" style="${tdT};font-weight:700">Subtotal por estándares</td>
-            <td style="${tdT};text-align:right;font-weight:700">${_simDotFmt(personasExactas,2)}</td></tr>
-        <tr><td colspan="3" style="${tdT};color:var(--txt2)">Ajuste: regla VAS (+${_simDotFmt(prm.kmax,1)} por +10 pp) en vez del estándar VAS</td>
-            <td style="${tdT};text-align:right;color:var(--txt2)">${pMax-personasExactas>=0?'+':''}${_simDotFmt(pMax-personasExactas,2)}</td></tr>
-        <tr><td colspan="3" style="padding:7px 4px;border-top:2px solid rgba(255,255,255,.2);font-size:12px;font-weight:900">TOTAL MODELO (con margen)</td>
-            <td style="padding:7px 4px;border-top:2px solid rgba(255,255,255,.2);text-align:right;font-size:12px;font-weight:900">${_simDotFmt(pMax,2)} → ${personas}</td></tr>
+        ${filaG('Sin VAS',usv,std.sv,pdSv)}${filaG('Con VAS',ucv,std.cv,pdCv)}
+        <tr><td colspan="3" style="padding:7px 4px;border-top:2px solid rgba(255,255,255,.2);font-size:12px;font-weight:900">TOTAL</td>
+            <td style="padding:7px 4px;border-top:2px solid rgba(255,255,255,.2);text-align:right;font-size:12px;font-weight:900">${_simDotFmt(personasExactas,2)} → ${personas}</td></tr>
       </tbody>
+    </table>
+    <div class="card-title" style="margin-top:12px;font-size:12px">Equilibrio según % de VAS</div>
+    <table style="width:100%;border-collapse:collapse;margin-top:4px">
+      <thead><tr style="font-size:9.5px;color:var(--txt2);text-transform:uppercase">
+        <th style="text-align:left;padding:4px">% VAS</th><th style="text-align:right;padding:4px">Personas para ${_simDotFmt(total)} uds</th><th style="text-align:right;padding:4px">Uds que aguantas${disp>0?' con '+disp:''}</th></tr></thead>
+      <tbody>${filasEq}</tbody>
     </table>
     <div class="card-title" style="margin-top:12px;font-size:12px">Hora estimada de término según dotación</div>
     <div style="margin-top:4px">${filasEsc}</div>`;
 
-  _simDotChart(p,carga,pctVas);
-  const nota=_simDotEl(p,'simdot-nota');
-  if(nota) nota.textContent = `Modelo: personas = carga sin VAS por estándares + k × (%VAS/10) × (uds/${_simDotFmt(prm.ref)}) × (9 h / horas disponibles), con k = ${_simDotFmt(prm.kmin,1)} (mínimo) a ${_simDotFmt(prm.kmax,1)} (con margen) personas por cada +10 pp de VAS. Refleja el efecto observado en la operación (llegada del picking). Se mantiene el total offline (${_simDotFmt(udsOffline)} uds), la proporción maleta/línea y la carga online; solo cambia el % que lleva VAS. Horas efectivas: ${_simDotFmt(horasDisp,1)} h.`;
+  _simDotChart(p,{total,pctVas,a,b,horasDisp,disp});
+  if(nota) nota.textContent=`Unidades = lo embalado (resultado operativo); la carga real pendiente suele ser mayor. Personas = (uds sin VAS ÷ ${_simDotFmt(std.sv)} + uds con VAS ÷ ${_simDotFmt(std.cv)}) × 9 h ÷ horas disponibles. Estándar de cada grupo = promedio de CAP_STANDARDS; el online va con sin VAS. Horas efectivas: ${_simDotFmt(horasDisp,1)} h.`;
 }
 
-function _simDotChart(p,carga,pctActual){
+function _simDotChart(p,d){
   const cv=_simDotEl(p,'simdot-chart'); if(!cv || typeof Chart==='undefined') return;
   if(_simDotCharts[p]){ try{_simDotCharts[p].destroy();}catch(e){} _simDotCharts[p]=null; }
-  const off = carga.ms+carga.mv+carga.ls+carga.lv;
-  if(!off) return;
-  const fechaISO=_simDotEl(p,'simdot-fecha')?.value; const cfg=_simDotCfg(fechaISO);
-  const jIni=_simDotMin(cfg.horaInicio), jFin=_simDotMin(cfg.horaTermino);
-  const ini=_simDotMin(_simDotEl(p,'simdot-ini')?.value)??jIni, fin=_simDotMin(_simDotEl(p,'simdot-fin')?.value)??jFin;
-  const horasDisp=Math.max(0.01,(fin-ini)/60*cfg.horasEfectivas/((jFin-jIni)/60));
-  const mal=(carga.ms+carga.mv)/off, lin=1-mal;
-  const total = SIMDOT_KEYS.reduce((s,k)=>s+(carga[k]||0),0);
-  const prm=_simDotParams(p);
-  const hhSinVas=_simDotHH({ms:off*mal, mv:0, ls:off*lin, lv:0, ol:carga.ol, om:carga.om, ox:carga.ox}).hh;
-  const mod=_simDotModelo(prm, hhSinVas, horasDisp, total);
-  const labels=[], std=[], mMin=[], mMax=[];
+  if(!d) return;
+  const labels=[], pers=[];
   for(let v=0; v<=100; v+=10){
-    const f=v/100;
-    const c={ms:off*mal*(1-f), mv:off*mal*f, ls:off*lin*(1-f), lv:off*lin*f, ol:carga.ol, om:carga.om, ox:carga.ox};
-    labels.push(v+'%');
-    std.push(+(_simDotHH(c).hh/horasDisp).toFixed(2));
-    mMin.push(+mod.at(prm.kmin,v).toFixed(2));
-    mMax.push(+mod.at(prm.kmax,v).toFixed(2));
+    const ff=v/100; labels.push(v+'%');
+    pers.push(+(d.total*((1-ff)*d.a+ff*d.b)*JORNADA_BASE_HORAS/d.horasDisp).toFixed(2));
   }
-  const dispG = Math.max(0,parseInt(_simDotEl(p,'simdot-disp')?.value,10)||0);
-  const actual = mod.at(prm.kmax, pctActual);
+  const actual=d.total*((1-d.pctVas/100)*d.a+(d.pctVas/100)*d.b)*JORNADA_BASE_HORAS/d.horasDisp;
   _simDotCharts[p]=new Chart(cv.getContext('2d'),{
     type:'line',
     data:{labels,datasets:[
-      {label:`Modelo con margen (+${_simDotFmt(prm.kmax,1)} por 10 pp)`,data:mMax,borderColor:'#FF7A45',backgroundColor:'rgba(255,122,69,.12)',fill:true,pointRadius:3,tension:0},
-      {label:`Modelo mínimo (+${_simDotFmt(prm.kmin,1)} por 10 pp)`,data:mMin,borderColor:'#F5A524',borderDash:[3,3],pointRadius:0,tension:0},
-      {label:'Solo estándares',data:std,borderColor:'#3B8FFF',borderDash:[5,4],pointRadius:0,tension:.2},
-      ...(dispG>0?[{label:`Dotación disponible (${dispG})`,data:Array(11).fill(dispG),borderColor:'#2ECC8A',borderDash:[2,2],pointRadius:0,tension:0}]:[]),
-      {type:'scatter',label:`Tu carga (${pctActual.toFixed(0)}% VAS)`,data:[{x:pctActual/10,y:+actual.toFixed(2)}],backgroundColor:'#22C55E',borderColor:'#fff',pointRadius:7,pointHoverRadius:9}
+      {label:'Personas requeridas',data:pers,borderColor:'#FF7A45',backgroundColor:'rgba(255,122,69,.12)',fill:true,pointRadius:3,tension:0},
+      ...(d.disp>0?[{label:`Dotación disponible (${d.disp})`,data:Array(11).fill(d.disp),borderColor:'#2ECC8A',borderDash:[2,2],pointRadius:0,tension:0}]:[]),
+      {type:'scatter',label:`Hoy (${d.pctVas.toFixed(0)}% VAS)`,data:[{x:d.pctVas/10,y:+actual.toFixed(2)}],backgroundColor:'#22C55E',borderColor:'#fff',pointRadius:7,pointHoverRadius:9}
     ]},
     options:{responsive:true,maintainAspectRatio:false,animation:false,   // sin animación: la imagen compartida siempre sale completa
       plugins:{legend:{labels:{color:'#8FA3C4',font:{size:10},boxWidth:10}},
-        tooltip:{callbacks:{label:ctx=> ctx.dataset.type==='scatter'?` Tu carga: ${ctx.parsed.y.toLocaleString('es-CL')} personas`:` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('es-CL')}`}}},
-      scales:{x:{type:'linear',min:0,max:10,ticks:{stepSize:1,color:'#8FA3C4',callback:v=>(v*10)+'%'},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'% VAS de la carga offline',color:'#8FA3C4',font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=> ctx.dataset.type==='scatter'?` Hoy: ${ctx.parsed.y.toLocaleString('es-CL')} personas`:` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('es-CL')}`}}},
+      scales:{x:{type:'linear',min:0,max:10,ticks:{stepSize:1,color:'#8FA3C4',callback:v=>(v*10)+'%'},grid:{color:'rgba(255,255,255,.05)'},title:{display:true,text:'% VAS de las unidades',color:'#8FA3C4',font:{size:10}}},
               y:{beginAtZero:true,ticks:{color:'#8FA3C4',precision:0},grid:{color:'rgba(255,255,255,.06)'},title:{display:true,text:'Personas',color:'#8FA3C4',font:{size:10}}}}},
   });
-  // los datasets de línea usan índice como x (0..10)
-  _simDotCharts[p].data.datasets.forEach(d=>{ if(d.type!=='scatter') d.data = d.data.map((y,j)=>({x:j,y})); });
+  // los datasets de línea usan el índice como x (0..10)
+  _simDotCharts[p].data.datasets.forEach(ds=>{ if(ds.type!=='scatter') ds.data = ds.data.map((y,j)=>({x:j,y})); });
   _simDotCharts[p].update();
 }
 
