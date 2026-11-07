@@ -3272,7 +3272,7 @@ function simDotCalcular(p){
   }
 
   // Tabla de equilibrio por % de VAS (mismas unidades)
-  const niveles=[0,10,20,30,40,50,60];
+  const niveles=[0,10,20,30,40,50,60,70,80,90,100];   // hasta 100% de VAS
   const cercano=niveles.reduce((m,v)=>Math.abs(v-pctVas)<Math.abs(m-pctVas)?v:m,0);
   const tdE='padding:5px 4px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;text-align:right';
   const filasEq=niveles.map(v=>{
