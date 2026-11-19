@@ -3025,16 +3025,17 @@ let _capSerieChart = null, _capSerieModo = 'vas', _capSerieCache = [];
 
 function capSerieDia(rows){
   const em = capClassifyOnlineMap(rows);
-  let tot = 0, vas = 0, loc = 0;
+  let tot = 0, vas = 0, loc = 0, mal = 0;
   rows.forEach(r=>{
     const k = capClassifyFull(r, em);
     if(!k) return;
     const c = Number(r.cantidad)||0;
     tot += c;
+    if((r.tipo||'').toLowerCase()==='maleta') mal += c;   // tipo de material real de la fila
     if(k==='mv' || k==='lv') vas += c;            // único caso con VAS
     if((r.canal||'').trim()==='Locales') loc += c;
   });
-  return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc };
+  return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc, mal, noMal: tot-mal };
 }
 
 function _capRenderSerie(porFecha){
@@ -3098,6 +3099,8 @@ function _capDibujarSerie(){
       <td style="${td}">${fm(a)}</td>
       <td style="${td}">${fm(b)}</td>
       <td style="${td}">${pct}%</td>
+      <td style="${td}">${fm(d.mal)}</td>
+      <td style="${td}">${fm(d.noMal)}</td>
     </tr>`;
   }).join('');
   elTabla.innerHTML = `
@@ -3108,12 +3111,14 @@ function _capDibujarSerie(){
         <th style="${th}">${esVas?'Sin VAS':'Local'}</th>
         <th style="${th}">${esVas?'Con VAS':'No local'}</th>
         <th style="${th}">${esVas?'% VAS':'% No local'}</th>
+        <th style="${th}">Maleta</th>
+        <th style="${th}">No maleta</th>
       </tr>
       ${filas}
     </table>`;
   if(elNota) elNota.textContent = esVas
-    ? 'VAS según regla por canal/cliente (Grandes Tiendas, Concesiones y Distribuidor Mercado Libre). Online cuenta como sin VAS. Excluye insumos, Anulada, BTS y Regula.'
-    : 'Local = canal Locales; No local = Distribuidor, Grandes Tiendas, Concesiones y online. Excluye insumos, Anulada, BTS y Regula.';
+    ? 'VAS según regla por canal/cliente (Grandes Tiendas, Concesiones y Distribuidor Mercado Libre). Online cuenta como sin VAS. Maleta / No maleta según el tipo de producto (No maleta = línea). Excluye insumos, Anulada, BTS y Regula.'
+    : 'Local = canal Locales; No local = Distribuidor, Grandes Tiendas, Concesiones y online. Maleta / No maleta según el tipo de producto (No maleta = línea). Excluye insumos, Anulada, BTS y Regula.';
 }
 
 function capSerieCompartir(btn){
