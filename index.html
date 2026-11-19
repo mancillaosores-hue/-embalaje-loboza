@@ -2936,7 +2936,7 @@ async function _capCargarHistorico(fechaFin){
     }
 
     // Serie diaria Total / Sin VAS / Con VAS (y Local / No local) — aislada: si falla no afecta lo demás
-    try{ _capRenderSerie(porFecha); }catch(e){ console.warn('serie embalaje:', e.message); }
+    _capCargarSerieMes(fechaFin);   // serie propia: mes completo (no depende de la ventana de 14 días)
 
     // Tabla
     const filas = dias.map(d=>`
@@ -3042,6 +3042,16 @@ function capSerieDia(rows){
   return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc, mal, noMal: tot-mal, svM, svN, cvM, cvN };
 }
 
+async function _capCargarSerieMes(fechaFin){
+  try{
+    const ini = fechaFin.slice(0,8)+'01';   // día 1 del mes de la fecha final
+    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${ini}&fecha=lte.${fechaFin}&order=id.asc`);
+    const porFecha = {};
+    rows.forEach(r=>{ (porFecha[r.fecha] = porFecha[r.fecha]||[]).push(r); });
+    _capRenderSerie(porFecha);
+  }catch(e){ console.warn('serie embalaje mes:', e.message); }
+}
+
 function _capRenderSerie(porFecha){
   _capSerieCache = Object.keys(porFecha).sort()
     .filter(f=>porFecha[f] && porFecha[f].length)
@@ -3062,7 +3072,7 @@ function _capDibujarSerie(){
   const bVas = _getCapEl('cap-serie-b-vas'), bLoc = _getCapEl('cap-serie-b-local');
   [[bVas,'vas'],[bLoc,'local']].forEach(([b,m])=>{ if(b) b.style.background = (_capSerieModo===m)?'#3B8FFF':'transparent'; });
   if(!elTabla) return;
-  if(!dias.length){ elTabla.innerHTML = '<div class="loading">Sin datos en los últimos 14 días.</div>'; return; }
+  if(!dias.length){ elTabla.innerHTML = '<div class="loading">Sin datos en el mes.</div>'; return; }
 
   const esVas = _capSerieModo==='vas';
   const lbls = dias.map(d=>_capSerieFmtFecha(d.fecha));
@@ -3106,6 +3116,17 @@ function _capDibujarSerie(){
       <td style="${td}">${pc(d.cvM+d.cvN, d.tot)}</td>
       <td style="${td}">${pc(d.svM+d.svN, d.tot)}</td>
     </tr>`).join('');
+    const T = dias.reduce((a,d)=>{ ['tot','svM','svN','cvM','cvN'].forEach(k=>a[k]+=d[k]); return a; },{tot:0,svM:0,svN:0,cvM:0,cvN:0});
+    const filaTot = `<tr style="font-weight:800;background:rgba(59,143,255,.10)">
+      <td style="${td};text-align:left">Total mes</td>
+      <td style="${td}">${fm(T.tot)}</td>
+      <td style="${td}">${fm(T.svM)}</td>
+      <td style="${td}">${fm(T.svN)}</td>
+      <td style="${td}">${fm(T.cvM)}</td>
+      <td style="${td}">${fm(T.cvN)}</td>
+      <td style="${td}">${pc(T.cvM+T.cvN, T.tot)}</td>
+      <td style="${td}">${pc(T.svM+T.svN, T.tot)}</td>
+    </tr>`;
     elTabla.innerHTML = `
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse">
@@ -3120,6 +3141,7 @@ function _capDibujarSerie(){
         <th style="${th}">% Sin VAS</th>
       </tr>
       ${filasV}
+      ${filaTot}
     </table></div>`;
     if(elNota) elNota.textContent = 'VAS según regla por canal/cliente (Grandes Tiendas, Concesiones y Distribuidor Mercado Libre). Online cuenta como sin VAS. Maleta / No maleta según el tipo de producto (No maleta = línea). % VAS = (Con VAS maleta + no maleta) ÷ Total. Excluye insumos, Anulada, BTS y Regula.';
     return;
