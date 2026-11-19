@@ -3025,17 +3025,21 @@ let _capSerieChart = null, _capSerieModo = 'vas', _capSerieCache = [];
 
 function capSerieDia(rows){
   const em = capClassifyOnlineMap(rows);
-  let tot = 0, vas = 0, loc = 0, mal = 0;
+  let tot = 0, vas = 0, loc = 0, mal = 0, svM = 0, svN = 0, cvM = 0, cvN = 0;
   rows.forEach(r=>{
     const k = capClassifyFull(r, em);
     if(!k) return;
     const c = Number(r.cantidad)||0;
     tot += c;
-    if((r.tipo||'').toLowerCase()==='maleta') mal += c;   // tipo de material real de la fila
+    const esMal = (r.tipo||'').toLowerCase()==='maleta';   // tipo de material real de la fila
+    const esVasK = (k==='mv' || k==='lv');
+    if(esMal) mal += c;
+    if(esVasK){ if(esMal) cvM += c; else cvN += c; }
+    else      { if(esMal) svM += c; else svN += c; }
     if(k==='mv' || k==='lv') vas += c;            // único caso con VAS
     if((r.canal||'').trim()==='Locales') loc += c;
   });
-  return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc, mal, noMal: tot-mal };
+  return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc, mal, noMal: tot-mal, svM, svN, cvM, cvN };
 }
 
 function _capRenderSerie(porFecha){
@@ -3090,6 +3094,36 @@ function _capDibujarSerie(){
   const th = 'text-align:right;padding-bottom:4px';
   const td = 'padding:6px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:right;font-size:11px';
   const fm = n=>Math.round(n).toLocaleString('es-CL');
+  if(esVas){
+    const pc = (n,t)=> t ? Math.round(n/t*100)+'%' : '0%';
+    const filasV = dias.map(d=>`<tr>
+      <td style="${td};text-align:left">${_capSerieFmtFecha(d.fecha)}</td>
+      <td style="${td};font-weight:700">${fm(d.tot)}</td>
+      <td style="${td}">${fm(d.svM)}</td>
+      <td style="${td}">${fm(d.svN)}</td>
+      <td style="${td}">${fm(d.cvM)}</td>
+      <td style="${td}">${fm(d.cvN)}</td>
+      <td style="${td}">${pc(d.cvM+d.cvN, d.tot)}</td>
+      <td style="${td}">${pc(d.svM+d.svN, d.tot)}</td>
+    </tr>`).join('');
+    elTabla.innerHTML = `
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="color:var(--txt2,#8FA3C4);font-size:9.5px;text-transform:uppercase;line-height:1.2">
+        <th style="text-align:left;padding-bottom:4px">Fecha</th>
+        <th style="${th}">Total</th>
+        <th style="${th}">Sin VAS<br>Maleta</th>
+        <th style="${th}">Sin VAS<br>No maleta</th>
+        <th style="${th}">Con VAS<br>Maleta</th>
+        <th style="${th}">Con VAS<br>No maleta</th>
+        <th style="${th}">% VAS</th>
+        <th style="${th}">% Sin VAS</th>
+      </tr>
+      ${filasV}
+    </table></div>`;
+    if(elNota) elNota.textContent = 'VAS según regla por canal/cliente (Grandes Tiendas, Concesiones y Distribuidor Mercado Libre). Online cuenta como sin VAS. Maleta / No maleta según el tipo de producto (No maleta = línea). % VAS = (Con VAS maleta + no maleta) ÷ Total. Excluye insumos, Anulada, BTS y Regula.';
+    return;
+  }
   const filas = dias.map(d=>{
     const a = esVas ? d.sinVas : d.loc, b = esVas ? d.vas : d.noLoc;
     const pct = d.tot ? Math.round(b/d.tot*100) : 0;
