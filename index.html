@@ -2285,6 +2285,7 @@ async function enviarReporteEmail(){
   const fd    = new Date(rptDatos.hoy+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const fdCap = fd.charAt(0).toUpperCase()+fd.slice(1);
 
+  const _tEnv0 = performance.now();
   try{
     let htmlReporte = await buildEmailHTML(rptDatos);
     let htmlMin = htmlReporte
@@ -2310,7 +2311,7 @@ async function enviarReporteEmail(){
         .trim();
     }
 
-    console.log('HTML size:', htmlMin.length, 'chars', modoCompacto?'(modo compacto)':'');
+    console.log('HTML size:', htmlMin.length, 'chars', modoCompacto?'(modo compacto)':'', '| construir ms:', Math.round(performance.now()-_tEnv0));
     sta.textContent = 'Enviando ('+(Math.round(htmlMin.length/1024))+'KB'+(modoCompacto?', modo compacto':'')+')...';
 
     if(htmlMin.length > 49500){
@@ -2336,6 +2337,7 @@ async function enviarReporteEmail(){
       })
     });
     const result = await resp.json();
+    console.log('[rpt] envío total ms:', Math.round(performance.now()-_tEnv0));
     if(!resp.ok) throw new Error(JSON.stringify(result?.error||result)+' ['+resp.status+']');
     toast('✓ Reporte enviado desde '+cfg.from_name+' a '+dest+(modoCompacto?' (modo compacto, sin mini-gráficos)':''));
     sta.textContent = '✓ Enviado'+(modoCompacto?' (compacto)':'');
@@ -10397,10 +10399,16 @@ async function fetchRptDatos(fechaParam) {
   const hoy = fechaParam || fechaLocalStr(new Date());
   const hace14 = fechaLocalStr(new Date(new Date(hoy+'T12:00:00').getTime()-13*24*60*60*1000));
   // Usa fetchProdAll que ya maneja RLS y auth correctamente
+  const _tRpt0 = performance.now();
+  // rC (hoy) mantiene todas las columnas: lo usan calcularKpisGerenciales / capacidad dinámica.
+  // rTend (14 días) solo alimenta tendencias, top 3 y promedio → basta fecha, canal, tipo, cantidad, usuario
+  // (mismos campos que lee buildEmailHTML sobre rawData). Menos columnas = páginas más livianas y rápidas.
   const [rC, rTend] = await Promise.all([
     fetchProdAll(hoy, hoy),
-    fetchProdAll(hace14, hoy)
+    sbFetchAll(`produccion?select=fecha,canal,tipo,cantidad,usuario&fecha=gte.${hace14}&fecha=lte.${hoy}&order=fecha.asc,usuario.asc,id.asc`)
+      .then(rows=>rows.map(normalizarRow))
   ]);
+  console.log('[rpt] tendencia+hoy ms:', Math.round(performance.now()-_tRpt0), '| filas hoy:', (rC||[]).length, '| filas 14d:', (rTend||[]).length);
   const toArr = v => Array.isArray(v) ? v : [];
   const aC = toArr(rC);
   const aTend = toArr(rTend);
@@ -10460,6 +10468,22 @@ async function fetchRptDatos(fechaParam) {
       const fIniW   = fechaLocalStr(lunRpt);
       const fFinW   = fechaLocalStr(vieRpt);
       const fHastaW = hoy <= fFinW ? hoy : fFinW;
+
+      // Arrastre S-1: se lanza ahora en una cadena propia (sus 2 consultas siguen en secuencia entre sí,
+      // por el statement_timeout de 8s) pero en paralelo con las consultas de la semana actual,
+      // en vez de esperar a que estas terminen. Se espera más abajo, dentro del try del arrastre.
+      let _promS1 = null;
+      if(fIniW > '2026-06-01'){
+        const _lunAntP = new Date(lunRpt); _lunAntP.setDate(_lunAntP.getDate()-7);
+        const _domAntP = new Date(lunRpt); _domAntP.setDate(_domAntP.getDate()-1);
+        const _fLunAntP = fechaLocalStr(_lunAntP), _fDomAntP = fechaLocalStr(_domAntP);
+        _promS1 = (async()=>{
+          const entregas = await sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+_fLunAntP+'&fecha_creada=lte.'+_fDomAntP+'&order=id_entrega.asc')||[];
+          const prod = await sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+_fLunAntP+'&fecha=lte.'+_fDomAntP+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')||[];
+          return {entregas, prod};
+        })();
+        _promS1.catch(()=>{}); // evita "unhandled rejection"; el error real se captura al esperarla en el try del arrastre
+      }
 
       // Producción acumulada de ESA semana via sbFetchAll
       const prodPlan = await sbFetchAll(
@@ -10537,10 +10561,11 @@ async function fetchRptDatos(fechaParam) {
           const fLunAntW = fechaLocalStr(_lunAntW);
           const fDomAntW = fechaLocalStr(_domAntW);
 
-          // En secuencia (no Promise.all) para no gatillar el statement_timeout de 8s de Supabase.
-          // La producción de esta semana ya viene en prodPlan (no se vuelve a consultar).
-          const entregasAntW = await sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAntW+'&fecha_creada=lte.'+fDomAntW+'&order=id_entrega.asc')||[];
-          const prodSemAntW  = await sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAntW+'&fecha=lte.'+fDomAntW+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')||[];
+          // Las 2 consultas de S-1 ya corren desde antes (_promS1), en secuencia entre sí para no gatillar
+          // el statement_timeout de 8s. La producción de esta semana ya viene en prodPlan.
+          const _s1 = await _promS1;
+          const entregasAntW = _s1.entregas;
+          const prodSemAntW  = _s1.prod;
           const prodEstaSemW = prodPlan;
 
           const _excCanalW = {anulada:1, regula:1, bts:1};
@@ -10617,6 +10642,7 @@ async function fetchRptDatos(fechaParam) {
   const dotacionEmail = {presentes:dotPresentes, ausentes:dotAusentes, capPerdida:capPerdidaDot,
                          capDisponible:capDispDot, cumplAjustado:cumplAjDot, metaProm:metaPromDot};
 
+  console.log('[rpt] fetchRptDatos total ms:', Math.round(performance.now()-_tRpt0));
   return {hoy,porCanal,porTipo,totalHoy,offline,online,insumoHoy,fechas,valTend,prom,rawData:aTend,kpisGer,planEmail,dotacionEmail};
 }
 
