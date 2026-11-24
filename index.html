@@ -2924,7 +2924,14 @@ async function _capCargarHistorico(fechaFin){
   const inicioISO = _capFechaLocalISO(inicio);
 
   try{
-    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${inicioISO}&fecha=lte.${fechaFin}&order=id.asc`);
+    // UNA sola consulta que cubre ambos rangos: ventana de 14 días (histórico) y mes completo (serie "Embalaje diario").
+    // Antes eran 2 consultas en secuencia (la del mes recién partía cuando terminaba la de 14 días y repetía casi las mismas filas).
+    const _iniMesH = fechaFin.slice(0,8)+'01';
+    const _desdeH  = _iniMesH < inicioISO ? _iniMesH : inicioISO;
+    const _tHist0  = performance.now();
+    const rowsAll  = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${_desdeH}&fecha=lte.${fechaFin}&order=id.asc`);
+    console.log('[cap] histórico+serie ms:', Math.round(performance.now()-_tHist0), '| filas:', rowsAll.length, '| desde', _desdeH);
+    const rows = _desdeH === inicioISO ? rowsAll : rowsAll.filter(r=>(r.fecha||'').toString().slice(0,10) >= inicioISO);
     const porFecha = {};
     rows.forEach(r=>{ (porFecha[r.fecha] = porFecha[r.fecha]||[]).push(r); });
 
@@ -2938,7 +2945,7 @@ async function _capCargarHistorico(fechaFin){
     }
 
     // Serie diaria Total / Sin VAS / Con VAS (y Local / No local) — aislada: si falla no afecta lo demás
-    _capCargarSerieMes(fechaFin);   // serie propia: mes completo (no depende de la ventana de 14 días)
+    _capCargarSerieMes(fechaFin, rowsAll);   // serie propia: mes completo (no depende de la ventana de 14 días); reutiliza las filas ya traídas
 
     // Tabla
     const filas = dias.map(d=>`
@@ -3044,10 +3051,13 @@ function capSerieDia(rows){
   return { tot, vas, sinVas: tot-vas, loc, noLoc: tot-loc, mal, noMal: tot-mal, svM, svN, cvM, cvN };
 }
 
-async function _capCargarSerieMes(fechaFin){
+async function _capCargarSerieMes(fechaFin, rowsPre){
   try{
     const ini = fechaFin.slice(0,8)+'01';   // día 1 del mes de la fecha final
-    const rows = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${ini}&fecha=lte.${fechaFin}&order=id.asc`);
+    // Si el histórico ya trajo las filas (mismas columnas, rango que cubre el mes), se reutilizan: evita una 2ª consulta pesada.
+    const rows = rowsPre
+      ? rowsPre.filter(r=>(r.fecha||'').toString().slice(0,10) >= ini)
+      : await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${ini}&fecha=lte.${fechaFin}&order=id.asc`);
     const porFecha = {};
     rows.forEach(r=>{ (porFecha[r.fecha] = porFecha[r.fecha]||[]).push(r); });
     _capRenderSerie(porFecha);
