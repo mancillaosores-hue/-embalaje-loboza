@@ -2929,7 +2929,7 @@ async function _capCargarHistorico(fechaFin){
     const _iniMesH = fechaFin.slice(0,8)+'01';
     const _desdeH  = _iniMesH < inicioISO ? _iniMesH : inicioISO;
     const _tHist0  = performance.now();
-    const rowsAll  = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${_desdeH}&fecha=lte.${fechaFin}&order=id.asc`);
+    const rowsAll  = await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${_desdeH}&fecha=lte.${fechaFin}&order=fecha.asc,id.asc`);
     console.log('[cap] histórico+serie ms:', Math.round(performance.now()-_tHist0), '| filas:', rowsAll.length, '| desde', _desdeH);
     const rows = _desdeH === inicioISO ? rowsAll : rowsAll.filter(r=>(r.fecha||'').toString().slice(0,10) >= inicioISO);
     const porFecha = {};
@@ -3057,7 +3057,7 @@ async function _capCargarSerieMes(fechaFin, rowsPre){
     // Si el histórico ya trajo las filas (mismas columnas, rango que cubre el mes), se reutilizan: evita una 2ª consulta pesada.
     const rows = rowsPre
       ? rowsPre.filter(r=>(r.fecha||'').toString().slice(0,10) >= ini)
-      : await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${ini}&fecha=lte.${fechaFin}&order=id.asc`);
+      : await sbFetchAll(`produccion?select=usuario,canal,tipo,cantidad,clientenombre,fecha,entrega&fecha=gte.${ini}&fecha=lte.${fechaFin}&order=fecha.asc,id.asc`);
     const porFecha = {};
     rows.forEach(r=>{ (porFecha[r.fecha] = porFecha[r.fecha]||[]).push(r); });
     _capRenderSerie(porFecha);
@@ -8205,7 +8205,7 @@ async function cargarPlanCompacto(){
     // Producción acumulada semana actual (sin insumos, anuladas, BTS)
     // usando sbFetchAll que ya maneja paginación y RLS
     const prodRaw = await sbFetchAll(
-      `produccion?select=usuario,canal,tipo,cantidad&fecha=gte.${fLun}&fecha=lte.${fHasta}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc`
+      `produccion?select=usuario,canal,tipo,cantidad&fecha=gte.${fLun}&fecha=lte.${fHasta}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc`
     );
     const prodFilt = (prodRaw||[]); // total: incluye usuarios no mapeados en DB
 
@@ -9921,7 +9921,7 @@ async function cargarPlanSemanal(){
   const [resPlan, resProd0, resEntregas0] = await Promise.all([
     fetch(`${SUPA_URL}/rest/v1/plan_carga?select=canal,tipo,unidades_plan&semana_iso=eq.${planSemActual}&anio=eq.${anio}`, hdr),
     fetch(`${SUPA_URL}/rest/v1/produccion?select=usuario,canal,tipo,cantidad,fecha,entrega&fecha=gte.${fLun}&fecha=lte.${fHasta}&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc&limit=1000&offset=0`, hdr),
-    fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=0`, hdr)
+    fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&order=fecha_carga.asc,id.asc&limit=1000&offset=0`, hdr)
   ]);
   const planRaw = await resPlan.json();
   if(!resPlan.ok) throw new Error(`plan_carga HTTP ${resPlan.status}: ${JSON.stringify(planRaw)}`);
@@ -9932,7 +9932,7 @@ async function cargarPlanSemanal(){
   if(Array.isArray(entregasRaw) && entregasRaw.length === 1000){
     let offE = 1000;
     while(true){
-      const re = await fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&limit=1000&offset=${offE}`, hdr);
+      const re = await fetch(`${SUPA_URL}/rest/v1/entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,fecha_carga,estado&fecha_carga=gte.${fLun}&fecha_carga=lte.${fHastaEntregas}&order=fecha_carga.asc,id.asc&limit=1000&offset=${offE}`, hdr);
       const pe = re.ok ? await re.json() : [];
       if(!Array.isArray(pe)||!pe.length) break;
       entregasRaw = entregasRaw.concat(pe);
@@ -10004,11 +10004,11 @@ async function cargarPlanSemanal(){
 
       var _bkRes = await Promise.all([
         // Entregas S-1 — excluir insumos en el filtro de cantidad > 0
-        sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAnt+'&fecha_creada=lte.'+fDomAnt+'&order=id_entrega.asc'),
+        sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+fLunAnt+'&fecha_creada=lte.'+fDomAnt+'&order=fecha_creada.asc,id.asc'),
         // Lo que se embaló EN S-1 (para descontar del arrastre inicial)
-        sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAnt+'&fecha=lte.'+fDomAnt+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc'),
+        sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+fLunAnt+'&fecha=lte.'+fDomAnt+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc'),
         // Producción de esta semana
-        sbFetchAll('produccion?select=entrega,cantidad,usuario,fecha,canal&fecha=gte.'+fLun+'&fecha=lte.'+vieLocal+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')
+        sbFetchAll('produccion?select=entrega,cantidad,usuario,fecha,canal&fecha=gte.'+fLun+'&fecha=lte.'+vieLocal+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc')
       ]);
 
       var entregasAnt = _bkRes[0]||[];
@@ -10488,8 +10488,8 @@ async function fetchRptDatos(fechaParam) {
         const _domAntP = new Date(lunRpt); _domAntP.setDate(_domAntP.getDate()-1);
         const _fLunAntP = fechaLocalStr(_lunAntP), _fDomAntP = fechaLocalStr(_domAntP);
         _promS1 = (async()=>{
-          const entregas = await sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+_fLunAntP+'&fecha_creada=lte.'+_fDomAntP+'&order=id_entrega.asc')||[];
-          const prod = await sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+_fLunAntP+'&fecha=lte.'+_fDomAntP+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=id.asc')||[];
+          const entregas = await sbFetchAll('entregas_carga?select=id_entrega,fecha_creada,cantidad,tipo_producto,canal,clientenombre,ruta,estado&fecha_creada=gte.'+_fLunAntP+'&fecha_creada=lte.'+_fDomAntP+'&order=fecha_creada.asc,id.asc')||[];
+          const prod = await sbFetchAll('produccion?select=entrega,cantidad,usuario&fecha=gte.'+_fLunAntP+'&fecha=lte.'+_fDomAntP+'&canal=neq.Anulada&canal=neq.BTS&canal=neq.Regula&tipo=neq.insumo&order=fecha.asc,id.asc')||[];
           return {entregas, prod};
         })();
         _promS1.catch(()=>{}); // evita "unhandled rejection"; el error real se captura al esperarla en el try del arrastre
@@ -10533,7 +10533,7 @@ async function fetchRptDatos(fechaParam) {
         const fDomCarg = fechaLocalStr(domCarg);
         const fHastaCarg = hoy <= fDomCarg ? hoy : fDomCarg; // igual que supervisor: hasta hoy o dom
         const cargRows = await sbFetchAll(
-          'entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,estado&fecha_carga=gte.'+fIniW+'&fecha_carga=lte.'+fHastaCarg
+          'entregas_carga?select=id_entrega,canal,tipo_producto,cantidad,estado&fecha_carga=gte.'+fIniW+'&fecha_carga=lte.'+fHastaCarg+'&order=fecha_carga.asc,id.asc'
         );
         totalCargW = (cargRows||[])
           .filter(r=>{
